@@ -77,24 +77,3 @@ jobs:
           - Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
           Please check the logs above for details.
-
-    - name: Send success notification
-      if: success()
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 465
-        username: ${{ secrets.EMAIL_USERNAME }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "✅ CI Pipeline Passed - Phishing Detection Tests"
-        to: ${{ secrets.EMAIL_RECIPIENTS }}
-        from: "GitHub Actions <noreply@github.com>"
-        body: |
-          **All Tests Passed!**
-
-          Repository: ${{ github.repository }}
-          Branch: ${{ github.ref_name }}
-          Commit: ${{ github.sha }}
-          Author: ${{ github.actor }}
-
-          All pytest tests passed successfully.
