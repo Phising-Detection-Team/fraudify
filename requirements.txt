@@ -27,3 +27,6 @@ python-dotenv>=1.2.1
 aiohttp>=3.9.0
 # Calculate LLM cost
 tokencost>=0.1.26
+
+#OpenAI Agents framework for more advanced agent management
+openai-agents>=0.1.0
