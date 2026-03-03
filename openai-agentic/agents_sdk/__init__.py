@@ -1,24 +1,46 @@
 """
 OpenAI Agents SDK integration package.
 
-Provides agentic orchestration for Generator → Detector workflows.
+This package provides agentic orchestration for the phishing detection system.
+It uses OpenAI Agents SDK to coordinate Generator and Detector agents in parallel workflows.
+
+Architecture:
+    - Orchestrator (GPT-4o-mini): Coordinates workflow execution
+    - Generator Agent (Gemini): Creates phishing/legitimate emails
+    - Detector Agent (Claude): Analyzes emails for phishing
+    - Tools: Database integration functions
 """
 
+# Import orchestrator components
 from .orchestrator import AgenticOrchestrator, run_orchestrated_round
-from .generator_agent import create_generator_agent
-from .detector_agent import create_detector_agent
+
+# Import agent creators
+from .generator import create_generator_agent, get_generation_prompt
+from .detector import create_detector_agent, get_detection_prompt_for_email
+
+# Import database tools
 from .tools import (
     save_generated_email,
     save_detection_result,
     update_round_progress
 )
 
+# Export all public interfaces
 __all__ = [
+    # Orchestrator
     'AgenticOrchestrator',
     'run_orchestrated_round',
+    
+    # Generator agent
     'create_generator_agent',
+    'get_generation_prompt',
+    
+    # Detector agent
     'create_detector_agent',
+    'get_detection_prompt_for_email',
+    
+    # Database tools
     'save_generated_email',
     'save_detection_result',
-    'update_round_progress'
+    'update_round_progress',
 ]

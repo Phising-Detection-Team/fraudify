@@ -307,3 +307,67 @@ def get_prompt(prompt_name: str) -> str:
     if prompt_name not in PROMPTS:
         raise KeyError(f"Prompt '{prompt_name}' not found. Available prompts: {list(PROMPTS.keys())}")
     return PROMPTS[prompt_name]
+
+
+# ==========================================
+# GENERATOR HELPER FUNCTIONS
+# ==========================================
+
+def get_system_prompt_generator() -> str:
+    """Get system prompt for generator agent."""
+    return PROMPTS["generator_system"]
+
+
+def get_generation_prompt() -> str:
+    """Get generation prompt for generator agent."""
+    return PROMPTS["generator_generation"]
+
+
+def get_phishing_email_prompt(scenario: str = "phishing") -> str:
+    """
+    Get phishing email generation prompt.
+    
+    Args:
+        scenario: The scenario type for generation
+    
+    Returns:
+        Formatted prompt for phishing email generation
+    """
+    base_prompt = PROMPTS["generator_generation"]
+    return base_prompt.format(scenario=scenario)
+
+
+def get_legitimate_email_prompt(scenario: str = "legitimate") -> str:
+    """
+    Get legitimate email generation prompt.
+    
+    Args:
+        scenario: The scenario type for generation
+    
+    Returns:
+        Formatted prompt for legitimate email generation
+    """
+    base_prompt = PROMPTS["generator_generation"]
+    return base_prompt.format(scenario=scenario)
+
+
+# ==========================================
+# DETECTOR HELPER FUNCTIONS
+# ==========================================
+
+def get_system_prompt_detector() -> str:
+    """Get system prompt for detector agent."""
+    return PROMPTS["detector_system"]
+
+
+def get_detection_prompt(email_content: str) -> str:
+    """
+    Get detection analysis prompt for specific email.
+    
+    Args:
+        email_content: The email content to analyze
+    
+    Returns:
+        Formatted prompt for email detection/analysis
+    """
+    return PROMPTS["detector_analysis"].format(email_content=email_content)
