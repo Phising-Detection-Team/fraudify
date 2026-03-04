@@ -1,6 +1,6 @@
 import os
 from openai import AsyncOpenAI
-from entities.base_entity import BaseEntity
+from .base_entity import BaseEntity
 
 
 class GeneratorAgentEntity(BaseEntity):

@@ -6,3 +6,4 @@ backend/app.db
 **/*.pyo
 LLM.log
 **/*.pyo
+.idea

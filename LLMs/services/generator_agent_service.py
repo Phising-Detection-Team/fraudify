@@ -32,13 +32,12 @@ class GeneratorAgentService(BaseService):
         description="Generates a scam email based on a given scenario or random type",
         name="generate_scam"
     )
-    async def generate_scam(self, scenario: str = "random", round_id: int = None) -> dict:
+    async def generate_scam(self, scenario: str = "random") -> dict:
         """Generate a scam email based on the given scenario or a random type.
 
         Args:
             scenario: Type of scam (phishing, lottery, Nigerian prince, tech support, etc.)
                      Use "random" to generate a random scam type.
-            round_id: Optional round ID for database logging
 
         Returns:
             dict: Generated scam email with metadata
@@ -55,7 +54,10 @@ class GeneratorAgentService(BaseService):
                 "romance scam",
                 "cryptocurrency investment scam",
                 "fake package delivery notification",
-                "IRS tax scam"
+                "IRS tax scam",
+                "Gift Card award scam",
+                "Business email compromise",
+                "advance fee scam",
             ]
             scenario = random.choice(scam_types)
 
@@ -66,8 +68,8 @@ class GeneratorAgentService(BaseService):
         # Load system prompt
         system_prompt = self.entity.get_prompt('generator_system')
 
-        # Determine effective round_id
-        effective_round_id = round_id if round_id is not None else self.round_id
+        # Use self.round_id directly (set by orchestration)
+        effective_round_id = self.round_id
 
         # Define the API call function
         async def make_api_call():

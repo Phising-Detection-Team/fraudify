@@ -1,6 +1,6 @@
 import os
 from anthropic import AsyncAnthropic
-from entities.base_entity import BaseEntity
+from .base_entity import BaseEntity
 
 
 class DetectorAgentEntity(BaseEntity):

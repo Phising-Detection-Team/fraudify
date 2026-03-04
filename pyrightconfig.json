@@ -1,0 +1,8 @@
+{
+  "pythonVersion": "3.12",
+  "pythonPath": ".venv/bin/python",
+  "typeCheckingMode": "basic",
+  "include": ["backend", "tests", "LLMs"],
+  "extraPaths": ["backend"],
+  "venv": ".venv"
+}

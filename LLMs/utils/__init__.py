@@ -1,6 +1,6 @@
 """Utility modules for LLM services."""
 
-from .db_utils import init_db, log_api_call, get_db
+from .db_utils import init_db, save_api_call, get_db
 from .api_utils import (
     track_api_call,
     extract_openai_response,
@@ -11,7 +11,7 @@ from .api_utils import (
 
 __all__ = [
     'init_db',
-    'log_api_call',
+    'save_api_call',
     'get_db',
     'track_api_call',
     'extract_openai_response',

@@ -56,15 +56,23 @@ class OrchestrationAgentService(BaseService):
                 generator_plugin = kernel.get_plugin("generator")
                 detector_plugin = kernel.get_plugin("detector")
 
-                # Access the service instance from the plugin
-                if hasattr(generator_plugin, 'round_id'):
-                    generator_plugin.round_id = round_id
-                if hasattr(detector_plugin, 'round_id'):
-                    detector_plugin.round_id = round_id
-            except Exception as e:
-                print(f"⚠️  Could not set round_id on plugins: {e}")
+                # Access service instances through plugin functions
+                for func_obj in generator_plugin.functions.values():
+                    if hasattr(func_obj, 'method') and hasattr(func_obj.method, '__self__'):
+                        service_instance = func_obj.method.__self__
+                        if hasattr(service_instance, 'round_id'):
+                            service_instance.round_id = round_id
+                            break
 
-        # Reset chat history for each new email to avoid contamination
+                for func_obj in detector_plugin.functions.values():
+                    if hasattr(func_obj, 'method') and hasattr(func_obj.method, '__self__'):
+                        service_instance = func_obj.method.__self__
+                        if hasattr(service_instance, 'round_id'):
+                            service_instance.round_id = round_id
+                            break
+
+            except Exception as e:
+                print(f"⚠️  Could not set round_id on services: {e}")
         self.entity.reset_chat_history()
 
         chat_service = kernel.get_service("openai")

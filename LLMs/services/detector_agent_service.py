@@ -30,12 +30,11 @@ class DetectorAgentService(BaseService):
         description="Analyzes an email to detect if it's a scam with detailed indicator scoring and reasoning",
         name="detect_scam"
     )
-    async def detect_scam(self, email_content: str = "", round_id: int = None) -> dict:
+    async def detect_scam(self, email_content: str = "") -> dict:
         """Analyze an email to determine if it's a scam with comprehensive indicator analysis.
 
         Args:
             email_content: The email content to analyze
-            round_id: Optional round ID for database logging
 
         Returns:
             dict: Detailed analysis with verdict, confidence, indicator scores, and reasoning
@@ -55,8 +54,8 @@ class DetectorAgentService(BaseService):
         # Prepare messages payload
         messages_payload = [{"role": "user", "content": prompt}]
 
-        # Determine effective round_id
-        effective_round_id = round_id if round_id is not None else self.round_id
+        # Use self.round_id directly (set by orchestration)
+        effective_round_id = self.round_id
 
         # Define the API call function
         async def make_api_call():

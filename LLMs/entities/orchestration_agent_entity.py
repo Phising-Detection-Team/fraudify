@@ -6,7 +6,7 @@ chat history and configuration.
 """
 
 from semantic_kernel.contents import ChatHistory
-from entities.base_entity import BaseEntity
+from .base_entity import BaseEntity
 
 
 class OrchestrationAgentEntity(BaseEntity):

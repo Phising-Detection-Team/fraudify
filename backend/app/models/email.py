@@ -1,5 +1,6 @@
 from datetime import datetime
 from . import db
+from sqlalchemy.orm import validates
 
 class Email(db.Model):
     """
@@ -12,7 +13,15 @@ class Email(db.Model):
     4. Optional: Human can override judge verdict
     """
 
-    __tablename__ = 'Emails'
+    __tablename__ = 'emails'
+    __table_args__ = (
+        db.CheckConstraint('detector_confidence >= 0 AND detector_confidence <= 1', name='ck_email_detector_confidence_range'),
+        db.CheckConstraint('generator_latency_ms IS NULL OR generator_latency_ms >= 0', name='ck_email_generator_latency_nonneg'),
+        db.CheckConstraint('detector_latency_ms IS NULL OR detector_latency_ms >= 0', name='ck_email_detector_latency_nonneg'),
+        db.CheckConstraint('cost IS NULL OR cost >= 0', name='ck_email_cost_nonneg'),
+        db.CheckConstraint("detector_verdict IN ('phishing','legitimate')", name='ck_email_detector_verdict_enum'),
+        db.CheckConstraint('processing_time IS NULL OR processing_time >= 0', name='ck_email_processing_time_nonneg'),
+    )
 
     # PRIMARY KEY
     id = db.Column(db.Integer, primary_key=True)
@@ -20,7 +29,7 @@ class Email(db.Model):
     # FOREIGN KEY
     round_id = db.Column(
         db.Integer,
-        db.ForeignKey('Rounds.id', ondelete='CASCADE'),
+        db.ForeignKey('rounds.id', ondelete='CASCADE'),
         nullable=False,
         index=True          # Faster look up
     )
@@ -51,7 +60,7 @@ class Email(db.Model):
     # Set by generator, used by judge for evaluation
     is_phishing = db.Column(
         db.Boolean,
-        nullable=False    
+        nullable=False
     )
 
     # Stored as JSON for flexibility
@@ -67,6 +76,7 @@ class Email(db.Model):
     )
 
     # Generator latency (ms)
+    # Note: Column name has typo in initial schema; should be generator_latency_ms
     generator_latency_ms = db.Column(
         db.Integer,
         nullable=True
@@ -87,7 +97,6 @@ class Email(db.Model):
     )
 
     # Detector's confidence (0.0 to 1.0) -> Higher = more confident
-    # !!! DO WE WANT TO KEEP THIS !!!
     detector_confidence = db.Column(
         db.Float,
         nullable=True
@@ -106,6 +115,8 @@ class Email(db.Model):
         nullable=True
     )
 
+    # Decided not to use Judge agent for now since it may be redundant with detector confidence + reasoning
+    """
     # JUDGE OUTPUTS
 
     # Judge ground truth (minimum truth?)
@@ -145,6 +156,7 @@ class Email(db.Model):
         db.Integer,
         nullable=True
     )
+    """
 
     # MANUALLY OVERRIDE
     # Was this overridden by human?
@@ -185,14 +197,14 @@ class Email(db.Model):
     )
 
     # Processing time (seconds)
-    # How long did it take to generate, detect, and judge?
+    # How long did it take to generate, detect?
     processing_time = db.Column(
         db.Float,
         nullable=True
     )
 
     # API cost for this email (USD)
-    # Sum generator + detector + judge
+    # Sum generator + detector
     cost = db.Column(
         db.Float,
         default=0.0
@@ -202,7 +214,7 @@ class Email(db.Model):
     def __repr__(self):
         """String representation for debugging"""
         return f"<Email {self.id} (Round {self.round_id})>"
-    
+
     def to_dict(self):
         """Convert to dictionary for JSON responses"""
         return {
@@ -213,17 +225,12 @@ class Email(db.Model):
             'generated_email_body': self.generated_body,
             'is_phishing': self.is_phishing,
             'generated_email_metadata': self.generated_email_metadata,
+            'generator_latency_ms': self.generator_latency_ms,
             'detector_verdict': self.detector_verdict,
             'detector_confidence': self.detector_confidence,
             'detector_risk_score': self.detector_risk_score,
             'detector_reasoning': self.detector_reasoning,
             'detector_latency_ms': self.detector_latency_ms,
-            'judge_verdict': self.judge_verdict,
-            'judge_ground_truth': self.judge_ground_truth,
-            'is_judge_correct': self.is_judge_correct,
-            'judge_quality_score': self.judge_quality_score,
-            'judge_latency_ms': self.judge_latency_ms,
-            'judge_reasoning': self.judge_reasoning,
             'manual_override': self.manual_override,
             'override_verdict': self.override_verdict,
             'override_reason': self.override_reason,
@@ -233,7 +240,7 @@ class Email(db.Model):
             'processing_time': self.processing_time,
             'cost': self.cost
         }
-    
+
     def get_final_verdict(self):
         """
         Get the final verdict (considering manual overrides)
@@ -244,9 +251,62 @@ class Email(db.Model):
 
         if self.manual_override:
             return self.override_verdict
-        
-        return self.judge_verdict
-    
+
+        if self.detector_verdict:
+            return self.detector_verdict
+
+    # ORM-level validators
+    @validates('detector_confidence')
+    def validate_detector_confidence(self, key, value):
+        if value is None:
+            return None
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            raise ValueError('detector_confidence must be a float between 0 and 1')
+        if not (0.0 <= value <= 1.0):
+            raise ValueError('detector_confidence must be between 0 and 1')
+        return value
+
+    @validates('detector_verdict')
+    def validate_detector_verdict(self, key, value):
+        if value is None:
+            raise ValueError('detector_verdict is required')
+        allowed = {'phishing', 'legitimate'}
+        if value not in allowed:
+            raise ValueError(f"detector_verdict must be one of {allowed}")
+        return value
+
+    @validates('generator_latency_ms', 'detector_latency_ms')
+    def validate_latency(self, key, value):
+        if value is None:
+            return None
+        try:
+            value = int(value)
+        except (TypeError, ValueError):
+            raise ValueError(f'{key} must be an integer (ms)')
+        if value < 0:
+            raise ValueError(f'{key} must be non-negative')
+        return value
+
+    @validates('cost', 'detector_risk_score', 'processing_time')
+    def validate_non_negative_floats(self, key, value):
+        if value is None:
+            return None
+        try:
+            val = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(f'{key} must be a number')
+        if val < 0:
+            raise ValueError(f'{key} must be non-negative')
+        return val
+
+    @validates('is_phishing')
+    def validate_is_phishing(self, key, value):
+        if not isinstance(value, bool):
+            raise ValueError('is_phishing must be a boolean')
+        return value
+
     def is_false_positive(self):
         """
         Check if this is a false positive (Says it phishing but it is legitimate)
@@ -256,17 +316,16 @@ class Email(db.Model):
         """
 
         return (
-            not self.is_phishing and 
+            not self.is_phishing and
             self.detector_verdict == "phishing"
         )
-    
+
     def is_false_negative(self):
         """
         Check if this is a false negative
         """
-        
+
         return (
-            self.is_phishing and 
+            self.is_phishing and
             self.detector_verdict == "legitimate"
         )
-

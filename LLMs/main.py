@@ -3,19 +3,30 @@ import asyncio
 import os
 import json
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from root .env file FIRST before anything else
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_file = os.path.join(project_root, '.env')
+if os.path.exists(env_file):
+    load_dotenv(env_file)
+else:
+    print(f"⚠️  Warning: .env file not found at {env_file}")
+
+# Add project root to sys.path for backend imports
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 import semantic_kernel as sk
 from datetime import datetime, UTC
-from dotenv import load_dotenv
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
-# from backend.app.models import db, Round
-from utils.db_utils import init_db
+from backend.app.models import db
+from utils.db_utils import init_db, save_email, create_round, update_round, save_log
 
 # Import services (self-contained with their own entities)
 from services.orchestration_agent_service import OrchestrationAgentService
 from services.generator_agent_service import GeneratorAgentService
 from services.detector_agent_service import DetectorAgentService
-
-load_dotenv()
 
 # Constants
 OPENAI_MODEL = "gpt-4o-mini"
@@ -24,22 +35,22 @@ DEFAULT_MAX_ROUNDS = 10
 def setup_logging():
     """Set up logging to file and console."""
     log_file = "LLM.log"
-    
+
     # Create logger
     logger = logging.getLogger("LLM_Orchestration")
     logger.setLevel(logging.DEBUG)
-    
+
     # Remove existing handlers to avoid duplicates
     logger.handlers = []
-    
+
     # File handler
     file_handler = logging.FileHandler(log_file, mode='a')
     file_handler.setLevel(logging.DEBUG)
-    
+
     # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
-    
+
     # Formatter
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -47,20 +58,11 @@ def setup_logging():
     )
     file_handler.setFormatter(formatter)
     console_handler.setFormatter(formatter)
-    
+
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
-    
-    return logger
 
-def create_minimal_app():
-    """Create a minimal Flask app context for DB access."""
-    app = Flask(__name__)
-    # Ensure this matches your backend config
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
-    return app
+    return logger
 
 def initialize_kernel():
     """Initialize the Semantic Kernel with OpenAI service."""
@@ -118,9 +120,9 @@ async def main():
     logger.info("=" * 60)
     logger.info("Starting LLM Orchestration Session")
     logger.info("=" * 60)
-    
+
     # Initialize database connection
-    # init_db()
+    init_db()
 
     # Initialize kernel and register agents
     kernel = initialize_kernel()
@@ -169,17 +171,15 @@ async def main():
         print("="*60 + "\n")
 
         # Create Round record in database
-        # db_round = Round(
-        #     status='in_progress',
-        #     total_emails=emails_per_round,
-        #     processed_emails=0,
-        #     started_at=datetime.now(UTC)
-        # )
-        # db.session.add(db_round)
-        # db.session.commit()
-        # round_id = db_round.id
-        round_id = round_num  # Use round number instead of DB ID for now
-        print(f"✅ Using round number as ID: {round_id}\n")
+        round_id = create_round(
+            total_emails=emails_per_round,
+            status='running'
+        )
+        if not round_id:
+            logger.error(f"[Round {round_num}] Failed to create round in database")
+            continue
+
+        print(f"✅ Round created with ID: {round_id}\n")
 
         round_emails = []
         round_start_time = datetime.now(UTC)
@@ -210,6 +210,20 @@ async def main():
             email_result['generator_agent_return_status'] = generator_status
             email_result['detector_agent_return_status'] = detector_status
 
+            # Save email to database
+            email_id = save_email(
+                round_id=round_id,
+                email_result=email_result,
+                processing_time=None  # Will be calculated at round completion
+            )
+            if email_id:
+                email_result['email_id'] = email_id
+                logger.info(f"[Round {round_num}, Email {email_num}] Saved to database with ID: {email_id}")
+            else:
+                msg = f"Failed to save email {email_num} to database"
+                logger.warning(f"[Round {round_num}, Email {email_num}] {msg}")
+                save_log('warning', msg, round_id=round_id)
+
             round_emails.append(email_result)
             print(f"   ✓ Email {email_num} generated and analyzed")
             print(f"      Generator status: {'✓' if generator_status == 1 else '✗'}")
@@ -237,8 +251,23 @@ async def main():
 
         # Calculate total cost for this round from API calls
         total_round_cost = sum(
-            int(email.get('generator_agent_api_cost', 0)) + int(email.get('detector_agent_api_cost', 0))
+            float(email.get('generator_agent_api_cost', 0)) + float(email.get('detector_agent_api_cost', 0))
             for email in round_emails
+        )
+
+        # Calculate statistics
+        detector_accuracy = (detector_successes / len(round_emails) * 100) if round_emails else 0
+        generator_success_rate = (generator_successes / len(round_emails) * 100) if round_emails else 0
+
+        # Update round with final statistics
+        update_round(
+            round_id=round_id,
+            status='completed',
+            processed_emails=len(round_emails),
+            detector_accuracy=detector_accuracy,
+            generator_success_rate=generator_success_rate,
+            processing_time=processing_time,
+            total_cost=total_round_cost
         )
 
         print(f"\n✅ Round {round_num} complete: {len(round_emails)} emails generated")
@@ -246,7 +275,7 @@ async def main():
         print(f"   Detector successes: {detector_successes}/{len(round_emails)}")
         print(f"   Processing time: {processing_time}s")
         print(f"   Total cost: ${total_round_cost:.7f}")
-        
+
         logger.info(f"[Round {round_num}] Summary: {len(round_emails)} emails, Generator: {generator_successes}/{len(round_emails)}, Detector: {detector_successes}/{len(round_emails)}, Time: {processing_time}s, Cost: ${total_round_cost:.7f}")
 
     # Final summary
@@ -257,7 +286,7 @@ async def main():
     print(f"   Total rounds: {num_rounds}")
     print(f"   Emails per round: {emails_per_round}")
     print(f"   Total emails generated: {num_rounds * emails_per_round}")
-    
+
     logger.info("=" * 60)
     logger.info("AI ORCHESTRATION SESSION COMPLETE")
     logger.info(f"Total rounds: {num_rounds}, Emails per round: {emails_per_round}, Total emails: {num_rounds * emails_per_round}")
