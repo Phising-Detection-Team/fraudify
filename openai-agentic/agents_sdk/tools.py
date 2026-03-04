@@ -15,15 +15,12 @@ Available Tools:
     2. save_detection_result() - Save detector verdict to database
     3. update_round_progress() - Update round status and metrics
 """
-
-from agents import function_tool
 from typing import Dict, Any
 from flask import current_app
 from app.models import db, Email, Round, API
 from datetime import datetime
 
 
-@function_tool
 def save_generated_email(
     round_id: int,
     content: str,
@@ -116,8 +113,6 @@ def save_generated_email(
             'error': str(e)
         }
 
-
-@function_tool
 def save_detection_result(
     email_id: int,
     verdict: str,
@@ -265,8 +260,6 @@ def save_detection_result(
             'error': str(e)
         }
 
-
-@function_tool
 def update_round_progress(
     round_id: int,
     emails_processed: int,
