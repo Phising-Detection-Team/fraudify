@@ -12,7 +12,7 @@ Architecture:
 """
 
 # Import orchestrator components
-from .orchestrator import AgenticOrchestrator, run_orchestrated_round
+from .orchestrator import GeneratorAgent, DetectorAgent, HumanOverrideAgent, OrchestratorAgent, run_orchestrated_round
 
 # Import agent creators
 from .generator import create_generator_agent, get_generation_prompt
@@ -28,7 +28,10 @@ from .tools import (
 # Export all public interfaces
 __all__ = [
     # Orchestrator
-    'AgenticOrchestrator',
+    'GeneratorAgent',
+    'DetectorAgent',
+    'HumanOverrideAgent',
+    'OrchestratorAgent',
     'run_orchestrated_round',
     
     # Generator agent
