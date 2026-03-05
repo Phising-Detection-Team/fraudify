@@ -8,31 +8,30 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 env_file = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
 if os.path.exists(env_file):
     load_dotenv(env_file)
 else:
-    # Try backend/.env
     env_file_backend = os.path.join(os.path.dirname(__file__), '..', '.env')
     if os.path.exists(env_file_backend):
         load_dotenv(env_file_backend)
 
 
-class Config:
-    """Base configuration - loads all settings from environment variables."""
+class BaseConfig:
+    """Base configuration shared across all environments."""
 
-    # Flask Settings
-    SECRET_KEY = os.environ.get(
-        'SECRET_KEY',
-        'dev-secret-key-change-in-production'
-    )
-    DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    DEBUG = False
     TESTING = False
 
     # SQLAlchemy
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
     SQLALCHEMY_ECHO = os.environ.get('SQLALCHEMY_ECHO', 'False').lower() == 'true'
+
+    # CORS
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*')
+    JSON_SORT_KEYS = False
 
     # Session
     PERMANENT_SESSION_LIFETIME = timedelta(
@@ -56,7 +55,7 @@ class Config:
     OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 
 
-class DevelopmentConfig(Config):
+class DevelopmentConfig(BaseConfig):
     """Development configuration."""
 
     DEBUG = True
@@ -69,37 +68,44 @@ class DevelopmentConfig(Config):
     )
 
 
-class TestingConfig(Config):
-    """Testing configuration.
-
-    Uses in-memory SQLite by default for fast local testing.
-    Can use PostgreSQL if DATABASE_URL environment variable is set (for CI/CD).
-    """
+class TestingConfig(BaseConfig):
+    """Testing configuration with in-memory SQLite."""
 
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
         'sqlite:///:memory:'
     )
+    SQLALCHEMY_ECHO = False
     WTF_CSRF_ENABLED = False
     SERVER_NAME = os.environ.get('TEST_SERVER_NAME', 'localhost')
 
 
-class ProductionConfig(Config):
-    """Production configuration.
-
-    Note: Validation happens in get_config() when production is actually used,
-    not at import time, to avoid errors during testing/CI.
-    """
+class ProductionConfig(BaseConfig):
+    """Production configuration."""
 
     DEBUG = False
-    SQLALCHEMY_ECHO = False
+    TESTING = False
     SESSION_COOKIE_SECURE = True
 
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'PROD_DATABASE_URL',
         'postgresql://localhost/phishing_db'
     )
+
+    def __init__(self):
+        if 'DATABASE_URL' not in os.environ and 'PROD_DATABASE_URL' not in os.environ:
+            raise ValueError('DATABASE_URL or PROD_DATABASE_URL must be set in production')
+        if self.SQLALCHEMY_DATABASE_URI.startswith('sqlite'):
+            raise ValueError('SQLite is not allowed in production. Use PostgreSQL via DATABASE_URL.')
+
+
+config = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig,
+}
 
 
 def get_config(env=None):
@@ -116,18 +122,10 @@ def get_config(env=None):
     if env is None:
         env = os.environ.get('FLASK_ENV', 'development')
 
-    configs = {
-        'development': DevelopmentConfig,
-        'testing': TestingConfig,
-        'production': ProductionConfig,
-    }
+    selected = config.get(env, DevelopmentConfig)
 
-    config = configs.get(env, DevelopmentConfig)
-
-    if config == ProductionConfig:
+    if selected == ProductionConfig:
         if not os.environ.get('SECRET_KEY') or os.environ.get('SECRET_KEY') == 'dev-secret-key-change-in-production':
             raise ValueError('SECRET_KEY must be set in .env for production')
-        if not os.environ.get('PROD_DATABASE_URL'):
-            raise ValueError('PROD_DATABASE_URL must be set in .env for production')
 
-    return config
+    return selected

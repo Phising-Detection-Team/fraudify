@@ -1,3 +1,5 @@
+"""API route blueprints."""
+
 from flask import Blueprint, jsonify, current_app
 from sqlalchemy import text
 

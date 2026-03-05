@@ -1,10 +1,9 @@
-"""
-Flask application factory and database initialization.
-"""
+"""Flask application factory and initialization."""
 
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
+from flask_socketio import SocketIO
 
 from .config import get_config
 from .models import db
@@ -12,9 +11,9 @@ from .errors import register_error_handlers
 from .services.kernel_service import KernelService
 from .services.cache_service import cache
 
-
 migrate = Migrate()
 kernel_service = KernelService()
+socketio = SocketIO()
 
 
 def create_app(config_env=None):
@@ -39,7 +38,8 @@ def create_app(config_env=None):
     db.init_app(app)
     migrate.init_app(app, db)
 
-    CORS(app)
+    CORS(app, resources={r'/api/*': {'origins': app.config.get('CORS_ORIGINS', '*')}})
+    socketio.init_app(app, cors_allowed_origins=app.config.get('CORS_ORIGINS', '*'))
 
     register_error_handlers(app)
 
