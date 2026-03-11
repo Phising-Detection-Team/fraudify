@@ -110,7 +110,7 @@ ANALYSIS GUIDELINES:
     agent = Agent(
         name="PhishingDetector",
         instructions=full_instructions,
-        model=LitellmModel(model="claude-3-5-haiku-20241022",api_key=api_key),  # Use Claude for detection
+        model=LitellmModel(model="anthropic/claude-3-5-haiku-20241022",api_key=api_key),  # Use Claude for detection
         model_settings=ModelSettings(temperature=0.3) # Lower temperature for consistent, analytical responses
     )
     

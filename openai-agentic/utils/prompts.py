@@ -378,8 +378,12 @@ def get_system_prompt_generator() -> str:
 
 
 def get_generation_prompt() -> str:
-    """Get generation prompt for generator agent."""
-    return PROMPTS["generator_generation"]
+    """Get generation prompt for generator agent.
+    
+    Returns the prompt with scenario set to 'random' so the agent decides
+    internally whether to generate phishing or legitimate email (50/50).
+    """
+    return PROMPTS["generator_generation"].format(scenario="random")
 
 
 def get_phishing_email_prompt(scenario: str = "phishing") -> str:

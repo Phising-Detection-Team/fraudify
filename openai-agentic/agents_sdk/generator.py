@@ -100,7 +100,7 @@ IMPORTANT RULES:
     agent = Agent(
         name="EmailGenerator",
         instructions=full_instructions,
-        model=LitellmModel(model="gemini-2.0-flash-exp", api_key=api_key),  # Use Gemini for generation
+        model=LitellmModel(model="gemini/gemini-2.0-flash", api_key=api_key),  # Use Gemini for generation
         model_settings=ModelSettings(temperature=0.8)  # Higher temperature for creative, varied outputs
     )
     

@@ -19,9 +19,11 @@ class GeneratorAgentEntity(BaseEntity):
         system_instructions = get_system_prompt_generator()
         
         # Define the agent with its static configuration
+        # Use 'gemini/' prefix so LiteLLM routes to Google AI Studio (API key)
+        # instead of Vertex AI (which requires Google Cloud ADC credentials)
         self.agent = Agent(
             name="EmailGenerator",
             instructions=system_instructions,
-            model=LitellmModel(model="gemini-2.0-flash-exp", api_key=self.api_key),
+            model=LitellmModel(model="gemini/gemini-2.0-flash", api_key=self.api_key),
             model_settings=ModelSettings(temperature=0.8) # Higher temperature for creative outputs
         )
