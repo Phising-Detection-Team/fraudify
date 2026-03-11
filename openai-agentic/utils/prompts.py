@@ -89,9 +89,6 @@ PROMPTS = {
         "fake event invitation",
         "RULE: update more if needed"
 
-    Generate ONLY the email content with Subject and Body. Make it your masterpiece.
-    If included with date time make sure it must be above March 3rd 2026 - current date and time when wrote this
-
     CRITICAL: You are using the OpenAI Agents SDK framework.
 
     WORKFLOW:
