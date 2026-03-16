@@ -202,6 +202,16 @@ async def main():
             logger.debug(f"[Round {round_num}, Email {email_num}] Raw LLM Response:")
             logger.debug(json.dumps(email_result, indent=2, default=str))
 
+            # Check for JSON parsing errors
+            if 'parse_error' in email_result:
+                msg = f"LLM response parsing error: {email_result.get('parse_error')}"
+                logger.error(f"[Round {round_num}, Email {email_num}] {msg}")
+                save_log('error', msg, round_id=round_id)
+                email_result['generator_agent_return_status'] = 0
+                email_result['detector_agent_return_status'] = 0
+                round_emails.append(email_result)
+                continue
+
             # Extract agent statuses from the result (they're at the top level)
             generator_status = email_result.get('generator_agent_status', 0)
             detector_status = email_result.get('detector_agent_status', 0)

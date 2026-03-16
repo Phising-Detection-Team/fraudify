@@ -122,8 +122,11 @@ class OrchestrationAgentService(BaseService):
                     print(f"✅ Successfully parsed JSON result ({len(result_dict)} keys)\n")
                     return result_dict
                 except json.JSONDecodeError as e:
-                    print(f"⚠️  Failed to parse JSON: {e}\n")
-                    return {"raw_response": final_response, "parse_error": str(e)}
+                    print(f"⚠️  Failed to parse JSON: {e}")
+                    # Try to extract the error location and provide better feedback
+                    error_msg = f"Line {e.lineno}, Col {e.colno}: {e.msg}"
+                    print(f"   Error details: {error_msg}\n")
+                    return {"raw_response": final_response, "parse_error": error_msg}
 
         print(f"\n⚠️  Maximum rounds ({max_rounds}) reached without completion\n")
         return None

@@ -29,18 +29,21 @@ for env_file in env_locations:
 # access to the values within the .ini file in use.
 config = context.config
 
+# Configure logging only if alembic.ini config file exists
+if config.config_file_name:
+    fileConfig(config.config_file_name)
+
 # Use DEV_DATABASE_URL or DATABASE_URL from environment, otherwise use alembic.ini
 database_url = os.environ.get('DEV_DATABASE_URL') or os.environ.get('PROD_DATABASE_URL')
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
-    fileConfig(config.config_file_name)
-else:
-    # Fall back to alembic.ini if no env var found
-    fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 # Import all models to ensure they're registered with SQLAlchemy
+# Add parent app directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from app.models import db
 from app.models.email import Email
 from app.models.round import Round

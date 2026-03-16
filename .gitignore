@@ -7,3 +7,5 @@ backend/app.db
 LLM.log
 **/*.pyo
 .idea
+frontend/node_modules/*
+frontend/.next/*

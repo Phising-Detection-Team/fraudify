@@ -45,7 +45,7 @@ def init_db() -> None:
         sys.path.insert(0, backend_path)
     
     # Use backend's create_app() which properly loads config and initializes db
-    _app = create_app(config_env='development')
+    _app = create_app(config_name='development')
     
     # Push app context and keep it active for the lifetime of the script
     _app_context = _app.app_context()
