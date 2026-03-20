@@ -3,12 +3,12 @@ from . import db
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 import string
-import secrets
+import random
 
 def generate_random_code(length=12):
     """Generates a random alphanumeric code"""
     chars = string.ascii_uppercase + string.digits
-    return ''.join(secrets.choice(chars) for _ in range(length))
+    return ''.join(random.choice(chars) for _ in range(length))
 
 class InviteCode(db.Model):
     __tablename__ = 'invite_codes'
