@@ -59,3 +59,8 @@ huggingface_hub
 transformers[torch]
 datasets[torch]
 peft[torch]
+# Auth & API
+bcrypt
+Flask-JWT-Extended
+Flask-Limiter
+marshmallow
