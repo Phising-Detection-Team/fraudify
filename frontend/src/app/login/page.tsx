@@ -19,6 +19,46 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    // Test Admin Bypass for Demo
+    if (email === "test-admin" && password === "test-admin") {
+      localStorage.setItem("sentra-role", "admin");
+      localStorage.setItem("is-demo", "true");
+      router.push("/dashboard/admin");
+      return;
+    }
+    localStorage.removeItem("is-demo");
+    
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Login failed");
+        setLoading(false);
+        return;
+      }
+
+      // Check roles
+      const userRoles = data.user?.roles || ['user'];
+      const is_admin = userRoles.includes('admin');
+      const assignedRole = is_admin ? "admin" : "user";
+      
+      // Temporary token handling. TODO: NextAuth session integration
+      localStorage.setItem("sentra-role", assignedRole);
+      
+      router.push(is_admin ? "/dashboard/admin" : "/dashboard/user");
+    } catch (err) {
+      console.error(err);
+      setError("Unable to reach the server.");
+      setLoading(false);
+    }
+    localStorage.removeItem("is-demo");
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
@@ -151,6 +191,7 @@ export default function LoginPage() {
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
+            Don't have an account?{" "}
             <Link href="/signup" className="text-accent-cyan hover:text-accent-cyan/80 transition-colors">
               Sign up
             </Link>
