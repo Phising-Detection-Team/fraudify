@@ -6,6 +6,13 @@ import { Logo } from "@/components/Logo";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldAlert, Database, Mail, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { ShieldAlert, Database, Mail, ArrowRight, Check } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Logo } from "@/components/Logo";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShieldAlert, Database, Mail, ArrowRight, Check } from "lucide-react";
+import { ShieldAlert, Database, Mail, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
+import { ShieldAlert, Database, Mail, ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import { TermsModal } from "@/components/TermsModal";
 import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
@@ -102,6 +109,8 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [adminSecret, setAdminSecret] = useState("");
   const [showAdminSecret, setShowAdminSecret] = useState(false);
+  const [adminSecret, setAdminSecret] = useState("");
+  
   // Default to just read
   const [allowTraining, setAllowTraining] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -255,6 +264,16 @@ export default function SignupPage() {
               <div className="space-y-2">                <label className="text-sm font-medium">Email Address / Username</label>
                 <input
                   type="text"
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email Address</label>
+                <input
+                  type="email"
+                <label className="text-sm font-medium">Email Address / Username</label>
+                <input
+                  type="text"
+                <label className="text-sm font-medium">Email Address</label>
+                <input
+                  type="email"
                   required
                   value={email}
                   onChange={(e) => {
@@ -272,6 +291,9 @@ export default function SignupPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
                   placeholder="john@example.com / demo-user"
+                  placeholder="john@example.com"
+                  placeholder="john@example.com / demo-user"
+                  placeholder="john@example.com"
                 />
                 {(emailError || (hasTriedContinue && emailValidationError)) && (
                   <p className="text-xs text-red-400">{emailError || emailValidationError}</p>
