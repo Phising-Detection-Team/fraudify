@@ -13,13 +13,13 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
 
   // Real data state
-  const [realStats, setRealStats] = useState({
+  const [realStats] = useState({
     totalEmailsScanned: 0,
     phishingDetected: 0,
     markedSafe: 0,
     creditsRemaining: 1000 // default starting credits
   });
-  const [realRounds, setRealRounds] = useState([]);
+  const [realRounds] = useState([]);
 
   useEffect(() => {
     const demoFlag = localStorage.getItem("is-demo") === "true";

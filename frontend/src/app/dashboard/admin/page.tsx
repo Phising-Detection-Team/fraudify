@@ -14,14 +14,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   
   // Real data state
-  const [realStats, setRealStats] = useState({
+  const [realStats] = useState({
     totalApiCost: 0,
     activeAgents: 0,
     totalEmailsScanned: 0,
     phishingDetected: 0
   });
-  const [realRounds, setRealRounds] = useState([]);
-  const [realAgents, setRealAgents] = useState([]);
+  const [realRounds] = useState([]);
+  const [realAgents] = useState([]);
 
   useEffect(() => {
     const demoFlag = localStorage.getItem("is-demo") === "true";
