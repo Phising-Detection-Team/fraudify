@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldAlert, Database, Mail, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
+import { ShieldAlert, Database, Mail, ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import { TermsModal } from "@/components/TermsModal";
 import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
@@ -97,6 +98,10 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [hasTriedContinue, setHasTriedContinue] = useState(false);
 
+  const [adminSecret, setAdminSecret] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [adminSecret, setAdminSecret] = useState("");
+  const [showAdminSecret, setShowAdminSecret] = useState(false);
   // Default to just read
   const [allowTraining, setAllowTraining] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -247,10 +252,9 @@ export default function SignupPage() {
                   <p className="text-xs text-red-400">{nameError || nameValidationError}</p>
                 )}
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email Address</label>
+              <div className="space-y-2">                <label className="text-sm font-medium">Email Address / Username</label>
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={email}
                   onChange={(e) => {
@@ -265,6 +269,9 @@ export default function SignupPage() {
                   autoComplete="email"
                   className={`w-full bg-background/50 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 ${emailError ? "border-red-500/70" : "border-border/50"}`}
                   placeholder="you@example.com"
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                  placeholder="john@example.com / demo-user"
                 />
                 {(emailError || (hasTriedContinue && emailValidationError)) && (
                   <p className="text-xs text-red-400">{emailError || emailValidationError}</p>
@@ -273,6 +280,14 @@ export default function SignupPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Password</label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                  placeholder="••••••••"
+                />
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -287,6 +302,8 @@ export default function SignupPage() {
                     onBlur={() => setPasswordError(validatePassword(password))}
                     autoComplete="new-password"
                     className={`w-full bg-background/50 border rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 ${passwordError ? "border-red-500/70" : "border-border/50"}`}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
                     placeholder="••••••••"
                   />
                   <button
@@ -318,6 +335,36 @@ export default function SignupPage() {
                 <p className="text-xs text-muted-foreground">
                   Use at least 10 characters with uppercase, lowercase, number, and symbol.
                 </p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex justify-between">
+                  <span>Admin Secret</span>
+                  <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+                </label>
+                <input
+                  type="password"
+                  value={adminSecret}
+                  onChange={(e) => setAdminSecret(e.target.value)}
+                  className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                  placeholder="Enter secret for admin access"
+                />
+                <div className="relative">
+                  <input
+                    type={showAdminSecret ? "text" : "password"}
+                    value={adminSecret}
+                    onChange={(e) => setAdminSecret(e.target.value)}
+                    className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                    placeholder="Enter secret for admin access"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setShowAdminSecret(!showAdminSecret)}
+                    tabIndex={-1}
+                  >
+                    {showAdminSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"

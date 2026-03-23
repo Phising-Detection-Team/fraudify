@@ -83,6 +83,9 @@ export default function LoginPage() {
               readOnly
               value={role === "admin" ? "admin@sentra.ai" : "user@sentra.ai"}
               className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              readOnly
+              value={role === "admin" ? "admin@sentra.ai" : "user@sentra.ai"}
+              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
