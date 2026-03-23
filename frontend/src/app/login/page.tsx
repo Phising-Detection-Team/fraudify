@@ -5,13 +5,6 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import Link from "next/link";
-<<<<<<< Updated upstream
-import { ShieldCheck, LogIn } from "lucide-react";
-
-export default function LoginPage() {
-  const router = useRouter();
-  const [role, setRole] = useState<"user" | "admin">("user");
-=======
 import { ShieldCheck, LogIn, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
@@ -20,17 +13,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
->>>>>>> Stashed changes
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-<<<<<<< Updated upstream
-=======
     setError("");
-<<<<<<< Updated upstream
-=======
 
     // Test Admin Bypass for Demo
     if (email === "test-admin" && password === "test-admin") {
@@ -47,23 +35,29 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
->>>>>>> Stashed changes
 
-    // Test Admin Bypass for Demo
-    if (email === "test-admin" && password === "test-admin") {
-      localStorage.setItem("sentra-role", "admin");
-      localStorage.setItem("is-demo", "true");
-      router.push("/dashboard/admin");
-      return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Login failed");
+        setLoading(false);
+        return;
+      }
+
+      // Check roles
+      const userRoles = data.user?.roles || ['user'];
+      const is_admin = userRoles.includes('admin');
+      const assignedRole = is_admin ? "admin" : "user";
+      
+      // Temporary token handling. TODO: NextAuth session integration
+      localStorage.setItem("sentra-role", assignedRole);
+      
+      router.push(is_admin ? "/dashboard/admin" : "/dashboard/user");
+    } catch (err) {
+      console.error(err);
+      setError("Unable to reach the server.");
+      setLoading(false);
     }
-    localStorage.removeItem("is-demo");
->>>>>>> Stashed changes
-    
-    // TODO(AUTH): Replace mockup timeout with real authentication API request (NextAuth signIn)
-    localStorage.setItem("sentra-role", role);
-    setTimeout(() => {
-      router.push(role === "admin" ? "/dashboard/admin" : "/dashboard/user");
-    }, 600);
   };
 
   return (
@@ -83,40 +77,27 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-6">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-lg flex items-center gap-2">
+              <AlertCircle size={16} />
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-medium">Email Address / Username</label>
             <input
               type="text"
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-              readOnly
-              value={role === "admin" ? "admin@sentra.ai" : "user@sentra.ai"}
-              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-=======
-=======
->>>>>>> Stashed changes
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-              placeholder="you@example.com / test-admin"
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+              placeholder="you@example.com"
             />
           </div>
           
           <div className="space-y-2">
             <label className="text-sm font-medium">Password</label>
-<<<<<<< Updated upstream
-            <input
-              type="password"
-              readOnly
-              value="••••••••••••"
-              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none"
-            />
-=======
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -135,28 +116,6 @@ export default function LoginPage() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
->>>>>>> Stashed changes
-          </div>
-
-          <div className="flex bg-background/50 p-1 rounded-lg border border-border/50">
-            <button
-              type="button"
-              onClick={() => setRole("user")}
-              className={`flex-1 py-2 text-sm font-medium leading-none rounded-md transition-all ${
-                role === "user" ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground"
-              }`}
-            >
-              User Role
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole("admin")}
-              className={`flex-1 py-2 text-sm font-medium leading-none rounded-md transition-all ${
-                role === "admin" ? "bg-card text-foreground shadow-sm border border-border/50" : "text-muted-foreground"
-              }`}
-            >
-              Admin Role
-            </button>
           </div>
 
           <button
@@ -174,6 +133,15 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        <div className="text-center mt-6">
+          <p className="text-sm text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="text-accent-cyan hover:text-accent-cyan/80 transition-colors">
+              Sign up
+            </Link>
+          </p>
+        </div>
 
         <div className="mt-8 text-center border-t border-border/50 pt-6">
           <Link
