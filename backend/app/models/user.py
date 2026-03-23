@@ -32,7 +32,7 @@ class User(db.Model):
     )
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -41,7 +41,7 @@ class User(db.Model):
     # Relationships
     admin = db.relationship('Admin', back_populates='user', uselist=False, cascade='all, delete-orphan')
     email_permissions = db.relationship('EmailPermission', back_populates='user', cascade='all, delete-orphan')
-    emails = db.relationship('Email', back_populates='owner', cascade='all, delete-orphan')
+    emails = db.relationship('Email', back_populates='owner', passive_deletes=True)
     
     # Discuss more about 2 functions, do we need them? If we do, we can move them to a utils file and import here, or just keep them here for now since they are user-specific.
     '''
@@ -65,7 +65,7 @@ class User(db.Model):
         if not value:
             raise ValueError("Email is required")
         
-        value.lower().strip()
+        value = value.lower().strip()
 
         # Regex pattern for email validation
         email_pattern = r'^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$'
