@@ -17,8 +17,6 @@ class DetectorAgentEntity(BaseEntity):
         
         if not self.api_key:
             print("[Detector] WARNING: ANTHROPIC_API_KEY not found in environment!", file=sys.stderr)
-        else:
-            print(f"[Detector] API key loaded (length: {len(self.api_key)})", file=sys.stderr)
         
         self.tokens_used = 0
         
