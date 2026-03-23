@@ -18,7 +18,15 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    
+
+    // Test Admin Bypass for Demo
+    if (email === "test-admin" && password === "test-admin") {
+      localStorage.setItem("sentra-role", "admin");
+      localStorage.setItem("is-demo", "true");
+      router.push("/dashboard/admin");
+      return;
+    }
+    localStorage.removeItem("is-demo");
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
@@ -75,7 +83,7 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email Address</label>
+            <label className="text-sm font-medium">Email Address / Username</label>
             <input
               type="email"
               required
@@ -83,6 +91,15 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
               placeholder="you@example.com"
+              type="text"
+              readOnly
+              value={role === "admin" ? "admin@sentra.ai" : "user@sentra.ai"}
+              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              placeholder="you@example.com / test-admin"
             />
           </div>
           

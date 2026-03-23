@@ -6,10 +6,12 @@ import { ShieldCheck, ShieldAlert, Clock } from "lucide-react";
 import { MOCK_LIVE_FEED } from "@/lib/mock-data";
 import { EmailResult } from "@/types";
 
-export function LiveFeed() {
-  const [feed, setFeed] = useState<EmailResult[]>(MOCK_LIVE_FEED);
+export function LiveFeed({ isDemo }: { isDemo?: boolean }) {
+  const [feed, setFeed] = useState<EmailResult[]>(isDemo ? MOCK_LIVE_FEED : []);
 
   useEffect(() => {
+    if (!isDemo) return;
+    
     // Simulate real-time data influx
     const interval = setInterval(() => {
       const newEvent: EmailResult = {
@@ -24,7 +26,7 @@ export function LiveFeed() {
       setFeed(prev => [newEvent, ...prev].slice(0, 8));
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isDemo]);
 
   return (
     <div className="glass-panel p-6 rounded-xl h-full flex flex-col">

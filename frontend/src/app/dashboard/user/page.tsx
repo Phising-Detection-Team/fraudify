@@ -6,8 +6,39 @@ import { RoundTable } from "@/components/dashboard/RoundTable";
 import { MOCK_STATS_USER, MOCK_ROUNDS } from "@/lib/mock-data";
 import { Mail, ShieldAlert, ShieldCheck, Zap } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 export default function UserDashboard() {
+  const [isDemo, setIsDemo] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Real data state
+  const [realStats, setRealStats] = useState({
+    totalEmailsScanned: 0,
+    phishingDetected: 0,
+    markedSafe: 0,
+    creditsRemaining: 1000 // default starting credits
+  });
+  const [realRounds, setRealRounds] = useState([]);
+
+  useEffect(() => {
+    const demoFlag = localStorage.getItem("is-demo") === "true";
+    setIsDemo(demoFlag);
+    
+    if (!demoFlag) {
+      // TODO: Fetch from actual Backend API once ready.
+      // Currently defaulting to empty values as new users have no data.
+      setLoading(false);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const stats = isDemo ? MOCK_STATS_USER : realStats;
+  const rounds = isDemo ? MOCK_ROUNDS : realRounds;
+
+  if (loading) return null;
+
   return (
     <div className="space-y-6">
       <div>
@@ -18,30 +49,30 @@ export default function UserDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Emails Scanned"
-          value={MOCK_STATS_USER.totalEmailsScanned.toLocaleString()}
+          value={stats.totalEmailsScanned.toLocaleString()}
           icon={Mail}
-          trend={{ value: 12, isPositive: true }}
+          trend={isDemo ? { value: 12, isPositive: true } : undefined}
           delay={0.1}
         />
         <StatCard
           title="Phishing Detected"
-          value={MOCK_STATS_USER.phishingDetected.toLocaleString()}
+          value={stats.phishingDetected.toLocaleString()}
           icon={ShieldAlert}
           valueClassName="text-accent-red"
-          trend={{ value: 5, isPositive: false }}
+          trend={isDemo ? { value: 5, isPositive: false } : undefined}
           delay={0.2}
         />
         <StatCard
           title="Marked Safe"
-          value={MOCK_STATS_USER.markedSafe.toLocaleString()}
+          value={stats.markedSafe.toLocaleString()}
           icon={ShieldCheck}
           valueClassName="text-accent-green"
-          trend={{ value: 8, isPositive: true }}
+          trend={isDemo ? { value: 8, isPositive: true } : undefined}
           delay={0.3}
         />
         <StatCard
           title="Credits Remaining"
-          value={MOCK_STATS_USER.creditsRemaining.toLocaleString()}
+          value={stats.creditsRemaining.toLocaleString()}
           icon={Zap}
           delay={0.4}
         />
@@ -54,7 +85,7 @@ export default function UserDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          <RoundTable rounds={MOCK_ROUNDS} />
+          <RoundTable rounds={rounds} />
         </motion.div>
         
         <motion.div 
@@ -63,7 +94,7 @@ export default function UserDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
         >
-          <LiveFeed />
+          <LiveFeed isDemo={isDemo} />
         </motion.div>
       </div>
     </div>

@@ -5,19 +5,42 @@ import { ShieldAlert, ShieldCheck, ArrowLeft, Bot, Activity } from "lucide-react
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export function RoundDetailView() {
   const pathname = usePathname();
   const params = useParams();
+  const [isDemo, setIsDemo] = useState(false);
+  const [loading, setLoading] = useState(true);
   
-  // TODO(AUTH): Replace with actual user role check 
+  useEffect(() => {
+    const demoFlag = localStorage.getItem("is-demo") === "true";
+    setIsDemo(demoFlag);
+    setLoading(false);
+  }, []);
+
   const isAdmin = pathname.includes('/dashboard/admin');
   const baseHref = isAdmin ? "/dashboard/admin" : "/dashboard/user";
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   
-  const round = MOCK_ROUNDS.find(r => r.id === id);
+  // Real DB state fetch logic here later
+  const round = isDemo 
+    ? MOCK_ROUNDS.find(r => r.id === id) 
+    : null; // Return null intentionally if not in demo mode since real DB is empty
+
+  if (loading) return null;
 
   if (!round) {
+    if (!isDemo) {
+       return (
+         <div className="space-y-6">
+           <Link href={baseHref} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-cyan transition-colors">
+              <ArrowLeft size={16} /> Back to Dashboard
+           </Link>
+           <div className="p-8 text-center text-muted-foreground pt-20">Round details are not available yet for newly signed up accounts.</div>
+         </div>
+       );
+    }
     return <div className="p-8 text-center text-muted-foreground pt-20">Round not found</div>;
   }
 
