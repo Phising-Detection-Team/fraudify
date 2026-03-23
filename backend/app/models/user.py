@@ -39,24 +39,9 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    admin = db.relationship('Admin', back_populates='user', uselist=False, cascade='all, delete-orphan')
+    admin = db.relationship('Admin', back_populates='user', foreign_keys='Admin.user_id', uselist=False, cascade='all, delete-orphan')
     email_permissions = db.relationship('EmailPermission', back_populates='user', cascade='all, delete-orphan')
     emails = db.relationship('Email', back_populates='owner', passive_deletes=True)
-    
-    # Discuss more about 2 functions, do we need them? If we do, we can move them to a utils file and import here, or just keep them here for now since they are user-specific.
-    '''
-    def set_password(self, password):
-        """Hashes the password and stores it."""
-        salt = bcrypt.gensalt()
-        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
-
-    def check_password(self, password):
-        """Verifies the password against the stored hash."""
-        # Check if password_hash exists and matches
-        if not self.password_hash:
-            return False
-        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
-    '''
 
     # APPLICATION-LEVEL METHODS
     @validates('email')

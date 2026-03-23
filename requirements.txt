@@ -34,8 +34,18 @@ tokencost>=0.1.26
 #OpenAI Agents framework for more advanced agent management
 openai-agents
 openai-agents[litellm]
+
 # Auth & API
 bcrypt
 Flask-JWT-Extended
 Flask-Limiter
 marshmallow
+
+# Encryption
+cryptography
+
+# OAuth and Email integrations
+google-auth
+google-auth-oauthlib
+google-api-python-client
+requests

@@ -209,7 +209,6 @@ export default function SignupPage() {
         className="glass-panel w-full max-w-md p-8 rounded-2xl relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent-cyan to-accent-purple" />
-
         <div className="flex flex-col items-center mb-8">
           <Logo className="mb-6 scale-110" />
           <h1 className="text-2xl font-bold tracking-tight">Create your Account</h1>
