@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldAlert, Database, Mail, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
+import { ShieldAlert, Database, Mail, ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 
 type SignupStep = "details" | "consent" | "provider";
@@ -13,7 +13,7 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [adminSecret, setAdminSecret] = useState("");
   
   // Default to just read
   const [allowTraining, setAllowTraining] = useState(false);
@@ -117,36 +117,43 @@ export default function SignupPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email Address / Username</label>
+                <label className="text-sm font-medium">Email Address</label>
                 <input
-                  type="text"
+                  type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+<<<<<<< HEAD
                   placeholder="john@example.com"
+=======
+                  placeholder="john@example.com / demo-user"
+>>>>>>> 1720d2e (feat: add signup page with multi-step form; implement secure user registration and OAuth integration)
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex justify-between">
+                  <span>Admin Secret</span>
+                  <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+                </label>
+                <input
+                  type="password"
+                  value={adminSecret}
+                  onChange={(e) => setAdminSecret(e.target.value)}
+                  className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                  placeholder="Enter secret for admin access"
+                />
               </div>
               <button
                 type="submit"
