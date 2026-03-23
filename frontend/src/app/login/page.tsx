@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ShieldCheck, LogIn, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { ShieldCheck, LogIn, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,15 +18,6 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    // Test Admin Bypass for Demo
-    if (email === "test-admin" && password === "test-admin") {
-      localStorage.setItem("sentra-role", "admin");
-      localStorage.setItem("is-demo", "true");
-      router.push("/dashboard/admin");
-      return;
-    }
-    localStorage.removeItem("is-demo");
     
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
@@ -136,24 +126,14 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-                placeholder="••••••••••••"
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setShowPassword(!showPassword)}
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              placeholder="••••••••••••"
+            />
           </div>
 
           {error && (
@@ -190,8 +170,8 @@ export default function LoginPage() {
 
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
             Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-accent-cyan hover:text-accent-cyan/80 transition-colors">
               Sign up
             </Link>
