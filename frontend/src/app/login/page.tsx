@@ -28,7 +28,7 @@ export default function LoginPage() {
       return;
     }
     localStorage.removeItem("is-demo");
-    
+
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
@@ -39,23 +39,18 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Login failed");
+        setError(data.message || "Invalid credentials. Please try again.");
         setLoading(false);
         return;
       }
 
-      // Check roles
-      const userRoles = data.user?.roles || ['user'];
-      const is_admin = userRoles.includes('admin');
-      const assignedRole = is_admin ? "admin" : "user";
-      
-      // Temporary token handling. TODO: NextAuth session integration
-      localStorage.setItem("sentra-role", assignedRole);
-      
-      router.push(is_admin ? "/dashboard/admin" : "/dashboard/user");
-    } catch (err) {
-      console.error(err);
-      setError("Unable to reach the server.");
+      localStorage.setItem("sentra-role", data.user?.role || data.role || "user");
+      localStorage.setItem("sentra-access-token", data.access_token || "");
+      localStorage.setItem("sentra-refresh-token", data.refresh_token || "");
+      const role = data.user?.role || data.role || "user";
+      router.push(role === "admin" ? "/dashboard/admin" : "/dashboard/user");
+    } catch {
+      setError("Unable to connect to the server. Please try again.");
       setLoading(false);
     }
   };
@@ -69,7 +64,7 @@ export default function LoginPage() {
         className="glass-panel w-full max-w-md p-8 rounded-2xl relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent-cyan to-accent-purple" />
-        
+
         <div className="flex flex-col items-center mb-8">
           <Logo className="mb-6 scale-110" />
           <h1 className="text-2xl font-bold tracking-tight">Welcome Back</h1>
@@ -77,13 +72,6 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-6">
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-lg flex items-center gap-2">
-              <AlertCircle size={16} />
-              {error}
-            </div>
-          )}
-
           <div className="space-y-2">
             <label className="text-sm font-medium">Email Address / Username</label>
             <input
@@ -92,12 +80,20 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-              placeholder="you@example.com"
+              placeholder="you@example.com / test-admin"
             />
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">Password</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Password</label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-muted-foreground hover:text-accent-cyan transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -118,6 +114,13 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-4 py-3">
+              <AlertCircle size={16} className="shrink-0" />
+              {error}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -134,7 +137,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="text-center mt-6">
+        <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-accent-cyan hover:text-accent-cyan/80 transition-colors">
@@ -143,7 +146,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mt-8 text-center border-t border-border/50 pt-6">
+        <div className="mt-6 text-center border-t border-border/50 pt-6">
           <Link
             href="/extension"
             target="_blank"
