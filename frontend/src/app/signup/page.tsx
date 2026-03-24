@@ -11,12 +11,69 @@ import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
 
 type SignupStep = "details" | "consent" | "provider";
 
+const MIN_PASSWORD_LENGTH = 11;
+
+const validateEmail = (value: string): string | null => {
+  // Allow demo usernames like "demo-user" but require valid email pattern for actual emails
+  if (value.includes("@")) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      return "Please enter a valid email address.";
+    }
+  } else if (value.trim().length === 0) {
+    return "Email or username is required.";
+  }
+  return null;
+};
+
+const validatePassword = (value: string): string | null => {
+  if (value.length < MIN_PASSWORD_LENGTH) {
+    return "Password must be more than 10 characters.";
+  }
+
+  if (!/\d/.test(value)) {
+    return "Password must include at least one number.";
+  }
+
+  if (!/[^A-Za-z0-9]/.test(value)) {
+    return "Password must include at least one symbol.";
+  }
+
+  return null;
+};
+
+const getPasswordStrength = (value: string): { score: number; label: string; colorClass: string } => {
+  const checks = [
+    value.length >= MIN_PASSWORD_LENGTH,
+    /\d/.test(value),
+    /[^A-Za-z0-9]/.test(value),
+    /[a-z]/.test(value) && /[A-Z]/.test(value),
+  ];
+
+  const score = checks.filter(Boolean).length;
+
+  if (score <= 1) {
+    return { score, label: "Weak", colorClass: "bg-red-500" };
+  }
+
+  if (score === 2) {
+    return { score, label: "Fair", colorClass: "bg-amber-500" };
+  }
+
+  if (score === 3) {
+    return { score, label: "Good", colorClass: "bg-cyan-500" };
+  }
+
+  return { score, label: "Strong", colorClass: "bg-emerald-500" };
+};
+
 export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<SignupStep>("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [adminSecret, setAdminSecret] = useState("");
@@ -30,10 +87,10 @@ export default function SignupPage() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
-  useEffect(() => {
-    const err = searchParams.get("oauth_error");
-    if (err) setOauthError(err);
-  }, [searchParams]);
+  const passwordValidationError = validatePassword(password);
+  const emailValidationError = validateEmail(email);
+  const passwordStrength = getPasswordStrength(password);
+  const isContinueDisabled = !name.trim() || !email.trim() || !!passwordValidationError || !!emailValidationError;
 
   const handleNextToConsent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,19 +192,28 @@ export default function SignupPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-                  placeholder="John Doe"
+                  placeholder="Your Name"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email Address / Username</label>
+                <label className="text-sm font-medium">Email Address</label>
                 <input
-                  type="text"
+                  type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-                  placeholder="john@example.com / demo-user"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) {
+                      setEmailError(validateEmail(e.target.value));
+                    }
+                  }}
+                  onBlur={() => {
+                    setEmailError(validateEmail(email));
+                  }}
+                  className={`w-full bg-background/50 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 ${emailError ? "border-red-500/70" : "border-border/50"}`}
+                  placeholder="you@example.com"
                 />
+                {emailError && <p className="text-xs text-red-400">{emailError}</p>}
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Password</label>
