@@ -20,15 +20,6 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    // Test Admin Bypass for Demo
-    if (email === "test-admin" && password === "test-admin") {
-      localStorage.setItem("sentra-role", "admin");
-      localStorage.setItem("is-demo", "true");
-      router.push("/dashboard/admin");
-      return;
-    }
-    localStorage.removeItem("is-demo");
-
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
@@ -44,6 +35,7 @@ export default function LoginPage() {
         return;
       }
 
+      localStorage.removeItem("is-demo");
       localStorage.setItem("sentra-role", data.user?.role || data.role || "user");
       localStorage.setItem("sentra-access-token", data.access_token || "");
       localStorage.setItem("sentra-refresh-token", data.refresh_token || "");
@@ -75,25 +67,17 @@ export default function LoginPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Email Address</label>
             <input
-              type="text"
+              type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-              placeholder="you@example.com / test-admin"
+              placeholder="you@example.com"
             />
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Password</label>
-              <Link
-                href="/forgot-password"
-                className="text-xs text-muted-foreground hover:text-accent-cyan transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
+            <label className="text-sm font-medium">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -136,6 +120,15 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        <div className="mt-4 text-center">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-muted-foreground hover:text-accent-cyan transition-colors"
+          >
+            Forgot password?
+          </Link>
+        </div>
 
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">

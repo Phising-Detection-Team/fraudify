@@ -11,24 +11,37 @@ import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
 
 type SignupStep = "details" | "consent" | "provider";
 
-const MIN_PASSWORD_LENGTH = 11;
+const MIN_PASSWORD_LENGTH = 10;
+
+const validateName = (value: string): string | null => {
+  if (!value.trim()) {
+    return "Please enter your name.";
+  }
+
+  if (value.trim().length < 2) {
+    return "Name should be at least 2 characters.";
+  }
+
+  return null;
+};
 
 const validateEmail = (value: string): string | null => {
-  // Allow demo usernames like "demo-user" but require valid email pattern for actual emails
-  if (value.includes("@")) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) {
-      return "Please enter a valid email address.";
-    }
-  } else if (value.trim().length === 0) {
-    return "Email or username is required.";
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!value.trim()) {
+    return "Email address is required.";
   }
+
+  if (!emailRegex.test(value.trim())) {
+    return "Please enter a valid email address (example: you@example.com).";
+  }
+
   return null;
 };
 
 const validatePassword = (value: string): string | null => {
   if (value.length < MIN_PASSWORD_LENGTH) {
-    return "Password must be more than 10 characters.";
+    return "Password must be at least 10 characters.";
   }
 
   if (!/\d/.test(value)) {
@@ -37,6 +50,10 @@ const validatePassword = (value: string): string | null => {
 
   if (!/[^A-Za-z0-9]/.test(value)) {
     return "Password must include at least one symbol.";
+  }
+
+  if (!/[a-z]/.test(value) || !/[A-Z]/.test(value)) {
+    return "Password must include both uppercase and lowercase letters.";
   }
 
   return null;
@@ -72,12 +89,13 @@ export default function SignupPage() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState<SignupStep>("details");
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [adminSecret, setAdminSecret] = useState("");
-  const [showAdminSecret, setShowAdminSecret] = useState(false);
+  const [hasTriedContinue, setHasTriedContinue] = useState(false);
 
   // Default to just read
   const [allowTraining, setAllowTraining] = useState(false);
@@ -87,14 +105,34 @@ export default function SignupPage() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
+  const nameValidationError = validateName(name);
   const emailValidationError = validateEmail(email);
   const passwordValidationError = validatePassword(password);
-  const emailValidationError = validateEmail(email);
   const passwordStrength = getPasswordStrength(password);
-  const isContinueDisabled = !name.trim() || !email.trim() || !!passwordValidationError || !!emailValidationError;
+  const isContinueDisabled = !!nameValidationError || !!passwordValidationError || !!emailValidationError;
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error) {
+      setOauthError(error);
+    }
+  }, [searchParams]);
 
   const handleNextToConsent = (e: React.FormEvent) => {
     e.preventDefault();
+    setHasTriedContinue(true);
+    const nextNameError = validateName(name);
+    const nextEmailError = validateEmail(email);
+    const nextPasswordError = validatePassword(password);
+
+    setNameError(nextNameError);
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+
+    if (nextNameError || nextEmailError || nextPasswordError) {
+      return;
+    }
+
     setStep("consent");
   };
 
@@ -115,10 +153,9 @@ export default function SignupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          name,
+          email: email.trim(),
+          name: name.trim(),
           password,
-          admin_secret: adminSecret.trim() || undefined,
           allow_training: allowTraining,
           terms_accepted: termsAccepted,
           provider,
@@ -146,7 +183,7 @@ export default function SignupPage() {
       if (authUrlData.url) {
         // Only store safe data. NEVER store passwords in localStorage.
         localStorage.setItem("sentra-pending-signup", JSON.stringify({
-          email,
+          email: email.trim(),
           userId,
           scope,
           roles
@@ -195,10 +232,21 @@ export default function SignupPage() {
                   type="text"
                   required
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (hasTriedContinue || nameError) {
+                      setNameError(validateName(e.target.value));
+                    }
+                  }}
+                  onBlur={() => setNameError(validateName(name))}
+                  autoComplete="name"
                   className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
                   placeholder="Your Name"
+                  maxLength={100}
                 />
+                {(nameError || (hasTriedContinue && nameValidationError)) && (
+                  <p className="text-xs text-red-400">{nameError || nameValidationError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Email Address</label>
@@ -208,17 +256,21 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
-                    if (emailError) {
+                    if (hasTriedContinue || emailError) {
                       setEmailError(validateEmail(e.target.value));
                     }
                   }}
                   onBlur={() => {
                     setEmailError(validateEmail(email));
                   }}
+                  autoComplete="email"
                   className={`w-full bg-background/50 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 ${emailError ? "border-red-500/70" : "border-border/50"}`}
                   placeholder="you@example.com"
                 />
-                {emailError && <p className="text-xs text-red-400">{emailError}</p>}
+                {(emailError || (hasTriedContinue && emailValidationError)) && (
+                  <p className="text-xs text-red-400">{emailError || emailValidationError}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Use a valid email like you@example.com.</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Password</label>
@@ -227,8 +279,15 @@ export default function SignupPage() {
                     type={showPassword ? "text" : "password"}
                     required
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (hasTriedContinue || passwordError) {
+                        setPasswordError(validatePassword(e.target.value));
+                      }
+                    }}
+                    onBlur={() => setPasswordError(validatePassword(password))}
+                    autoComplete="new-password"
+                    className={`w-full bg-background/50 border rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 ${passwordError ? "border-red-500/70" : "border-border/50"}`}
                     placeholder="••••••••"
                   />
                   <button
@@ -240,33 +299,31 @@ export default function SignupPage() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex justify-between">
-                  <span>Admin Secret</span>
-                  <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showAdminSecret ? "text" : "password"}
-                    value={adminSecret}
-                    onChange={(e) => setAdminSecret(e.target.value)}
-                    className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-                    placeholder="Enter secret for admin access"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setShowAdminSecret(!showAdminSecret)}
-                    tabIndex={-1}
-                  >
-                    {showAdminSecret ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
+                {password && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Password strength</span>
+                      <span>{passwordStrength.label}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-border/60 overflow-hidden">
+                      <div
+                        className={`h-full ${passwordStrength.colorClass} transition-all duration-300`}
+                        style={{ width: `${(passwordStrength.score / 4) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {(passwordError || passwordValidationError) && (
+                  <p className="text-xs text-red-400">{passwordError || passwordValidationError}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Use at least 10 characters with uppercase, lowercase, number, and symbol.
+                </p>
               </div>
               <button
                 type="submit"
-                className="w-full btn-primary flex items-center justify-center gap-2 group mt-6"
+                disabled={isContinueDisabled}
+                  className="w-full btn-primary flex items-center justify-center gap-2 group mt-6 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Continue <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
