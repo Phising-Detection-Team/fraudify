@@ -87,6 +87,7 @@ export default function SignupPage() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
+  const emailValidationError = validateEmail(email);
   const passwordValidationError = validatePassword(password);
   const emailValidationError = validateEmail(email);
   const passwordStrength = getPasswordStrength(password);
