@@ -98,6 +98,10 @@ export default function SignupPage() {
   };
 
   const handleNextToProvider = () => {
+    if (!termsAccepted) {
+      alert("Please accept the Terms and Agreements to continue.");
+      return;
+    }
     setStep("provider");
   };
 
