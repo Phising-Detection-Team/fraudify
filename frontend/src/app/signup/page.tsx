@@ -124,7 +124,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-                  placeholder="john@example.com / demo-user"
+                  placeholder="john@example.com"
                 />
               </div>
               <div className="space-y-2">
