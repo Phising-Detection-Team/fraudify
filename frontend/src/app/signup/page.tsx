@@ -14,8 +14,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [adminSecret, setAdminSecret] = useState("");
-  const [showAdminSecret, setShowAdminSecret] = useState(false);
   
   // Default to just read
   const [allowTraining, setAllowTraining] = useState(false);
@@ -41,7 +39,6 @@ export default function SignupPage() {
         body: JSON.stringify({
           email,
           password,
-          admin_secret: adminSecret || undefined, // optionally pass the admin secret
         })
       });
       
@@ -148,29 +145,6 @@ export default function SignupPage() {
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex justify-between">
-                  <span>Admin Secret</span>
-                  <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showAdminSecret ? "text" : "password"}
-                    value={adminSecret}
-                    onChange={(e) => setAdminSecret(e.target.value)}
-                    className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-                    placeholder="Enter secret for admin access"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setShowAdminSecret(!showAdminSecret)}
-                    tabIndex={-1}
-                  >
-                    {showAdminSecret ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
