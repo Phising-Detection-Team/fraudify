@@ -35,6 +35,10 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+    # Required agreement gate. Defaults to False for backward-safe migrations.
+    terms_agreed = db.Column(db.Boolean, default=False, nullable=False)
+    # Optional consent for improving Sentra; nullable preserves unanswered state.
+    improve_sentra_opt_in = db.Column(db.Boolean, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -86,12 +90,32 @@ class User(db.Model):
             raise ValueError('is_active must be a boolean')
         
         return value
+
+    @validates('terms_agreed')
+    def validate_terms_agreed(self, key, value):
+        """Ensure required terms agreement is explicitly boolean."""
+        if value is None:
+            raise ValueError('terms_agreed cannot be None')
+        if not isinstance(value, bool):
+            raise ValueError('terms_agreed must be a boolean')
+        return value
+
+    @validates('improve_sentra_opt_in')
+    def validate_improve_sentra_opt_in(self, key, value):
+        """Optional consent can be None, otherwise must be boolean."""
+        if value is None:
+            return None
+        if not isinstance(value, bool):
+            raise ValueError('improve_sentra_opt_in must be a boolean')
+        return value
     
     def to_dict(self):
         return {
             'id': str(self.id),
             'email': self.email,
             'is_active': self.is_active,
+            'terms_agreed': self.terms_agreed,
+            'improve_sentra_opt_in': self.improve_sentra_opt_in,
             'is_admin': self.admin is not None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
