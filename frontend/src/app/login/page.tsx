@@ -85,7 +85,7 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email Address / Username</label>
+            <label className="text-sm font-medium">Email Address</label>
             <input
               type="text"
               required
@@ -93,18 +93,6 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
               placeholder="you@example.com"
-              type="text"
-              readOnly
-              value={role === "admin" ? "admin@sentra.ai" : "user@sentra.ai"}
-              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-              readOnly
-              value={role === "admin" ? "admin@sentra.ai" : "user@sentra.ai"}
-              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-              placeholder="you@example.com / test-admin"
             />
           </div>
           
@@ -127,6 +115,11 @@ export default function LoginPage() {
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
+            </div>
+            <div className="text-right">
+              <Link href="/forgot-password" passHref>
+                <p className="text-sm text-accent-cyan hover:underline">Forgot Password?</p>
+              </Link>
             </div>
           </div>
 
@@ -168,5 +161,4 @@ export default function LoginPage() {
       </motion.div>
     </div>
   );
-}
 }

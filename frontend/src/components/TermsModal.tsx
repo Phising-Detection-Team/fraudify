@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ShieldCheck, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -11,15 +11,6 @@ interface TermsModalProps {
 
 export function TermsModal({ isOpen, onClose }: TermsModalProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const handleScroll = () => setShowScrollTop(el.scrollTop > 200);
-    el.addEventListener("scroll", handleScroll);
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, [isOpen]);
 
   // Reset scroll position when opened
   useEffect(() => {
@@ -30,7 +21,9 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
 
   // Close on Escape
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     if (isOpen) document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
@@ -44,7 +37,9 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
-          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) onClose();
+          }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -60,7 +55,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
                 <ShieldCheck className="text-accent-cyan" size={22} />
                 <div>
                   <h2 className="text-lg font-bold tracking-tight">Terms &amp; Agreements</h2>
-                  <p className="text-xs text-gray-500">PhishGuard — Last updated March 2026</p>
+                  <p className="text-xs text-gray-500">Sentra — Last updated March 2026</p>
                 </div>
               </div>
               <button
@@ -80,11 +75,11 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">1. Acceptance of Terms</h3>
                 <p>
-                  By installing, accessing, or using the PhishGuard browser extension (&ldquo;Extension&rdquo;) or its
-                  associated web platform (&ldquo;Service&rdquo;), you (&ldquo;User&rdquo;) agree to be bound by these
-                  Terms &amp; Agreements (&ldquo;Terms&rdquo;). If you do not agree to these Terms in their entirety,
-                  you must not install or use the Extension or Service. These Terms constitute a legally binding
-                  agreement between you and PhishGuard (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or
+                  By installing, accessing, or utilizing the Sentra browser extension (&ldquo;Extension&rdquo;) or its
+                  accompanying web services (&ldquo;Service&rdquo;), you (&ldquo;User&rdquo;) agree to be bound by these
+                  Terms &amp; Agreements (&ldquo;Terms&rdquo;). If you do not consent to these Terms in their entirety,
+                  you must immediately cease using and uninstall the Extension and Service. This document forms a legally binding
+                  contract between you and Sentra (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or
                   &ldquo;our&rdquo;).
                 </p>
               </section>
@@ -92,139 +87,141 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">2. Description of Service</h3>
                 <p>
-                  PhishGuard is a browser extension designed to detect and warn users about potential phishing websites,
-                  malicious links, and fraudulent online content in real time. The Service uses machine-learning models,
-                  URL analysis, domain reputation data, and user-contributed feedback to assess the safety of web pages.
+                  Sentra provides a real-time security browser extension designed to identify and alert users to potential phishing websites,
+                  malicious links, and deceptive online content. The Service evaluates web page safety using machine-learning algorithms,
+                  URL analysis, domain reputation tracking, and community feedback.
                 </p>
                 <p className="mt-2">
-                  The Extension operates as a client-side tool that communicates with our backend servers to retrieve
-                  threat intelligence and submit anonymised URL scan data. The Service is provided on an
-                  &ldquo;as-is&rdquo; basis and is continuously updated to improve detection accuracy.
+                  Operating as a client-side application, the Extension communicates with our servers to access threat intelligence and securely submit
+                  anonymized URL scan data. The Service is offered on an &ldquo;as-is&rdquo; basis and undergoes continuous updates to optimize
+                  threat detection capabilities.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">3. Eligibility</h3>
                 <p>
-                  You must be at least 13 years of age to use the Service. If you are under 18, you represent that your
-                  parent or legal guardian has reviewed and agreed to these Terms on your behalf. By using the Service,
-                  you represent and warrant that you meet the applicable eligibility requirements.
+                  You must be at least 13 years old to use the Service. If you are between the ages of 13 and 18, you confirm that a
+                  parent or legal guardian has reviewed and consented to these Terms on your behalf. By using Sentra, you represent and
+                  warrant that you meet these eligibility requirements.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">4. User Account &amp; Registration</h3>
                 <p>
-                  Certain features of the Service require you to register for an account. You agree to provide accurate,
-                  current, and complete information during registration and to update such information to keep it
-                  accurate. You are solely responsible for safeguarding your account credentials and for all activity
-                  that occurs under your account.
+                  Accessing certain features of the Service requires account registration. You agree to provide and maintain accurate,
+                  current, and complete information. You are solely responsible for protecting your account credentials and for all activities
+                  that occur under your account.
                 </p>
                 <p className="mt-2">
-                  You must notify us immediately at{" "}
-                  <span className="text-accent-cyan">support@phishguard.io</span> if you suspect unauthorised use of
-                  your account. We are not liable for any loss arising from your failure to secure your credentials.
+                  If you suspect any unauthorized access to your account, you must notify us immediately at{" "}
+                  <span className="text-accent-cyan">cyberlab.dev@gmail.com</span>. Sentra assumes no liability for losses resulting from compromised
+                  account credentials.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">5. Data Collection &amp; Privacy</h3>
                 <p>
-                  Your use of the Service is also governed by our Privacy Policy, which is incorporated into these Terms
-                  by reference. By using the Service, you consent to the data practices described therein.
+                  Your privacy is important to us. Your use of the Service is subject to our Privacy Policy, which is incorporated into these Terms
+                  by reference. By using Sentra, you consent to our data practices:
                 </p>
                 <p className="mt-2">
-                  <strong>What we collect:</strong> URLs of pages you visit (anonymised or hashed where possible),
-                  extension interaction events, device information (browser type, OS version), and account data you
-                  voluntarily provide.
+                  <strong>Data We Collect:</strong> Hashed or anonymized URLs of visited pages, extension interaction metrics, device
+                  details (such as operating system and browser type), and voluntarily provided account data.
                 </p>
                 <p className="mt-2">
-                  <strong>What we do not collect:</strong> Passwords, form inputs, payment information, or the full
-                  content of web pages. We do not sell your personal data to third parties.
+                  <strong>Data We Exclude:</strong> We explicitly do not collect passwords, form inputs, financial data, or the full
+                  content of any web page. We will never sell your personal data.
                 </p>
                 <p className="mt-2">
-                  <strong>Training data:</strong> If you opt in, anonymised URL scan results may be used to improve our
-                  machine-learning models. You may withdraw this consent at any time from your account settings.
+                  <strong>Training Data:</strong> With your explicit opt-in consent, anonymized URL scans may be utilized to refine our
+                  machine-learning models. You retain the right to withdraw this consent at any time via your account settings.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">6. Permitted Use</h3>
-                <p>You agree to use the Extension and Service only for lawful purposes. You must not:</p>
+                <p>You agree to use Sentra strictly for lawful, intended purposes. You are expressly prohibited from:</p>
                 <ul className="mt-2 ml-4 space-y-1 list-disc list-outside">
-                  <li>Attempt to reverse-engineer, decompile, or disassemble the Extension or its backend systems.</li>
-                  <li>Use the Service to facilitate phishing, fraud, or any other malicious activity.</li>
-                  <li>Interfere with or disrupt the integrity or performance of the Service or its infrastructure.</li>
-                  <li>Submit false threat reports or abuse the feedback system to harm legitimate websites.</li>
-                  <li>Circumvent, disable, or otherwise interfere with security features of the Service.</li>
-                  <li>Scrape, crawl, or harvest data from the Service without our prior written consent.</li>
+                  <li>Reverse-engineering, decompiling, or disassembling the Extension or backend infrastructure.</li>
+                  <li>Leveraging the Service to execute phishing, fraud, or any malicious activities.</li>
+                  <li>Disrupting, overburdening, or interfering with the Service&rsquo;s integrity or performance.</li>
+                  <li>Submitting fraudulent threat reports or manipulating the feedback system to penalize legitimate websites.</li>
+                  <li>Bypassing or disabling any security protocols within the Service.</li>
+                  <li>Scraping or harvesting data from the Service without prior written authorization.</li>
                 </ul>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">7. Intellectual Property</h3>
                 <p>
-                  All rights, title, and interest in and to the Extension, Service, associated software,
-                  machine-learning models, brand assets, and documentation are owned by or licensed to PhishGuard.
-                  These Terms do not grant you any ownership rights. Your use of the Service is governed solely by the
-                  limited, non-exclusive, revocable licence set out herein.
+                  Sentra retains all rights, title, and interest in the Extension, Service, underlying software,
+                  machine-learning models, trademarks, and documentation. These Terms grant you a limited, non-exclusive,
+                  revocable license to use the Service; they do not convey any ownership rights.
+                </p>
+                <p className="mt-2">
+                  While you retain ownership of any original manual threat reports you submit, you grant Sentra a perpetual,
+                  worldwide, royalty-free license to utilize, modify, and integrate that content into the Service.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">8. Disclaimers &amp; Limitation of Liability</h3>
                 <p>
-                  THE SERVICE IS PROVIDED &ldquo;AS IS&rdquo; AND &ldquo;AS AVAILABLE&rdquo; WITHOUT WARRANTIES OF ANY
-                  KIND. PhishGuard does not guarantee that the Extension will detect every phishing attempt or malicious
-                  website. No security tool is infallible. You agree that we are not liable for any damages, direct or
-                  indirect, arising from your reliance on the Extension&rsquo;s output.
+                  THE SERVICE IS PROVIDED STRICTLY ON AN &ldquo;AS IS&rdquo; AND &ldquo;AS AVAILABLE&rdquo; BASIS WITHOUT EXPRESS
+                  OR IMPLIED WARRANTIES OF ANY KIND. Sentra cannot guarantee the detection of every malicious site or phishing
+                  attempt, as no security mechanism is entirely infallible. You acknowledge that Sentra is not liable for any
+                  direct or indirect damages resulting from your reliance on the Extension.
                 </p>
                 <p className="mt-2">
-                  TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, PHISHGUARD&rsquo;S TOTAL LIABILITY SHALL NOT
-                  EXCEED THE GREATER OF (A) THE AMOUNT YOU PAID US IN THE PRIOR 12 MONTHS OR (B) USD $50.
+                  TO THE MAXIMUM EXTENT PERMITTED BY LAW, SENTRA&rsquo;S TOTAL CUMULATIVE LIABILITY SHALL NOT EXCEED THE GREATER
+                  OF (A) THE TOTAL FEES PAID BY YOU IN THE PRECEDING 12 MONTHS, OR (B) $50 USD.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">9. Indemnification</h3>
                 <p>
-                  You agree to indemnify and hold harmless PhishGuard and its officers, directors, employees, and agents
-                  from any claims, liabilities, damages, and expenses arising out of your use of the Service, your
-                  violation of these Terms, or your infringement of any third-party rights.
+                  You agree to indemnify, defend, and hold harmless Sentra, its directors, employees, and agents from any claims,
+                  damages, liabilities, and expenses (including legal fees) arising from your use of the Service, your breach of
+                  these Terms, or your violation of any third-party rights.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">10. Termination</h3>
                 <p>
-                  We reserve the right to suspend or terminate your account or access to the Service at any time and for
-                  any reason, including violation of these Terms, without prior notice or liability.
+                  We reserve the right to suspend or terminate your access to the Service at our sole discretion, at any time,
+                  and without prior notice or liability, particularly in cases of Terms violations.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">11. Changes to These Terms</h3>
                 <p>
-                  We may update these Terms from time to time. When we make material changes, we will notify you via
-                  email or an in-extension notice at least 14 days before the changes take effect.
+                  Sentra may modify these Terms periodically. In the event of material changes, we will provide at least 14
+                  days&rsquo; notice via email or an in-extension alert before the updates take effect. Continued use of the
+                  Service following this period constitutes your acceptance of the new Terms.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">12. Governing Law &amp; Dispute Resolution</h3>
                 <p>
-                  These Terms are governed by and construed in accordance with the laws of the jurisdiction in which
-                  PhishGuard is incorporated. Disputes shall first be attempted to be resolved through good-faith
-                  negotiation, then by binding arbitration.
+                  These Terms shall be governed by the laws of the jurisdiction where Sentra is incorporated. Any disputes
+                  arising from these Terms will first be addressed through good-faith negotiations. If a resolution cannot be
+                  reached, the dispute will be settled through binding arbitration.
                 </p>
               </section>
 
               <section>
                 <h3 className="text-base font-semibold mb-2 text-gray-900">13. Contact</h3>
-                <p>If you have any questions about these Terms, please contact us at:</p>
+                <p>For any questions or concerns regarding these Terms, please reach out to us:</p>
                 <address className="mt-2 not-italic text-gray-500">
-                  PhishGuard Support Team<br />
-                  <span className="text-accent-cyan">support@phishguard.io</span>
+                  Sentra Support Team<br />
+                  <span className="text-accent-cyan">cyberlab.dev@gmail.com</span>
                 </address>
               </section>
 
