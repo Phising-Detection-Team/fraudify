@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent-cyan: 190 100% 42%;
+    --accent-purple: 260 100% 65%;
+    --accent-red: 350 100% 60%;
+    --accent-green: 155 70% 35%;
+    --border: 214.3 31.8% 91.4%;
+    --radius: 0.5rem;
+    --bg-grid-color: rgba(0,0,0,0.04);
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent-cyan: 190 100% 50%;
+    --accent-purple: 260 100% 66%;
+    --accent-red: 350 100% 61%;
+    --accent-green: 155 100% 50%;
+    --border: 217.2 32.6% 17.5%;
+    --bg-grid-color: rgba(255,255,255,0.05);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground tracking-wide font-sans min-h-screen relative;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: linear-gradient(var(--bg-grid-color) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--bg-grid-color) 1px, transparent 1px);
+    background-size: 30px 30px;
+    z-index: -1;
+    pointer-events: none;
+  }
+}
+
+.glass-panel {
+  @apply bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all;
+}
+.dark .glass-panel {
+  @apply bg-card/40 border-accent-cyan/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)];
+}
+
+.neon-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-accent-cyan to-accent-purple;
+}
+
+.btn-neon {
+  @apply relative overflow-hidden transition-all duration-300 ease-out 
+         hover:shadow-[0_0_15px_hsl(var(--accent-cyan)/0.5)] 
+         hover:border-accent-cyan/50;
+}
