@@ -17,7 +17,7 @@ for path in [PROJECT_ROOT, BACKEND_PATH, LLMS_PATH]:
         sys.path.insert(0, path)
 
 from app import create_app
-from app.models import db as _db, Round, Email
+from app.models import db as _db, Round, Email, Log, API, Override
 
 
 @pytest.fixture(scope='session')
@@ -37,11 +37,14 @@ def app():
 def db(app):
     """
     Provide a clean database session for each test.
-    Rolls back after the test to ensure isolation.
+    Deletes all data after each test to ensure isolation.
     """
     with app.app_context():
         yield _db
-        _db.session.rollback()
+        # Delete all data after each test for complete isolation
+        for table in reversed(_db.metadata.sorted_tables):
+            _db.session.execute(table.delete())
+        _db.session.commit()
 
 
 @pytest.fixture(scope='function')
@@ -80,3 +83,48 @@ def sample_email(db, sample_round):
     db.session.add(email_obj)
     db.session.commit()
     return email_obj
+
+
+@pytest.fixture
+def sample_log(db, sample_round):
+    """Create a minimal valid Log entry for testing."""
+    log_obj = Log(
+        round_id=sample_round.id,
+        level='info',
+        message='Test log message',
+        context={'test': 'context'}
+    )
+    db.session.add(log_obj)
+    db.session.commit()
+    return log_obj
+
+
+@pytest.fixture
+def sample_api_call(db, sample_round, sample_email):
+    """Create a minimal valid API call entry for testing."""
+    api_call = API(
+        round_id=sample_round.id,
+        email_id=sample_email.id,
+        agent_type='generator',
+        model_name='gpt-4o-mini',
+        token_used=100,
+        cost=0.001,
+        latency_ms=1000
+    )
+    db.session.add(api_call)
+    db.session.commit()
+    return api_call
+
+
+@pytest.fixture
+def sample_override(db, sample_email):
+    """Create a minimal valid Override entry for testing."""
+    override_obj = Override(
+        email_id=sample_email.id,
+        verdict='correct',
+        overridden_by='test_analyst',
+        reason='Test override'
+    )
+    db.session.add(override_obj)
+    db.session.commit()
+    return override_obj

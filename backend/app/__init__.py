@@ -8,12 +8,21 @@ from flask_socketio import SocketIO
 from .config import get_config
 from .models import db
 from .errors import register_error_handlers
-from .services.kernel_service import KernelService
-from .services.cache_service import cache
 
 migrate = Migrate()
-kernel_service = KernelService()
 socketio = SocketIO()
+
+# Graceful fallbacks for services that may not exist
+try:
+    from .services.kernel_service import KernelService
+    kernel_service = KernelService()
+except ImportError:
+    kernel_service = None
+
+try:
+    from .services.cache_service import cache
+except ImportError:
+    cache = None
 
 
 def create_app(config_name=None):
@@ -43,9 +52,11 @@ def create_app(config_name=None):
 
     register_error_handlers(app)
 
-    kernel_service.init_app(app)
+    if kernel_service:
+        kernel_service.init_app(app)
 
-    cache.init_app(app)
+    if cache:
+        cache.init_app(app)
 
     with app.app_context():
         from .models.email import Email

@@ -20,3 +20,5 @@ alembic upgrade head
 cd /home/hoang/projects/phishing_detection
 chmod +x ./run_detection.sh
 ./run_detection.sh --method openai --rounds 3 --emails 10 --workflows 2
+
+DROP SCHEMA public CASCADE; CREATE SCHEMA public;
