@@ -174,8 +174,8 @@ def save_email(
         return None
 
     try:
-        # Extract generator data
-        generated_content = email_result.get('generated_content')
+        # Extract generator data (fallback when generator fails since column is NOT NULL)
+        generated_content = email_result.get('generated_content') or '[Generation failed]'
         generated_prompt = email_result.get('generated_prompt')
         generated_subject = email_result.get('generated_subject')
         generated_body = email_result.get('generated_body')
@@ -280,7 +280,6 @@ def create_round(
             total_emails=total_emails,
             processed_emails=0,
             started_at=datetime.utcnow(),
-            completed_at=datetime.utcnow(),
             created_by=created_by
         )
 

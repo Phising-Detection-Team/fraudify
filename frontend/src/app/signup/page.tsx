@@ -3,144 +3,75 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { motion, AnimatePresence } from "framer-motion";
-import { ShieldAlert, Database, Mail, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
-import { TermsModal } from "@/components/TermsModal";
 import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
+import { TermsModal } from "@/components/TermsModal";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShieldAlert, Database, Mail, ArrowRight, Check, Eye, EyeOff, AlertCircle } from "lucide-react";
+import Link from "next/link";
 
 type SignupStep = "details" | "consent" | "provider";
-
-const MIN_PASSWORD_LENGTH = 10;
-
-const validateName = (value: string): string | null => {
-  if (!value.trim()) {
-    return "Please enter your name.";
-  }
-
-  if (value.trim().length < 2) {
-    return "Name should be at least 2 characters.";
-  }
-
-  return null;
-};
-
-const validateEmail = (value: string): string | null => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (!value.trim()) {
-    return "Email address is required.";
-  }
-
-  if (!emailRegex.test(value.trim())) {
-    return "Please enter a valid email address (example: you@example.com).";
-  }
-
-  return null;
-};
-
-const validatePassword = (value: string): string | null => {
-  if (value.length < MIN_PASSWORD_LENGTH) {
-    return "Password must be at least 10 characters.";
-  }
-
-  if (!/\d/.test(value)) {
-    return "Password must include at least one number.";
-  }
-
-  if (!/[^A-Za-z0-9]/.test(value)) {
-    return "Password must include at least one symbol.";
-  }
-
-  if (!/[a-z]/.test(value) || !/[A-Z]/.test(value)) {
-    return "Password must include both uppercase and lowercase letters.";
-  }
-
-  return null;
-};
-
-const getPasswordStrength = (value: string): { score: number; label: string; colorClass: string } => {
-  const checks = [
-    value.length >= MIN_PASSWORD_LENGTH,
-    /\d/.test(value),
-    /[^A-Za-z0-9]/.test(value),
-    /[a-z]/.test(value) && /[A-Z]/.test(value),
-  ];
-
-  const score = checks.filter(Boolean).length;
-
-  if (score <= 1) {
-    return { score, label: "Weak", colorClass: "bg-red-500" };
-  }
-
-  if (score === 2) {
-    return { score, label: "Fair", colorClass: "bg-amber-500" };
-  }
-
-  if (score === 3) {
-    return { score, label: "Good", colorClass: "bg-cyan-500" };
-  }
-
-  return { score, label: "Strong", colorClass: "bg-emerald-500" };
-};
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState<SignupStep>("details");
   const [name, setName] = useState("");
-  const [nameError, setNameError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [hasTriedContinue, setHasTriedContinue] = useState(false);
 
   // Default to just read
   const [allowTraining, setAllowTraining] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [oauthError, setOauthError] = useState<string | null>(null);
-  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  // Modal states
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [hasViewedPrivacy, setHasViewedPrivacy] = useState(false);
+  const [hasViewedTerms, setHasViewedTerms] = useState(false);
 
-  const nameValidationError = validateName(name);
-  const emailValidationError = validateEmail(email);
-  const passwordValidationError = validatePassword(password);
-  const passwordStrength = getPasswordStrength(password);
-  const isContinueDisabled = !!nameValidationError || !!passwordValidationError || !!emailValidationError;
+  // Password validation helpers
+  const hasMinLength = password.length > 10;
+  const hasNumber = /\d/.test(password);
+  const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  const isPasswordValid = hasMinLength && hasNumber && hasSymbol;
 
-  useEffect(() => {
-    const error = searchParams.get("error");
-    if (error) {
-      setOauthError(error);
-    }
-  }, [searchParams]);
+  // Email validation
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  // Password strength indicator
+  const getPasswordStrength = () => {
+    let strength = 0;
+    if (hasMinLength) strength += 1;
+    if (hasNumber) strength += 1;
+    if (hasSymbol) strength += 1;
+    return strength;
+  };
+
+  const passwordStrength = getPasswordStrength();
+  const strengthLabels = ["Weak", "Fair", "Fair", "Strong"];
+  const strengthColors = [
+    "text-red-500",
+    "text-yellow-500",
+    "text-yellow-500",
+    "text-green-500",
+  ];
+
+  const isDetailsStepValid = email && isEmailValid && password && isPasswordValid;
+
 
   const handleNextToConsent = (e: React.FormEvent) => {
     e.preventDefault();
-    setHasTriedContinue(true);
-    const nextNameError = validateName(name);
-    const nextEmailError = validateEmail(email);
-    const nextPasswordError = validatePassword(password);
-
-    setNameError(nextNameError);
-    setEmailError(nextEmailError);
-    setPasswordError(nextPasswordError);
-
-    if (nextNameError || nextEmailError || nextPasswordError) {
-      return;
+    if (isDetailsStepValid) {
+      setStep("consent");
     }
-
-    setStep("consent");
   };
 
   const handleNextToProvider = () => {
-    if (!termsAccepted) {
-      alert("Please accept the Terms and Agreements to continue.");
-      return;
+    if (privacyAgreed && termsAgreed) {
+      setStep("provider");
     }
-    setStep("provider");
   };
 
   const handleConnectProvider = async (provider: 'gmail' | 'outlook') => {
@@ -152,12 +83,9 @@ export default function SignupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email.trim(),
-          name: name.trim(),
+          email,
           password,
-          allow_training: allowTraining,
-          terms_accepted: termsAccepted,
-          provider,
+          name: name || null,
         })
       });
 
@@ -165,7 +93,7 @@ export default function SignupPage() {
 
       // 409 means user exists, we can still proceed to link mailbox
       if (!signupResponse.ok && signupResponse.status !== 409) {
-        alert(signupData.message || signupData.error || "Failed to create account");
+        alert(signupData.error || "Failed to create account");
         setLoading(false);
         return;
       }
@@ -176,13 +104,13 @@ export default function SignupPage() {
 
       // 2. Obtain the OAuth Redirect URL
       const scope = allowTraining ? "read_and_train" : "read";
-      const authUrlResponse = await fetch(`http://localhost:5000/api/auth/url?provider=${provider}&scope=${scope}&user_id=${userId}`);
+      const authUrlResponse = await fetch(`http://localhost:5000/api/auth/url?provider=${provider}&scope=${scope}`);
       const authUrlData = await authUrlResponse.json();
 
       if (authUrlData.url) {
         // Only store safe data. NEVER store passwords in localStorage.
         localStorage.setItem("sentra-pending-signup", JSON.stringify({
-          email: email.trim(),
+          email,
           userId,
           scope,
           roles
@@ -193,9 +121,8 @@ export default function SignupPage() {
         setLoading(false);
       }
     } catch (err) {
-      console.error("Signup error:", err);
-      const message = err instanceof Error ? err.message : String(err);
-      alert(`Error during signup process: ${message}`);
+      console.error(err);
+      alert("Error during signup process");
       setLoading(false);
     }
   };
@@ -226,68 +153,52 @@ export default function SignupPage() {
               className="space-y-4"
             >
               <div className="space-y-2">
-                <label className="text-sm font-medium">Full Name</label>
+                <label className="text-sm font-medium flex justify-between">
+                  <span>Full Name</span>
+                  <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+                </label>
                 <input
                   type="text"
-                  required
                   value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (hasTriedContinue || nameError) {
-                      setNameError(validateName(e.target.value));
-                    }
-                  }}
-                  onBlur={() => setNameError(validateName(name))}
-                  autoComplete="name"
+                  onChange={(e) => setName(e.target.value)}
                   className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
                   placeholder="Your Name"
-                  maxLength={100}
                 />
-                {(nameError || (hasTriedContinue && nameValidationError)) && (
-                  <p className="text-xs text-red-400">{nameError || nameValidationError}</p>
-                )}
               </div>
+
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email Address</label>
+                <label className="text-sm font-medium">Email Address <span className="text-red-500">*</span></label>
                 <input
                   type="email"
-                  required
                   value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (hasTriedContinue || emailError) {
-                      setEmailError(validateEmail(e.target.value));
-                    }
-                  }}
-                  onBlur={() => {
-                    setEmailError(validateEmail(email));
-                  }}
-                  autoComplete="email"
-                  className={`w-full bg-background/50 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 ${emailError ? "border-red-500/70" : "border-border/50"}`}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`w-full bg-background/50 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 ${
+                    email && !isEmailValid
+                      ? "border-red-500/50 focus:ring-red-500/50"
+                      : "border-border/50 focus:ring-accent-cyan/50"
+                  }`}
                   placeholder="you@example.com"
                 />
-                {(emailError || (hasTriedContinue && emailValidationError)) && (
-                  <p className="text-xs text-red-400">{emailError || emailValidationError}</p>
+                {email && !isEmailValid && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle size={14} /> Please enter a valid email address
+                  </p>
                 )}
-                <p className="text-xs text-muted-foreground">Use a valid email like you@example.com.</p>
               </div>
+
               <div className="space-y-2">
-                <label className="text-sm font-medium">Password</label>
+                <label className="text-sm font-medium">Password <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    required
                     value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (hasTriedContinue || passwordError) {
-                        setPasswordError(validatePassword(e.target.value));
-                      }
-                    }}
-                    onBlur={() => setPasswordError(validatePassword(password))}
-                    autoComplete="new-password"
-                    className={`w-full bg-background/50 border rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 ${passwordError ? "border-red-500/70" : "border-border/50"}`}
-                    placeholder="••••••••"
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`w-full bg-background/50 border rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 ${
+                      password && !isPasswordValid
+                        ? "border-red-500/50 focus:ring-red-500/50"
+                        : "border-border/50 focus:ring-accent-cyan/50"
+                    }`}
+                    placeholder="••••••••••••"
                   />
                   <button
                     type="button"
@@ -298,36 +209,69 @@ export default function SignupPage() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+
                 {password && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Password strength</span>
-                      <span>{passwordStrength.label}</span>
+                  <div className="space-y-2 mt-3 p-3 bg-background/50 rounded-lg border border-border/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium">Password Strength</span>
+                      <span className={`text-xs font-semibold ${strengthColors[passwordStrength]}`}>
+                        {strengthLabels[passwordStrength]}
+                      </span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-border/60 overflow-hidden">
-                      <div
-                        className={`h-full ${passwordStrength.colorClass} transition-all duration-300`}
-                        style={{ width: `${(passwordStrength.score / 4) * 100}%` }}
-                      />
+                    <div className="flex gap-1">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className={`flex-1 h-1.5 rounded-full transition-colors ${
+                            i < passwordStrength
+                              ? passwordStrength === 3
+                                ? "bg-green-500"
+                                : "bg-yellow-500"
+                              : "bg-border/50"
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="space-y-1 mt-3">
+                      <div className={`text-xs flex items-center gap-2 ${hasMinLength ? "text-green-500" : "text-muted-foreground"}`}>
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${hasMinLength ? "bg-green-500/20 border border-green-500/50" : "bg-border/30 border border-border/50"}`}>
+                          {hasMinLength && <Check size={12} />}
+                        </div>
+                        More than 10 characters
+                      </div>
+                      <div className={`text-xs flex items-center gap-2 ${hasNumber ? "text-green-500" : "text-muted-foreground"}`}>
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${hasNumber ? "bg-green-500/20 border border-green-500/50" : "bg-border/30 border border-border/50"}`}>
+                          {hasNumber && <Check size={12} />}
+                        </div>
+                        At least one number (0-9)
+                      </div>
+                      <div className={`text-xs flex items-center gap-2 ${hasSymbol ? "text-green-500" : "text-muted-foreground"}`}>
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${hasSymbol ? "bg-green-500/20 border border-green-500/50" : "bg-border/30 border border-border/50"}`}>
+                          {hasSymbol && <Check size={12} />}
+                        </div>
+                        At least one symbol (!@#$%^&* etc.)
+                      </div>
                     </div>
                   </div>
                 )}
-                {(passwordError || passwordValidationError) && (
-                  <p className="text-xs text-red-400">{passwordError || passwordValidationError}</p>
-                )}
+              </div>
+
+              <div className="pt-2 text-center">
                 <p className="text-xs text-muted-foreground">
-                  Use at least 10 characters with uppercase, lowercase, number, and symbol.
+                  💡 Please ensure all fields are filled correctly. This helps us secure your account.
                 </p>
               </div>
+
               <button
                 type="submit"
-                disabled={isContinueDisabled}
-                  className="w-full btn-primary flex items-center justify-center gap-2 group mt-6 disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={!isDetailsStepValid}
+                className="w-full btn-primary flex items-center justify-center gap-2 group mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
 
-              <div className="text-center mt-6">
+              <div className="text-center border-t border-border/50 pt-4 mt-4">
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{" "}
                   <Link href="/login" className="text-accent-cyan hover:text-accent-cyan/80 transition-colors">
@@ -346,71 +290,108 @@ export default function SignupPage() {
               exit={{ x: -50, opacity: 0 }}
               className="space-y-6"
             >
-              <div className="bg-accent-cyan/10 border border-accent-cyan/20 p-4 rounded-xl flex items-start gap-4">
-                <ShieldAlert className="w-6 h-6 text-accent-cyan shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-semibold text-sm mb-1">Email scanning required</h3>
-                  <p className="text-xs text-muted-foreground">In order to detect phishing, Sentra requires read access to your inbox. Your emails are scanned real-time by our agents.</p>
+              {/* Unified box with email scanning and policy checkboxes */}
+              <div className="bg-accent-cyan/10 border border-accent-cyan/20 p-6 rounded-xl space-y-4">
+                {/* Email Scanning Section */}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <ShieldAlert className="w-5 h-5 text-accent-cyan shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm">Email Scanning & Real-time Protection</h3>
+                      <p className="text-xs text-muted-foreground mt-1">Sentra requires read access to your inbox to detect and prevent phishing threats in real-time. Your emails are scanned instantly by our security agents. Messages are not stored unless you request it.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-4 pt-2">
-                <label className="flex items-start gap-3 p-3 rounded-lg border border-border/50 cursor-pointer hover:bg-background/50 transition-colors">
-                  <div className="mt-1 flex items-center justify-center w-5 h-5 rounded border border-accent-cyan/50 bg-accent-cyan/20">
-                    <Check className="w-3.5 h-3.5 text-accent-cyan" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium">Required: Real-time Scanning</h4>
-                    <p className="text-xs text-muted-foreground mt-1">Allow Sentra to read emails to identify phishing threats. Messages are not stored permanently unless requested.</p>
-                  </div>
-                </label>
+                {/* Divider */}
+                <div className="border-t border-accent-cyan/10" />
 
-                <label className="flex items-start gap-3 p-3 rounded-lg border border-border/50 cursor-pointer hover:bg-background/50 transition-colors">
-                  <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border border-border">
+                {/* Privacy Policy Checkbox */}
+                <label className={`flex items-start gap-3 cursor-pointer transition-all ${
+                  hasViewedPrivacy
+                    ? ""
+                    : "opacity-60 cursor-not-allowed"
+                }`}>
+                  <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border-2 border-border flex-shrink-0">
                     <input
                       type="checkbox"
                       className="absolute opacity-0 w-full h-full cursor-pointer"
+                      disabled={!hasViewedPrivacy}
+                      checked={privacyAgreed}
+                      onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                    />
+                    {privacyAgreed && <Check className="w-3.5 h-3.5 text-accent-purple" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className={`text-sm font-medium ${!hasViewedPrivacy ? "opacity-60" : ""}`}>
+                        I agree to the Privacy Policy
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowPrivacyModal(true);
+                        }}
+                        className="text-xs px-2 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 transition-colors flex-shrink-0"
+                      >
+                        {hasViewedPrivacy ? "✓ Read" : "Read"}
+                      </button>
+                    </div>
+                  </div>
+                </label>
+
+                {/* Terms & Agreements Checkbox */}
+                <label className={`flex items-start gap-3 cursor-pointer transition-all ${
+                  hasViewedTerms
+                    ? ""
+                    : "opacity-60 cursor-not-allowed"
+                }`}>
+                  <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border-2 border-border flex-shrink-0">
+                    <input
+                      type="checkbox"
+                      className="absolute opacity-0 w-full h-full cursor-pointer"
+                      disabled={!hasViewedTerms}
+                      checked={termsAgreed}
+                      onChange={(e) => setTermsAgreed(e.target.checked)}
+                    />
+                    {termsAgreed && <Check className="w-3.5 h-3.5 text-accent-purple" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className={`text-sm font-medium ${!hasViewedTerms ? "opacity-60" : ""}`}>
+                        I agree to the Terms & Agreements
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowTermsModal(true);
+                        }}
+                        className="text-xs px-2 py-1 rounded bg-white/10 border border-white/20 hover:bg-white/20 transition-colors flex-shrink-0"
+                      >
+                        {hasViewedTerms ? "✓ Read" : "Read"}
+                      </button>
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              {/* Optional training checkbox */}
+              <div className="space-y-4">
+                <label className="flex items-start gap-3 p-4 rounded-lg border border-border/50 cursor-pointer hover:bg-background/50 transition-colors">
+                  <div className="w-5 h-5 rounded border-2 border-border flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <input
+                      type="checkbox"
+                      className="absolute opacity-0 w-5 h-5 cursor-pointer"
                       checked={allowTraining}
                       onChange={(e) => setAllowTraining(e.target.checked)}
                     />
                     {allowTraining && <Check className="w-3.5 h-3.5 text-accent-purple" />}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h4 className="text-sm font-medium">Optional: Help improve Sentra</h4>
                     <p className="text-xs text-muted-foreground mt-1">Allow Sentra to securely store anonymized metadata and message contexts to fine-tune our detection models.</p>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-3 p-3 rounded-lg border border-border/50 cursor-pointer hover:bg-background/50 transition-colors">
-                  <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border border-border shrink-0">
-                    <input
-                      type="checkbox"
-                      className="absolute opacity-0 w-full h-full cursor-pointer"
-                      checked={termsAccepted}
-                      onChange={(e) => setTermsAccepted(e.target.checked)}
-                    />
-                    {termsAccepted && <Check className="w-3.5 h-3.5 text-accent-cyan" />}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium">Required: Terms &amp; Agreements</h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      I have read and agree to the{" "}
-                      <button
-                        type="button"
-                        onClick={() => setShowTermsModal(true)}
-                        className="text-accent-cyan hover:underline"
-                      >
-                        Terms &amp; Agreements
-                      </button>{" "}
-                      and{" "}
-                      <button
-                        type="button"
-                        onClick={() => setShowPrivacyModal(true)}
-                        className="text-accent-cyan hover:underline"
-                      >
-                        Privacy Policy
-                      </button>.
-                    </p>
                   </div>
                 </label>
               </div>
@@ -425,10 +406,127 @@ export default function SignupPage() {
                 </button>
                 <button
                   onClick={handleNextToProvider}
-                  disabled={!termsAccepted}
+                  disabled={!privacyAgreed || !termsAgreed}
                   className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Confirm
+                  Continue
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === "modals" && (
+            <motion.div
+              key="modals"
+              initial={{ x: 50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -50, opacity: 0 }}
+              className="space-y-4"
+            >
+              <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground text-center">
+                  📖 <span className="font-semibold">Important:</span> Please read our Privacy Policy and Terms & Agreements before continuing.
+                </p>
+              </div>
+
+              <label className={`flex items-start gap-3 p-4 rounded-lg border transition-all ${
+                hasViewedPrivacy
+                  ? "border-border/50 cursor-pointer hover:bg-background/50"
+                  : "border-amber-500/20 bg-amber-500/5 cursor-not-allowed"
+              }`}>
+                <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border shrink-0" style={{
+                  borderColor: hasViewedPrivacy ? undefined : "rgba(217, 119, 6, 0.3)"
+                }}>
+                  <input
+                    type="checkbox"
+                    className="absolute opacity-0 w-full h-full"
+                    disabled={!hasViewedPrivacy}
+                    checked={privacyAgreed}
+                    onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                  />
+                  {privacyAgreed && <Check className="w-3.5 h-3.5 text-accent-purple" />}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className={`text-sm font-medium ${!hasViewedPrivacy ? "opacity-60" : ""}`}>
+                      I agree to the Privacy Policy
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPrivacyModal(true);
+                      }}
+                      className="text-xs px-2 py-1 rounded bg-accent-cyan/10 border border-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
+                    >
+                      {hasViewedPrivacy ? "✓ Read" : "Read Now"}
+                    </button>
+                  </div>
+                  <p className={`text-xs mt-1 ${hasViewedPrivacy ? "text-muted-foreground" : "text-amber-600"}`}>
+                    {hasViewedPrivacy
+                      ? "Review our privacy practices and data protection measures."
+                      : "Click 'Read Now' to view the Privacy Policy before you can check this box."
+                    }
+                  </p>
+                </div>
+              </label>
+
+              <label className={`flex items-start gap-3 p-4 rounded-lg border transition-all ${
+                hasViewedTerms
+                  ? "border-border/50 cursor-pointer hover:bg-background/50"
+                  : "border-amber-500/20 bg-amber-500/5 cursor-not-allowed"
+              }`}>
+                <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border shrink-0" style={{
+                  borderColor: hasViewedTerms ? undefined : "rgba(217, 119, 6, 0.3)"
+                }}>
+                  <input
+                    type="checkbox"
+                    className="absolute opacity-0 w-full h-full"
+                    disabled={!hasViewedTerms}
+                    checked={termsAgreed}
+                    onChange={(e) => setTermsAgreed(e.target.checked)}
+                  />
+                  {termsAgreed && <Check className="w-3.5 h-3.5 text-accent-purple" />}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className={`text-sm font-medium ${!hasViewedTerms ? "opacity-60" : ""}`}>
+                      I agree to the Terms & Agreements
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowTermsModal(true);
+                      }}
+                      className="text-xs px-2 py-1 rounded bg-accent-cyan/10 border border-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
+                    >
+                      {hasViewedTerms ? "✓ Read" : "Read Now"}
+                    </button>
+                  </div>
+                  <p className={`text-xs mt-1 ${hasViewedTerms ? "text-muted-foreground" : "text-amber-600"}`}>
+                    {hasViewedTerms
+                      ? "Review the terms of service and user agreement."
+                      : "Click 'Read Now' to view the Terms & Agreements before you can check this box."
+                    }
+                  </p>
+                </div>
+              </label>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setStep("consent")}
+                  className="flex-1 px-4 py-2 rounded-lg border border-border/50 hover:bg-background/50 text-sm transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleCompleteModals}
+                  disabled={!privacyAgreed || !termsAgreed}
+                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Proceed to Email Provider
                 </button>
               </div>
             </motion.div>
@@ -443,12 +541,6 @@ export default function SignupPage() {
               className="space-y-4"
             >
               <p className="text-sm text-muted-foreground text-center mb-6">Select your email provider to connect your inbox and finalize registration.</p>
-
-              {oauthError && (
-                <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-lg px-4 py-3 text-center">
-                  Connection failed: <span className="font-mono">{oauthError}</span>. Please try again.
-                </div>
-              )}
 
               <button
                 onClick={() => handleConnectProvider('gmail')}
@@ -471,17 +563,29 @@ export default function SignupPage() {
               <button
                 type="button"
                 className="w-full mt-4 text-xs text-muted-foreground hover:text-white transition-colors"
-                onClick={() => setStep("consent")}
+                onClick={() => setStep("modals")}
               >
-                Back to privacy settings
+                Back to policies
               </button>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
 
-      <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
-      <PrivacyPolicyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
+        <PrivacyPolicyModal
+          isOpen={showPrivacyModal}
+          onClose={() => {
+            setShowPrivacyModal(false);
+            setHasViewedPrivacy(true);
+          }}
+        />
+        <TermsModal
+          isOpen={showTermsModal}
+          onClose={() => {
+            setShowTermsModal(false);
+            setHasViewedTerms(true);
+          }}
+        />
+      </motion.div>
     </div>
   );
 }

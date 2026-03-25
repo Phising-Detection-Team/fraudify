@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Loader2 } from "lucide-react";
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -50,5 +50,23 @@ export default function AuthCallbackPage() {
         <p className="text-sm text-muted-foreground">Connecting your mailbox…</p>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <div className="glass-panel w-full max-w-sm p-8 rounded-2xl text-center space-y-6">
+            <Logo className="mx-auto" />
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-accent-cyan" />
+            <p className="text-sm text-muted-foreground">Connecting your mailbox…</p>
+          </div>
+        </div>
+      }
+    >
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
