@@ -29,6 +29,10 @@ if os.path.exists(env_file):
 else:
     print(f"⚠️  Warning: .env file not found at {env_file}")
 
+# Add project root to sys.path to resolve backend imports
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 # Import backend modules
 from backend.app import create_app
 from backend.app.models import db, API, Email, Round, Log

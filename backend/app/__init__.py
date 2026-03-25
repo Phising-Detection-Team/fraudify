@@ -48,12 +48,13 @@ def create_app(config_name=None):
 
 def _register_blueprints(app):
     """Register all API blueprints."""
-    from .routes import health_bp, rounds_bp, emails_bp, logs_bp
+    from .routes import health_bp, rounds_bp, emails_bp, logs_bp, auth_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(rounds_bp)
     app.register_blueprint(emails_bp)
     app.register_blueprint(logs_bp)
+    app.register_blueprint(auth_bp)
 
 
 def _register_error_handlers(app):

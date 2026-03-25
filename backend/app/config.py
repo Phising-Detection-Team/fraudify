@@ -4,7 +4,7 @@ import os
 class BaseConfig:
     """Base configuration shared across all environments."""
 
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
+    ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',

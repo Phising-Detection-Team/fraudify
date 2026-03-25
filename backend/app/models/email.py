@@ -1,6 +1,7 @@
 from datetime import datetime
 from . import db
 from sqlalchemy.orm import validates
+from sqlalchemy.dialects.postgresql import UUID
 
 class Email(db.Model):
     """
@@ -115,85 +116,29 @@ class Email(db.Model):
         nullable=True
     )
 
-    # Decided not to use Judge agent for now since it may be redundant with detector confidence + reasoning
-    """
-    # JUDGE OUTPUTS
-
-    # Judge ground truth (minimum truth?)
-    judge_ground_truth = db.Column(
-        db.String(20),
-        nullable=False
-    )
-
-    # Verify judge
-    is_judge_correct = db.Column(
-        db.Boolean,
-        nullable=False
-    )
-
-    # Judge quality score (higher -> more accurate)
-    judge_quality_score = db.Column(
-        db.Integer,
-        nullable=False
-    )
-
-    # Judge's verdict: " correct" or "incorrect"
-    # Compares detector_verdict with is_phishing
-    judge_verdict =db.Column(
-        db.String(20),
-        nullable=False
-    )
-
-    # Judge's explanation
-    # Example: "Detector correctly identified phishing indicators"
-    judge_reasoning = db.Column(
-        db.Text,
-        nullable=True
-    )
-
-    # Judge latency in ms
-    judge_latency_ms = db.Column(
-        db.Integer,
-        nullable=True
-    )
-    """
-
-    # MANUALLY OVERRIDE
-    # Was this overridden by human?
-    manual_override = db.Column(
-        db.Boolean,
-        nullable=True
-    )
-    # Human's override verdict (if manual)
-    override_verdict = db.Column(
-        db.String(20),
-        nullable=True
-    )
-
-    # Reason for override
-    override_reason = db.Column(
-        db.Text,
-        nullable=True
-    )
-
-    # Who overrode the verdict
-    overridden_by = db.Column(
-        db.String(100),
-        nullable=True
-    )
-
-    # When was it overridden
-    overridden_at = db.Column(
-        db.DateTime,
-        nullable=True
-    )
-
     # METADATA
 
     # When this email record was created
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow
+    )
+
+    # Reference to the user who created/owned this email (for manual ingestion or tracking)
+    created_by = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True
+    )
+
+    # Relationship to user
+    owner = db.relationship('User', back_populates='emails')
+
+    # Whether this email has been ingested into training data
+    training_data_ingested = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
     )
 
     # Processing time (seconds)
@@ -231,11 +176,6 @@ class Email(db.Model):
             'detector_risk_score': self.detector_risk_score,
             'detector_reasoning': self.detector_reasoning,
             'detector_latency_ms': self.detector_latency_ms,
-            'manual_override': self.manual_override,
-            'override_verdict': self.override_verdict,
-            'override_reason': self.override_reason,
-            'overridden_by': self.overridden_by,
-            'overridden_at': self.overridden_at,
             'created_at': self.created_at,
             'processing_time': self.processing_time,
             'cost': self.cost
@@ -248,10 +188,6 @@ class Email(db.Model):
         Returns:
             str: "correct" or "incorrect"
         """
-
-        if self.manual_override:
-            return self.override_verdict
-
         if self.detector_verdict:
             return self.detector_verdict
 
