@@ -14,3 +14,9 @@ alembic upgrade head
 
 5. Initialize migration
 alembic upgrade head
+
+
+6. Run some rounds
+cd /home/hoang/projects/phishing_detection
+chmod +x ./run_detection.sh
+./run_detection.sh --method openai --rounds 3 --emails 10 --workflows 2
