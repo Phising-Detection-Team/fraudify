@@ -220,6 +220,7 @@ class Email(db.Model):
         return {
             'id': self.id,
             'round_id': self.round_id,
+            'generated_content': self.generated_content,
             'generated_prompt': self.generated_prompt,
             'generated_email_subject': self.generated_subject,
             'generated_email_body': self.generated_body,

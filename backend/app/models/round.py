@@ -43,10 +43,10 @@ class Round(db.Model):
     )
 
 
-    # Timestamp when round completed
+    # Timestamp when round completed (NULL while still running)
     completed_at = db.Column(
         db.DateTime,
-        nullable=False
+        nullable=True
     )
 
     # Total number of emails to process
