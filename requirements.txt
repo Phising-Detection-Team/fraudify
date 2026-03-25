@@ -23,9 +23,7 @@ openai
 # Anthropic Claude API (for Detector Agent)
 anthropic>=0.18.0
 # Google Gemini API (for Judge Agent)
-google.genai==1.39.0
-# Environment variables
-python-dotenv>=1.2.1
+google-genai>=1.39.0
 # Async support (included with other packages, but explicit for clarity)
 aiohttp>=3.9.0
 # Calculate LLM cost
@@ -34,3 +32,23 @@ tokencost>=0.1.26
 #OpenAI Agents framework for more advanced agent management
 openai-agents
 openai-agents[litellm]
+
+# Training pipeline requirements
+torch>=2.5.1
+torchvision>=0.20.1
+torchaudio>=2.5.1
+bitsandbytes>=0.46.0
+transformers>=4.48.3
+accelerate>=1.3.0
+datasets>=3.2.0
+peft>=0.14.0
+trl>=0.14.0
+evaluate>=0.4.0
+scikit-learn>=1.4.0
+matplotlib>=3.9.0
+numpy
+dotenv
+huggingface_hub
+transformers[torch]
+datasets[torch]
+peft[torch]
