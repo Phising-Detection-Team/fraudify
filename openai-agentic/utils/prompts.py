@@ -125,122 +125,54 @@ PROMPTS = {
     # ==========================================
     # DETECTOR AGENT PROMPTS
     # ==========================================
-    "detector_system": """You are an elite cybersecurity expert specializing in advanced threat detection, social engineering analysis, and sophisticated scam identification. You have decades of experience analyzing both obvious and highly sophisticated fraud attempts. You never miss subtle indicators.""",
+    "detector_system": """You are an email security expert. Your job is to analyze emails for phishing/scam indicators and output ONLY valid JSON.
 
-    "detector_analysis": """You are an elite email security analyst with expertise in detecting sophisticated scams and social engineering attacks.
+CRITICAL RULES:
+1. Output ONLY valid JSON - no text before or after
+2. Must be parseable by JSON parser
+3. Start with { and end with }
+4. No markdown, no code blocks, no explanations""",
 
-    Analyze this email using a multi-layered approach to identify both obvious and subtle scam indicators.
+    "detector_analysis": """Analyze this email for phishing/scam indicators:
 
-    EMAIL CONTENT:
-    {email_content}
+EMAIL TO ANALYZE:
+{email_content}
 
-    COMPREHENSIVE ANALYSIS FRAMEWORK:
+ANALYSIS CHECKLIST:
+1. SENDER: Is the sender domain legitimate? Are there impersonation attempts?
+2. LANGUAGE: Is there unusual urgency, threats, or pressure tactics?
+3. LINKS: Are there suspicious URLs or domain mismatches?
+4. REQUESTS: Does it request passwords, personal data, or financial info?
+5. OFFERS: Are there "too good to be true" offers or prizes?
+6. CREDIBILITY: Does it use fake logos, spoofed company info, or false authority?
+7. PATTERNS: Are there grammatical errors, formatting issues, or inconsistencies?
 
-    === LAYER 1: STRUCTURAL ANALYSIS ===
-    1. SENDER AUTHENTICITY [0-10]:
-    - Domain legitimacy, email format consistency
-    - Impersonation attempts, domain spoofing
-    - Contact information verification
+VERDICT LOGIC:
+- If 3+ indicators suggest phishing → verdict is "phishing"
+- If clear legitimate markers and no red flags → verdict is "legitimate"
+- Otherwise → verdict is "legitimate" (default to safe verdict)
 
-    2. LINGUISTIC PATTERNS [0-10]:
-    - Grammar/spelling quality (note: sophisticated scams have good grammar)
-    - Tone consistency and professionalism
-    - Cultural/regional language markers
-    - Use of jargon and terminology
+OUTPUT THIS JSON WITH REAL VALUES:
+{
+    "verdict": "phishing",
+    "confidence": 0.85,
+    "scam_score": 0.90,
+    "reasoning": "Sender domain is spoofed (fakebank.com not real bank). Email requests immediate password reset with false urgency.",
+    "threat_level": "critical",
+    "scam_category": "phishing",
+    "sophistication": "medium"
+}
 
-    3. FORMATTING & PRESENTATION [0-10]:
-    - Professional appearance vs. amateur indicators
-    - Logo/branding authenticity claims
-    - Signature block completeness and realism
+INSTRUCTIONS FOR YOUR OUTPUT:
+- verdict: "phishing" or "legitimate" (pick one based on analysis)
+- confidence: number from 0.0 to 1.0 (how confident you are in your verdict)
+- scam_score: number from 0.0 to 1.0 (likelihood it's a scam)
+- reasoning: 1-2 sentence explanation of your verdict
+- threat_level: "critical", "high", "medium", "low", or "minimal"
+- scam_category: type of scam like "phishing", "credential_theft", "CEO_fraud", "lottery", "invoice", "unknown"
+- sophistication: "low", "medium", "high", or "very_high"
 
-    === LAYER 2: CONTENT ANALYSIS ===
-    4. URGENCY & PRESSURE TACTICS [0-10]:
-    - Time pressure (explicit or implicit)
-    - Consequence threats (account closure, legal action, missed opportunity)
-    - Artificial scarcity or deadlines
-
-    5. INFORMATION REQUESTS [0-10]:
-    - Personal data solicitation (subtle or direct)
-    - Financial information requests
-    - Credential or password requests
-    - Unusual verification procedures
-
-    6. FINANCIAL INDICATORS [0-10]:
-    - Money requests or promises
-    - Too-good-to-be-true offers
-    - Unusual payment methods
-    - Investment or prize claims
-
-    === LAYER 3: PSYCHOLOGICAL ANALYSIS ===
-    7. EMOTIONAL MANIPULATION [0-10]:
-    - Fear, anxiety, or panic induction
-    - Greed or excitement exploitation
-    - Authority/trust exploitation
-    - Reciprocity manipulation
-
-    8. SOCIAL ENGINEERING TECHNIQUES [0-10]:
-    - Impersonation of authority figures
-    - False familiarity or relationship building
-    - Exploitation of helping tendency
-    - Cognitive bias exploitation
-
-    9. CREDIBILITY ESTABLISHMENT [0-10]:
-    - Use of specific details to build trust
-    - Reference to legitimate processes or systems
-    - Inclusion of security language to appear safe
-    - Professional credentials or affiliations
-
-    === LAYER 4: TECHNICAL ANALYSIS ===
-    10. LINK & URL ANALYSIS [0-10]:
-        - Suspicious URLs or domain mismatches
-        - Shortened or obfuscated links
-        - Legitimate-looking but fake domains
-        - Phishing site indicators
-
-    11. CONTEXTUAL ANOMALIES [0-10]:
-        - Unexpected communication timing
-        - Unusual sender-recipient relationship
-        - Inconsistent narrative or details
-        - Out-of-pattern behavior claims
-
-    === COMPREHENSIVE EVALUATION ===
-    OVERALL SCAM SCORE: [0-100]
-    CONFIDENCE LEVEL: [0-100]%
-    VERDICT: [SCAM/LIKELY SCAM/SUSPICIOUS/LIKELY LEGITIMATE/LEGITIMATE]
-
-    SCAM CATEGORY: [Specific type if detected, or "N/A"]
-    SOPHISTICATION LEVEL: [LOW/MEDIUM/HIGH/VERY HIGH]
-
-    === DETAILED REASONING ===
-    PRIMARY RED FLAGS:
-    - [Most critical indicator 1 with specific evidence]
-    - [Most critical indicator 2 with specific evidence]
-    - [Most critical indicator 3 with specific evidence]
-
-    SUBTLE INDICATORS:
-    - [Subtle warning sign 1]
-    - [Subtle warning sign 2]
-    - [Subtle warning sign 3]
-
-    LEGITIMACY MARKERS (if any):
-    - [Legitimate aspect 1]
-    - [Legitimate aspect 2]
-
-    EVASION TACTICS DETECTED:
-    - [How the scam tries to appear legitimate]
-    - [Sophisticated techniques employed]
-
-    === RISK ASSESSMENT ===
-    THREAT LEVEL: [CRITICAL/HIGH/MEDIUM/LOW/MINIMAL]
-    POTENTIAL IMPACT: [Description of harm if victim falls for it]
-    TARGET AUDIENCE: [Who this scam is designed to fool]
-
-    === RECOMMENDATIONS ===
-    - [Specific action item 1]
-    - [Specific action item 2]
-    - [What to verify or check]
-
-    Analyze with extreme care - sophisticated scams mimic legitimate communications very well.""",
+MANDATORY: Output ONLY the JSON object. Start with { and end with }. No other text.""",
 
     # ==========================================
     # ORCHESTRATION AGENT PROMPTS
@@ -430,4 +362,4 @@ def get_detection_prompt(email_content: str) -> str:
     Returns:
         Formatted prompt for email detection/analysis
     """
-    return PROMPTS["detector_analysis"].format(email_content=email_content)
+    return PROMPTS["detector_analysis"].replace("{email_content}", email_content)
