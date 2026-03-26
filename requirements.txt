@@ -19,7 +19,7 @@ redis>=5.0.0
 python-dotenv==1.2.1
 
 # Testing
-pytest==9.0.2
+pytest>=8.2,<9.0
 pytest-asyncio==0.25.3
 
 # LLMs requirements
