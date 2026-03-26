@@ -1,6 +1,6 @@
 import { config } from "./config";
 
-const API_URL = config.API_URL;
+const API_URL = config.API.BASE_URL;
 
 export const getUserStats = async (token: string) => {
   const res = await fetch(`${API_URL}/users/stats`, {

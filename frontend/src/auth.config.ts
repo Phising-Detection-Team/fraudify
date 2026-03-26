@@ -34,6 +34,9 @@ export const authConfig = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = user.role;
+        token.fromBackend = user.fromBackend;
+        token.fromDemo = user.fromDemo;
+        token.id = user.id;
       }
       if (trigger === "update" && session?.role) {
         token.role = session.role;
@@ -43,6 +46,9 @@ export const authConfig = {
     async session({ session, token }) {
       if (session.user) {
         session.user.role = token.role as string;
+        session.user.fromBackend = token.fromBackend as boolean;
+        session.user.fromDemo = token.fromDemo as boolean;
+        session.user.id = token.id as string;
       }
       return session;
     }

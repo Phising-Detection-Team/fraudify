@@ -47,60 +47,30 @@ export default function LoginPage() {
     console.log("Result - ok:", result?.ok, "error:", result?.error, "status:", result?.status, "url:", result?.url);
 
     if (result?.error || !result?.ok) {
-      console.log("NextAuth credentials failed, trying backend...");
-      // If NextAuth fails (demo account not found), try backend
-      try {
-        const apiUrl = `${config.API.BASE_URL}${config.API.AUTH.LOGIN}`;
-        console.log("Backend endpoint:", apiUrl);
-        
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
-        });
-
-        const data = await response.json();
-        console.log("Backend response:", data);
-
-        if (!response.ok) {
-          setError(data.error || "Wrong email or password");
-          setLoading(false);
-          return;
-        }
-
-        // Check roles
-        const userRoles = data.user?.roles || ['user'];
-        const is_admin = userRoles.includes('admin');
-        const assignedRole = is_admin ? "admin" : "user";
-        
-        // Store user info for backend users
-        localStorage.setItem(config.STORAGE_KEYS.IS_DEMO, "false");
-        localStorage.setItem("sentra-role", assignedRole);
-        
-        const targetRoute = is_admin ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
-        console.log("Backend success - redirecting to:", targetRoute);
-        setLoading(false);
-        router.push(targetRoute);
-      } catch (err) {
-        console.error("Backend error:", err);
-        setError("Unable to reach the server: " + (err instanceof Error ? err.message : String(err)));
-        setLoading(false);
-      }
-    } else {
-      // Demo account authentication succeeded
-      console.log("NextAuth credentials successful!");
-      const is_admin = email === config.DEMO_ACCOUNTS.ADMIN.email;
-      localStorage.setItem(config.STORAGE_KEYS.IS_DEMO, "true");
-      localStorage.setItem("sentra-role", is_admin ? "admin" : "user");
-      
-      const targetRoute = is_admin ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
-      console.log("Demo login successful - Target route:", targetRoute);
-      
-      // Give the session time to be established, then redirect
+      console.log("NextAuth credentials failed:", result?.error);
+      setError("Wrong email or password");
       setLoading(false);
-      console.log("Session established, navigating to:", targetRoute);
+    } else {
+      console.log("NextAuth credentials successful!");
       
-      // Use replace instead of push to avoid back button issues
+      const isDemoAdmin = email === config.DEMO_ACCOUNTS.ADMIN.email;
+      const isDemoUser = email === config.DEMO_ACCOUNTS.USER.email;
+      const isDemo = isDemoAdmin || isDemoUser;
+      
+      localStorage.setItem(config.STORAGE_KEYS.IS_DEMO, isDemo ? "true" : "false");
+      
+      // Need to wait for session to be fetched or just let the redirect handle the router role. 
+      // Instead of guessing role based on Demo alone, we can fetch session to get role:
+      const res = await fetch("/api/auth/session");
+      const sessionData = await res.json();
+      
+      const role = sessionData?.user?.role || "user";
+      localStorage.setItem("sentra-role", role);
+      
+      const targetRoute = role === "admin" ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
+      console.log(`${isDemo ? 'Demo' : 'Backend'} login successful - Target route:`, targetRoute);
+      
+      setLoading(false);
       setTimeout(() => {
         router.replace(targetRoute);
       }, 200);
