@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { config } from "@/lib/config";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import { Mail, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
@@ -18,7 +19,7 @@ export default function ForgotPasswordPage() {
     setError("");
 
     try {
-      await fetch("http://localhost:5000/api/auth/forgot-password", {
+      await fetch(config.API.AUTH.FORGOT_PASSWORD, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

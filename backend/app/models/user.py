@@ -35,6 +35,8 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+    # Admin status - controlled by existing admins, not self-assigned
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     # Required agreement gate. Defaults to False for backward-safe migrations.
     terms_agreed = db.Column(db.Boolean, default=False, nullable=False)
     # Optional consent for improving Sentra; nullable preserves unanswered state.
@@ -43,7 +45,6 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    admin = db.relationship('Admin', back_populates='user', foreign_keys='Admin.user_id', uselist=False, cascade='all, delete-orphan')
     email_permissions = db.relationship('EmailPermission', back_populates='user', cascade='all, delete-orphan')
     emails = db.relationship('Email', back_populates='owner', passive_deletes=True)
 
@@ -116,9 +117,9 @@ class User(db.Model):
             'id': str(self.id),
             'email': self.email,
             'is_active': self.is_active,
+            'is_admin': self.is_admin,
             'terms_agreed': self.terms_agreed,
             'improve_sentra_opt_in': self.improve_sentra_opt_in,
-            'is_admin': self.admin is not None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

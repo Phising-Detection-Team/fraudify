@@ -4,41 +4,69 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { RoundTable } from "@/components/dashboard/RoundTable";
 import { CostPieChart } from "@/components/dashboard/CostPieChart";
 import { AgentLogsTable } from "@/components/dashboard/AgentLogsTable";
-import { MOCK_STATS_ADMIN, MOCK_ROUNDS, MOCK_AGENTS } from "@/lib/mock-data";
 import { Mail, ShieldAlert, BadgeDollarSign, Activity } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import {
+  MOCK_STATS_ADMIN,
+  MOCK_ROUNDS,
+  MOCK_AGENTS,
+} from "@/lib/mock-data";
+import {
+  getAdminStats,
+  getAdminRounds,
+  getAdminAgents,
+} from "@/lib/admin-api";
+import { config } from "@/lib/config";
 
 export default function AdminDashboard() {
-  const [isDemo, setIsDemo] = useState(false);
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
-  
+  const [isDemo, setIsDemo] = useState(false);
+
   // Real data state
-  const [realStats] = useState({
+  const [stats, setStats] = useState({
     totalApiCost: 0,
     activeAgents: 0,
     totalEmailsScanned: 0,
-    phishingDetected: 0
+    phishingDetected: 0,
   });
-  const [realRounds] = useState([]);
-  const [realAgents] = useState([]);
+  const [rounds, setRounds] = useState([]);
+  const [agents, setAgents] = useState([]);
 
   useEffect(() => {
-    const demoFlag = localStorage.getItem("is-demo") === "true";
+    const demoFlag =
+      localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
     setIsDemo(demoFlag);
-    
-    if (!demoFlag) {
-      // TODO: Fetch from actual Backend API once ready.
-      // Currently defaulting to empty values as new users have no data.
+
+    if (demoFlag) {
+      setStats(MOCK_STATS_ADMIN);
+      setRounds(MOCK_ROUNDS as any);
+      setAgents(MOCK_AGENTS as any);
       setLoading(false);
+    } else if (session?.accessToken) {
+      const fetchData = async () => {
+        try {
+          const [statsData, roundsData, agentsData] = await Promise.all([
+            getAdminStats(session.accessToken),
+            getAdminRounds(session.accessToken),
+            getAdminAgents(session.accessToken),
+          ]);
+          setStats(statsData);
+          setRounds(roundsData);
+          setAgents(agentsData);
+        } catch (error) {
+          console.error("Failed to fetch admin data:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
     } else {
       setLoading(false);
     }
-  }, []);
-
-  const rounds = isDemo ? MOCK_ROUNDS : realRounds;
-  const stats = isDemo ? MOCK_STATS_ADMIN : realStats;
-  const agents = isDemo ? MOCK_AGENTS : realAgents;
+  }, [session]);
 
   const mergedCosts = rounds.flatMap(r => r.apiCosts).reduce((acc, curr) => {
     const existing = acc.find(a => a.model === curr.model);
@@ -49,7 +77,7 @@ export default function AdminDashboard() {
       acc.push({ ...curr });
     }
     return acc;
-  }, [] as typeof MOCK_ROUNDS[0]["apiCosts"]);
+  }, [] as any[]);
 
   if (loading) return null;
 

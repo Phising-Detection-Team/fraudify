@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
+import { config } from "@/lib/config";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -9,54 +12,68 @@ import { ShieldCheck, LogIn, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const targetRoute = session.user.role === "admin" ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
+      console.log("User already authenticated, redirecting to:", targetRoute);
+      router.push(targetRoute);
+    }
+  }, [status, session, router]);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // Test Admin Bypass for Demo
-    if (email === "test-admin" && password === "test-admin") {
-      localStorage.setItem("sentra-role", "admin");
-      localStorage.setItem("is-demo", "true");
-      router.push("/dashboard/admin");
-      return;
-    }
-    localStorage.removeItem("is-demo");
-    
-    try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
+    console.log("=== Login Attempt Start ===");
+    console.log("Email:", email);
 
-      const data = await response.json();
+    // Use NextAuth to authenticate
+    const result = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
 
-      if (!response.ok) {
-        setError(data.error || "Login failed");
-        setLoading(false);
-        return;
-      }
+    console.log("SignIn Result:", result);
+    console.log("Result - ok:", result?.ok, "error:", result?.error, "status:", result?.status, "url:", result?.url);
 
-      // Check roles
-      const userRoles = data.user?.roles || ['user'];
-      const is_admin = userRoles.includes('admin');
-      const assignedRole = is_admin ? "admin" : "user";
-      
-      // Temporary token handling. TODO: NextAuth session integration
-      localStorage.setItem("sentra-role", assignedRole);
-      
-      router.push(is_admin ? "/dashboard/admin" : "/dashboard/user");
-    } catch (err) {
-      console.error(err);
-      setError("Unable to reach the server.");
+    if (result?.error || !result?.ok) {
+      console.log("NextAuth credentials failed:", result?.error);
+      setError("Wrong email or password");
       setLoading(false);
+    } else {
+      console.log("NextAuth credentials successful!");
+      
+      const isDemoAdmin = email === config.DEMO_ACCOUNTS.ADMIN.email;
+      const isDemoUser = email === config.DEMO_ACCOUNTS.USER.email;
+      const isDemo = isDemoAdmin || isDemoUser;
+      
+      localStorage.setItem(config.STORAGE_KEYS.IS_DEMO, isDemo ? "true" : "false");
+      
+      // Need to wait for session to be fetched or just let the redirect handle the router role. 
+      // Instead of guessing role based on Demo alone, we can fetch session to get role:
+      const res = await fetch("/api/auth/session");
+      const sessionData = await res.json();
+      
+      const role = sessionData?.user?.role || "user";
+      localStorage.setItem("sentra-role", role);
+      
+      const targetRoute = role === "admin" ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
+      console.log(`${isDemo ? 'Demo' : 'Backend'} login successful - Target route:`, targetRoute);
+      
+      setLoading(false);
+      setTimeout(() => {
+        router.replace(targetRoute);
+      }, 200);
     }
   };
 

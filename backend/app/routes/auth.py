@@ -3,7 +3,6 @@
 from flask import Blueprint, request, jsonify
 from app import db
 from app.models.email_permission import EmailPermission
-from app.models.admin import Admin
 from app.models.user import User
 from app.models.log import Log
 from app.utils.oauth_handler import GoogleOAuthHandler, OutlookOAuthHandler
@@ -134,24 +133,19 @@ def signup():
         new_user = User(
             email=email,
             password_hash=hashed_password,
-            is_active=True
+            is_active=True,
+            is_admin=False  # Regular users start as non-admin
         )
         
         db.session.add(new_user)
-        db.session.flush() # Flush to get new_user.id
-        
-        # Every authenticated account has admin privileges.
-        new_admin = Admin(user_id=new_user.id)
-        db.session.add(new_admin)
-        roles = ['user', 'admin']
-            
         db.session.commit()
         
-        # Log successful signup
-        Log.create_log('info', f'New user signed up', context={'email': email, 'is_admin': True, 'user_id': str(new_user.id)})
+        # Log successful signup without storing PII in logs
+        Log.create_log('info', 'New user signed up', context={'user_id': str(new_user.id), 'is_admin': False})
         
         user_data = new_user.to_dict()
-        user_data['roles'] = roles
+        # Return actual user roles based on is_admin flag
+        user_data['roles'] = ['admin'] if new_user.is_admin else ['user']
         
         return jsonify({
             'message': 'User created successfully', 
@@ -160,7 +154,7 @@ def signup():
         
     except Exception as e:
         db.session.rollback()
-        Log.create_log('error', f'Error during signup: {str(e)}', context={'email': email})
+        Log.create_log('error', f'Error during signup: {str(e)}')
         return jsonify({'error': f'Failed to create user: {str(e)}'}), 500
 
 @auth_bp.route('/login', methods=['POST'])
@@ -183,23 +177,24 @@ def login():
     
     if not user:
         # Avoid user enumeration by giving a generic error
-        Log.create_log('warning', f'Failed login attempt (user not found)', context={'email': email})
+        Log.create_log('warning', 'Failed login attempt (user not found)')
         return jsonify({'error': 'Invalid email or password'}), 401
         
     try:
         # Verify password hash
         if not bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
-            Log.create_log('warning', f'Failed login attempt (bad password)', context={'email': email, 'user_id': str(user.id)})
+            Log.create_log('warning', 'Failed login attempt (bad password)', context={'user_id': str(user.id)})
             return jsonify({'error': 'Invalid email or password'}), 401
             
         if not user.is_active:
-            Log.create_log('warning', f'Failed login attempt (inactive user)', context={'email': email, 'user_id': str(user.id)})
+            Log.create_log('warning', 'Failed login attempt (inactive user)', context={'user_id': str(user.id)})
             return jsonify({'error': 'Account is inactive'}), 403
             
-        roles = ['user', 'admin']
+        # Return actual roles based on is_admin flag
+        roles = ['admin'] if user.is_admin else ['user']
             
         # Log successful login
-        Log.create_log('info', f'User logged in successfully', context={'email': email, 'user_id': str(user.id), 'roles': roles})
+        Log.create_log('info', 'User logged in successfully', context={'user_id': str(user.id), 'roles': roles})
         
         user_data = user.to_dict()
         user_data['roles'] = roles
@@ -213,5 +208,8 @@ def login():
         }), 200
         
     except Exception as e:
-        Log.create_log('error', f'Error during login: {str(e)}', context={'email': email})
+        if user:
+            Log.create_log('error', f'Error during login: {str(e)}', context={'user_id': str(user.id)})
+        else:
+            Log.create_log('error', f'Error during login: {str(e)}')
         return jsonify({'error': f'An unexpected error occurred'}), 500

@@ -116,6 +116,29 @@ class Email(db.Model):
         nullable=True
     )
 
+    # OVERRIDE COLUMNs
+    manual_override = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=True
+    )
+    override_verdict = db.Column(
+        db.String(20),
+        nullable=True
+    )
+    override_reason = db.Column(
+        db.Text,
+        nullable=True
+    )
+    overridden_by = db.Column(
+        db.String(100),
+        nullable=True
+    )
+    overridden_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
     # METADATA
 
     # When this email record was created

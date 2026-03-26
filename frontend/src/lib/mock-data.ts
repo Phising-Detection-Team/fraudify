@@ -1,8 +1,8 @@
 import { Agent, DashboardStats, EmailResult, Round, User } from "@/types";
 
 export const MOCK_USERS: User[] = [
-  { id: "u1", name: "Alice Security", email: "user@sentra.ai", role: "user", credits: 500 },
-  { id: "u2", name: "Bob Admin", email: "admin@sentra.ai", role: "admin", credits: 10000 },
+  { id: "u1", name: "Demo User", email: "user@sentra.ai", role: "user", credits: 500 },
+  { id: "u2", name: "Demo Admin", email: "admin@sentra.ai", role: "admin", credits: 10000 },
 ];
 
 export const MOCK_STATS_USER: DashboardStats = {

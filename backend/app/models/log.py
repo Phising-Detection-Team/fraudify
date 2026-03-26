@@ -11,6 +11,7 @@ Helps with:
 from datetime import datetime
 from . import db
 from sqlalchemy.orm import validates
+from app.utils.encryption import hash_email
 
 class Log(db.Model):
     """
@@ -92,12 +93,34 @@ class Log(db.Model):
 
         log.level = level
         log.message = message
-        log.context = context
+        log.context = Log._sanitize_context(context)
         log.round_id = round_id
 
         db.session.add(log)
         db.session.commit()
         return log
+
+    @staticmethod
+    def _sanitize_context(value, parent_key=None):
+        """Recursively hash email fields in context before persistence."""
+        key_has_email = isinstance(parent_key, str) and 'email' in parent_key.lower()
+
+        if isinstance(value, dict):
+            return {
+                key: Log._sanitize_context(val, parent_key=key)
+                for key, val in value.items()
+            }
+
+        if isinstance(value, list):
+            return [Log._sanitize_context(item, parent_key=parent_key) for item in value]
+
+        if isinstance(value, tuple):
+            return tuple(Log._sanitize_context(item, parent_key=parent_key) for item in value)
+
+        if key_has_email and isinstance(value, str):
+            return hash_email(value)
+
+        return value
 
     @validates('level')
     def validate_level(self, key, value):

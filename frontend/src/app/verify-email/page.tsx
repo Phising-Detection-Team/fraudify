@@ -4,6 +4,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { config } from "@/lib/config";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import { CheckCircle, XCircle } from "lucide-react";
@@ -22,7 +23,7 @@ function VerifyEmailContent() {
       return;
     }
 
-    fetch("http://localhost:5000/api/auth/verify-email", {
+    fetch(config.API.AUTH.VERIFY_EMAIL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),

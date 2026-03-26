@@ -1,5 +1,6 @@
 "use client";
 
+import { config } from "@/lib/config";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { LiveFeed } from "@/components/dashboard/LiveFeed";
 import { RoundTable } from "@/components/dashboard/RoundTable";
@@ -7,35 +8,52 @@ import { MOCK_STATS_USER, MOCK_ROUNDS } from "@/lib/mock-data";
 import { Mail, ShieldAlert, ShieldCheck, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { getUserStats, getUserRounds } from "@/lib/user-api";
 
 export default function UserDashboard() {
-  const [isDemo, setIsDemo] = useState(false);
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
 
   // Real data state
-  const [realStats] = useState({
+  const [stats, setStats] = useState({
     totalEmailsScanned: 0,
     phishingDetected: 0,
     markedSafe: 0,
-    creditsRemaining: 1000 // default starting credits
+    creditsRemaining: 1000, // default starting credits
   });
-  const [realRounds] = useState([]);
+  const [rounds, setRounds] = useState([]);
 
   useEffect(() => {
-    const demoFlag = localStorage.getItem("is-demo") === "true";
+    const demoFlag =
+      localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
     setIsDemo(demoFlag);
-    
-    if (!demoFlag) {
-      // TODO: Fetch from actual Backend API once ready.
-      // Currently defaulting to empty values as new users have no data.
+
+    if (demoFlag) {
+      setStats(MOCK_STATS_USER);
+      setRounds(MOCK_ROUNDS as any);
       setLoading(false);
+    } else if (session?.accessToken) {
+      const fetchData = async () => {
+        try {
+          const [statsData, roundsData] = await Promise.all([
+            getUserStats(session.accessToken),
+            getUserRounds(session.accessToken),
+          ]);
+          setStats(statsData);
+          setRounds(roundsData);
+        } catch (error) {
+          console.error("Failed to fetch user data:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
     } else {
       setLoading(false);
     }
-  }, []);
-
-  const stats = isDemo ? MOCK_STATS_USER : realStats;
-  const rounds = isDemo ? MOCK_ROUNDS : realRounds;
+  }, [session]);
 
   if (loading) return null;
 

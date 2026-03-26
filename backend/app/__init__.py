@@ -78,12 +78,16 @@ def _register_blueprints(app):
     Imports are inside the function to avoid circular imports.
     """
     from .routes import main_bp
+    from .routes.auth import auth_bp
+    from .routes.users import users_bp
     from .routes.rounds import rounds_bp
     from .routes.emails import emails_bp
     from .routes.logs import logs_bp
     from .routes.costs import costs_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(users_bp)
     app.register_blueprint(rounds_bp, url_prefix='/api')
     app.register_blueprint(emails_bp, url_prefix='/api')
     app.register_blueprint(logs_bp, url_prefix='/api')

@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { config } from "@/lib/config";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
@@ -33,7 +34,7 @@ function ResetPasswordForm() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/reset-password", {
+      const response = await fetch(config.API.AUTH.RESET_PASSWORD, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),

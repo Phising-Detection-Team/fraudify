@@ -7,25 +7,30 @@ import { MOCK_LIVE_FEED } from "@/lib/mock-data";
 import { EmailResult } from "@/types";
 
 export function LiveFeed({ isDemo }: { isDemo?: boolean }) {
-  const [feed, setFeed] = useState<EmailResult[]>(isDemo ? MOCK_LIVE_FEED : []);
+  const [feed, setFeed] = useState<EmailResult[]>([]);
 
   useEffect(() => {
-    if (!isDemo) return;
-    
-    // Simulate real-time data influx
-    const interval = setInterval(() => {
-      const newEvent: EmailResult = {
-        id: `ev-${Date.now()}`,
-        subject: `Automated Scan ${Math.floor(Math.random() * 1000)}`,
-        generatorResponse: "N/A",
-        detectorResponse: Math.random() > 0.7 ? "Suspicious sender domain detected." : "All heuristics neutral.",
-        verdict: Math.random() > 0.7 ? "phishing" : "safe",
-        confidence: Math.floor(Math.random() * 20) + 80,
-        timestamp: new Date().toISOString(),
-      };
-      setFeed(prev => [newEvent, ...prev].slice(0, 8));
-    }, 4000);
-    return () => clearInterval(interval);
+    if (isDemo) {
+      setFeed(MOCK_LIVE_FEED);
+      const interval = setInterval(() => {
+        const newEvent: EmailResult = {
+          id: `ev-${Date.now()}`,
+          subject: `Automated Scan ${Math.floor(Math.random() * 1000)}`,
+          generatorResponse: "N/A",
+          detectorResponse:
+            Math.random() > 0.7
+              ? "Suspicious sender domain detected."
+              : "All heuristics neutral.",
+          verdict: Math.random() > 0.7 ? "phishing" : "safe",
+          confidence: Math.floor(Math.random() * 20) + 80,
+          timestamp: new Date().toISOString(),
+        };
+        setFeed((prev) => [newEvent, ...prev].slice(0, 8));
+      }, 4000);
+      return () => clearInterval(interval);
+    } else {
+      // TODO: Implement real-time data fetching via WebSockets or polling
+    }
   }, [isDemo]);
 
   return (

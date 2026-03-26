@@ -1,5 +1,6 @@
 "use client";
 
+import { config } from "@/lib/config";
 import { MOCK_ROUNDS } from "@/lib/mock-data";
 import { ShieldAlert, ShieldCheck, ArrowLeft, Bot, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,7 +15,7 @@ export function RoundDetailView() {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const demoFlag = localStorage.getItem("is-demo") === "true";
+    const demoFlag = localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
     setIsDemo(demoFlag);
     setLoading(false);
   }, []);
