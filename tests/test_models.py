@@ -294,6 +294,40 @@ class TestLogConstraints:
             )
 
 
+class TestLogHelperMethods:
+    """Test Log helper methods."""
+
+    def test_create_log_hashes_email_context(self, db):
+        """Email in context should be hashed before persistence."""
+        created = Log.create_log(
+            'info',
+            'User login',
+            context={'email': 'User@Example.com', 'user_id': 'abc-123'}
+        )
+
+        assert created.context['email'].startswith('sha256:')
+        assert created.context['email'] != 'User@Example.com'
+        assert created.context['user_id'] == 'abc-123'
+
+    def test_create_log_hashes_nested_email_context(self, db):
+        """Nested email fields in dict/list should also be hashed."""
+        created = Log.create_log(
+            'warning',
+            'Nested context test',
+            context={
+                'details': {
+                    'user_email': 'nested@example.com',
+                    'emails': ['a@example.com', 'b@example.com'],
+                },
+                'meta': {'attempt': 1},
+            },
+        )
+
+        assert created.context['details']['user_email'].startswith('sha256:')
+        assert all(val.startswith('sha256:') for val in created.context['details']['emails'])
+        assert created.context['meta']['attempt'] == 1
+
+
 # ============================================================================
 # API Model Tests
 # ============================================================================

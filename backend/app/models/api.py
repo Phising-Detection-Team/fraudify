@@ -10,7 +10,7 @@ class API(db.Model):
     __tablename__ = 'api_calls'
 
     __table_args__ = (
-        db.CheckConstraint("agent_type IN ('generator','detector','judge')", name='ck_api_agent_type_enum'),
+        db.CheckConstraint("agent_type IN ('generator','detector')", name='ck_api_agent_type_enum'),
         db.CheckConstraint('token_used IS NULL OR token_used >= 0', name='ck_api_token_used_nonneg'),
         db.CheckConstraint('cost IS NULL OR cost >= 0', name='ck_api_cost_nonneg'),
         db.CheckConstraint('latency_ms IS NULL OR latency_ms >= 0', name='ck_api_latency_nonneg'),
@@ -36,7 +36,7 @@ class API(db.Model):
         nullable=True
     )
 
-    # Agent type (generator, detector, judge)
+    # Agent type (generator, detector)
     agent_type = db.Column(db.String(20))
 
     # Model Name
@@ -81,7 +81,7 @@ class API(db.Model):
     def validate_agent_type(self, key, value):
         if value is None:
             raise ValueError('agent_type is required')
-        allowed = {'generator', 'detector', 'judge'}
+        allowed = {'generator', 'detector'}
         if value not in allowed:
             raise ValueError(f'agent_type must be one of {allowed}')
         return value
