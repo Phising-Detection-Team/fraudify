@@ -17,7 +17,7 @@ for path in [PROJECT_ROOT, BACKEND_PATH, LLMS_PATH]:
         sys.path.insert(0, path)
 
 from app import create_app
-from app.models import db as _db, Round, Email, Log, API, Override
+from app.models import db as _db, Round, Email, Log, API, Override, User, Role, InviteCode
 
 
 @pytest.fixture(scope='session')
@@ -128,3 +128,69 @@ def sample_override(db, sample_email):
     db.session.add(override_obj)
     db.session.commit()
     return override_obj
+
+
+# ---------------------------------------------------------------------------
+# Auth fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def sample_role_user(db):
+    """Create the 'user' role."""
+    role = Role(name='user', description='Standard user')
+    db.session.add(role)
+    db.session.commit()
+    return role
+
+
+@pytest.fixture
+def sample_role_admin(db):
+    """Create the 'admin' role."""
+    role = Role(name='admin', description='Administrator')
+    db.session.add(role)
+    db.session.commit()
+    return role
+
+
+@pytest.fixture
+def sample_role_super_admin(db):
+    """Create the 'super_admin' role."""
+    role = Role(name='super_admin', description='Super administrator')
+    db.session.add(role)
+    db.session.commit()
+    return role
+
+
+@pytest.fixture
+def sample_user(db, sample_role_user):
+    """Create a regular user with hashed password."""
+    user = User(email='user@example.com', username='testuser')
+    user.set_password('Password1')
+    user.roles.append(sample_role_user)
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+@pytest.fixture
+def sample_admin(db, sample_role_admin):
+    """Create an admin user."""
+    user = User(email='admin@example.com', username='testadmin')
+    user.set_password('Admin123')
+    user.roles.append(sample_role_admin)
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+@pytest.fixture
+def sample_invite_code(db, sample_admin, sample_role_user):
+    """Create a valid invite code that grants the 'user' role."""
+    invite = InviteCode.generate(
+        created_by=sample_admin.id,
+        role_id=sample_role_user.id,
+        expires_in_days=7,
+    )
+    db.session.add(invite)
+    db.session.commit()
+    return invite

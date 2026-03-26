@@ -210,6 +210,21 @@ class Email(db.Model):
         default=0.0
     )
 
+    # User who created this email (nullable FK to preserve pre-auth rows)
+    created_by = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True
+    )
+
+    # Whether this email has been ingested into the training pipeline
+    training_data_ingested = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
+    )
+
     # METHODS
     def __repr__(self):
         """String representation for debugging"""
@@ -239,7 +254,9 @@ class Email(db.Model):
             'overridden_at': self.overridden_at,
             'created_at': self.created_at,
             'processing_time': self.processing_time,
-            'cost': self.cost
+            'cost': self.cost,
+            'created_by': self.created_by,
+            'training_data_ingested': self.training_data_ingested,
         }
 
     def get_final_verdict(self):

@@ -14,8 +14,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # PostgreSQL service container
     services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # PostgreSQL service container
       postgres:
         image: postgres:15-alpine
         env:
@@ -45,11 +55,18 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-asyncio
 
+    - name: Create migration test database
+      env:
+        PGPASSWORD: phishing_password
+      run: psql -h localhost -U phishing_user phishing_test_db -c "CREATE DATABASE phishing_test_db_migrations;"
+
     - name: Run tests
       env:
         DATABASE_URL: postgresql://phishing_user:phishing_password@localhost:5432/phishing_test_db
+        MIGRATION_DATABASE_URL: postgresql://phishing_user:phishing_password@localhost:5432/phishing_test_db_migrations
         FLASK_ENV: testing
         FLASK_CONFIG: testing
+        JWT_SECRET_KEY: test-jwt-secret-for-ci
       run: |
         python -m pytest tests/ -v --tb=short
 

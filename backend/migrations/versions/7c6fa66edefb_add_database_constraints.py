@@ -79,10 +79,10 @@ def downgrade() -> None:
     # Modify Rounds table
     with op.batch_alter_table('Rounds', schema=None) as batch_op:
         batch_op.alter_column('completed_at',
-                   existing_type=sa.DATETIME(),
+                   existing_type=sa.DateTime(),
                    nullable=True)
         batch_op.alter_column('started_at',
-                   existing_type=sa.DATETIME(),
+                   existing_type=sa.DateTime(),
                    nullable=True)
     
     # Recreate Logs index
@@ -115,7 +115,7 @@ def downgrade() -> None:
     sa.Column('verdict', sa.VARCHAR(length=20), nullable=False),
     sa.Column('overridden_by', sa.VARCHAR(length=100), nullable=True),
     sa.Column('reason', sa.TEXT(), nullable=True),
-    sa.Column('created_at', sa.DATETIME(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['email_test_id'], ['Emails.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )

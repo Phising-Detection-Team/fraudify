@@ -33,25 +33,38 @@ config = context.config
 if config.config_file_name:
     fileConfig(config.config_file_name)
 
-# Use DEV_DATABASE_URL or DATABASE_URL from environment, otherwise use alembic.ini
-database_url = os.environ.get('DEV_DATABASE_URL') or os.environ.get('PROD_DATABASE_URL')
-if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
-
-# add your model's MetaData object here
-# for 'autogenerate' support
-# Import all models to ensure they're registered with SQLAlchemy
-# Add parent app directory to path for imports
+# Resolve the database URL using the Flask app context when available (standard
+# Flask-Migrate pattern), then fall back to environment variables, then alembic.ini.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from app.models import db
-from app.models.email import Email
-from app.models.round import Round
-from app.models.log import Log
-from app.models.api import API
-from app.models.override import Override
+from app.models.email import Email          # noqa: F401
+from app.models.round import Round          # noqa: F401
+from app.models.log import Log              # noqa: F401
+from app.models.api import API              # noqa: F401
+from app.models.override import Override    # noqa: F401
+from app.models.user import User            # noqa: F401
+from app.models.role import Role            # noqa: F401
+from app.models.invite_code import InviteCode          # noqa: F401
+from app.models.training_data_log import TrainingDataLog  # noqa: F401
 
 target_metadata = db.Model.metadata
+
+try:
+    from flask import current_app
+    db_url = current_app.config.get('SQLALCHEMY_DATABASE_URI', '').replace('%', '%%')
+    if db_url:
+        config.set_main_option('sqlalchemy.url', db_url)
+except RuntimeError:
+    # No active Flask app context (e.g. running alembic CLI directly).
+    # Fall back to environment variables, then the alembic.ini placeholder.
+    database_url = (
+        os.environ.get('DATABASE_URL')
+        or os.environ.get('DEV_DATABASE_URL')
+        or os.environ.get('PROD_DATABASE_URL')
+    )
+    if database_url:
+        config.set_main_option('sqlalchemy.url', database_url)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

@@ -57,6 +57,15 @@ class BaseConfig:
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
     OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 
+    # JWT (Flask-JWT-Extended)
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', SECRET_KEY)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+
+    # Rate limiting (Flask-Limiter backed by Redis)
+    RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    RATELIMIT_DEFAULT = '60 per minute'
+
 
 class DevelopmentConfig(BaseConfig):
     """Development configuration."""
@@ -82,6 +91,9 @@ class TestingConfig(BaseConfig):
     SQLALCHEMY_ECHO = False
     WTF_CSRF_ENABLED = False
     SERVER_NAME = os.environ.get('TEST_SERVER_NAME', 'localhost')
+    # Use memory storage for rate limiter in tests (no Redis needed)
+    RATELIMIT_STORAGE_URI = 'memory://'
+    RATELIMIT_ENABLED = False
 
 
 class ProductionConfig(BaseConfig):

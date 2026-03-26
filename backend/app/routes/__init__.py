@@ -39,17 +39,17 @@ def health_check():
 
     # Redis
     try:
-        redis_client = current_app.config.get('REDIS_CLIENT')
-        if redis_client is not None:
-            redis_client.ping()
-            checks['redis'] = {'status': 'healthy'}
-        else:
-            checks['redis'] = {
-                'status': 'degraded',
-                'message': 'Redis client not configured',
-            }
+        import redis as redis_lib
+        redis_url = current_app.config.get('REDIS_URL', 'redis://localhost:6379/0')
+        r = redis_lib.from_url(redis_url)
+        r.ping()
+        checks['redis'] = {'status': 'healthy'}
     except Exception as e:
-        checks['redis'] = {'status': 'unhealthy', 'error': str(e)}
+        checks['redis'] = {'status': 'degraded', 'message': str(e)}
+
+    # JWT
+    jwt_secret = current_app.config.get('JWT_SECRET_KEY')
+    checks['jwt'] = {'status': 'healthy' if jwt_secret else 'degraded', 'configured': bool(jwt_secret)}
 
     status_code = 200 if overall_healthy else 503
     return jsonify({
