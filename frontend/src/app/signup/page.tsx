@@ -17,11 +17,11 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Default to just read
   const [allowTraining, setAllowTraining] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // Modal states
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -82,7 +82,7 @@ export default function SignupPage() {
   const handleConnectProvider = async (provider: 'gmail' | 'outlook') => {
     setLoading(true);
     try {
-      // 1. Create the user account securely BEFORE redirecting, 
+      // 1. Create the user account securely BEFORE redirecting,
       // preventing the need to store plaintext password in localStorage.
       const signupResponse = await fetch(`${config.API.BASE_URL}${config.API.AUTH.SIGNUP}`, {
         method: "POST",
@@ -93,33 +93,33 @@ export default function SignupPage() {
           name: name || null,
         })
       });
-      
+
       const signupData = await signupResponse.json();
-      
+
       // 409 means user exists, we can still proceed to link mailbox
       if (!signupResponse.ok && signupResponse.status !== 409) {
         alert(signupData.error || "Failed to create account");
         setLoading(false);
         return;
       }
-      
+
       // Save minimal safe identifiers for the callback, NOT the password
       const userId = signupData.user?.id;
       const roles = signupData.user?.roles || ['user'];
-      
+
       // 2. Obtain the OAuth Redirect URL
       const scope = allowTraining ? "read_and_train" : "read";
       const authParams = new URLSearchParams({ provider, scope });
       const authUrlResponse = await fetch(`${config.API.BASE_URL}${config.API.AUTH.AUTH_URL}?${authParams}`);
       const authUrlData = await authUrlResponse.json();
-      
+
       if (authUrlData.url) {
         // Only store safe data. NEVER store passwords in localStorage.
-        localStorage.setItem(config.STORAGE_KEYS.PENDING_SIGNUP, JSON.stringify({ 
-          email, 
-          userId, 
-          scope, 
-          roles 
+        localStorage.setItem(config.STORAGE_KEYS.PENDING_SIGNUP, JSON.stringify({
+          email,
+          userId,
+          scope,
+          roles
         }));
         window.location.href = authUrlData.url;
       } else {
@@ -141,7 +141,7 @@ export default function SignupPage() {
         className="glass-panel w-full max-w-md p-8 rounded-2xl relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent-cyan to-accent-purple" />
-        
+
         <div className="flex flex-col items-center mb-8">
           <Logo className="mb-6 scale-110" />
           <h1 className="text-2xl font-bold tracking-tight">Create your Account</h1>
@@ -150,12 +150,12 @@ export default function SignupPage() {
 
         <AnimatePresence mode="wait">
           {step === "details" && (
-            <motion.form 
+            <motion.form
               key="details"
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -50, opacity: 0 }}
-              onSubmit={handleNextToConsent} 
+              onSubmit={handleNextToConsent}
               className="space-y-4"
             >
               <div className="space-y-2">
@@ -179,8 +179,8 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={`w-full bg-background/50 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 ${
-                    email && !isEmailValid 
-                      ? "border-red-500/50 focus:ring-red-500/50" 
+                    email && !isEmailValid
+                      ? "border-red-500/50 focus:ring-red-500/50"
                       : "border-border/50 focus:ring-accent-cyan/50"
                   }`}
                   placeholder="you@example.com"
@@ -276,7 +276,7 @@ export default function SignupPage() {
               >
                 Continue <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
-              
+
               <div className="text-center border-t border-border/50 pt-4 mt-4">
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{" "}
@@ -289,7 +289,7 @@ export default function SignupPage() {
           )}
 
           {step === "consent" && (
-            <motion.div 
+            <motion.div
               key="consent"
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -314,13 +314,13 @@ export default function SignupPage() {
 
                 {/* Privacy Policy Checkbox */}
                 <label className={`flex items-start gap-3 cursor-pointer transition-all ${
-                  hasViewedPrivacy 
-                    ? "" 
+                  hasViewedPrivacy
+                    ? ""
                     : "opacity-60 cursor-not-allowed"
                 }`}>
                   <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border-2 border-border flex-shrink-0">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="absolute opacity-0 w-full h-full cursor-pointer"
                       disabled={!hasViewedPrivacy}
                       checked={privacyAgreed}
@@ -349,13 +349,13 @@ export default function SignupPage() {
 
                 {/* Terms & Agreements Checkbox */}
                 <label className={`flex items-start gap-3 cursor-pointer transition-all ${
-                  hasViewedTerms 
-                    ? "" 
+                  hasViewedTerms
+                    ? ""
                     : "opacity-60 cursor-not-allowed"
                 }`}>
                   <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border-2 border-border flex-shrink-0">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="absolute opacity-0 w-full h-full cursor-pointer"
                       disabled={!hasViewedTerms}
                       checked={termsAgreed}
@@ -387,8 +387,8 @@ export default function SignupPage() {
               <div className="space-y-4">
                 <label className="flex items-start gap-3 p-4 rounded-lg border border-border/50 cursor-pointer hover:bg-background/50 transition-colors">
                   <div className="w-5 h-5 rounded border-2 border-border flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="absolute opacity-0 w-5 h-5 cursor-pointer"
                       checked={allowTraining}
                       onChange={(e) => setAllowTraining(e.target.checked)}
@@ -422,7 +422,7 @@ export default function SignupPage() {
           )}
 
           {step === "modals" && (
-            <motion.div 
+            <motion.div
               key="modals"
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -436,15 +436,15 @@ export default function SignupPage() {
               </div>
 
               <label className={`flex items-start gap-3 p-4 rounded-lg border transition-all ${
-                hasViewedPrivacy 
-                  ? "border-border/50 cursor-pointer hover:bg-background/50" 
+                hasViewedPrivacy
+                  ? "border-border/50 cursor-pointer hover:bg-background/50"
                   : "border-amber-500/20 bg-amber-500/5 cursor-not-allowed"
               }`}>
                 <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border shrink-0" style={{
                   borderColor: hasViewedPrivacy ? undefined : "rgba(217, 119, 6, 0.3)"
                 }}>
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     className="absolute opacity-0 w-full h-full"
                     disabled={!hasViewedPrivacy}
                     checked={privacyAgreed}
@@ -469,7 +469,7 @@ export default function SignupPage() {
                     </button>
                   </div>
                   <p className={`text-xs mt-1 ${hasViewedPrivacy ? "text-muted-foreground" : "text-amber-600"}`}>
-                    {hasViewedPrivacy 
+                    {hasViewedPrivacy
                       ? "Review our privacy practices and data protection measures."
                       : "Click 'Read Now' to view the Privacy Policy before you can check this box."
                     }
@@ -478,15 +478,15 @@ export default function SignupPage() {
               </label>
 
               <label className={`flex items-start gap-3 p-4 rounded-lg border transition-all ${
-                hasViewedTerms 
-                  ? "border-border/50 cursor-pointer hover:bg-background/50" 
+                hasViewedTerms
+                  ? "border-border/50 cursor-pointer hover:bg-background/50"
                   : "border-amber-500/20 bg-amber-500/5 cursor-not-allowed"
               }`}>
                 <div className="mt-1 relative flex items-center justify-center w-5 h-5 rounded border shrink-0" style={{
                   borderColor: hasViewedTerms ? undefined : "rgba(217, 119, 6, 0.3)"
                 }}>
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     className="absolute opacity-0 w-full h-full"
                     disabled={!hasViewedTerms}
                     checked={termsAgreed}
@@ -511,7 +511,7 @@ export default function SignupPage() {
                     </button>
                   </div>
                   <p className={`text-xs mt-1 ${hasViewedTerms ? "text-muted-foreground" : "text-amber-600"}`}>
-                    {hasViewedTerms 
+                    {hasViewedTerms
                       ? "Review the terms of service and user agreement."
                       : "Click 'Read Now' to view the Terms & Agreements before you can check this box."
                     }
@@ -539,7 +539,7 @@ export default function SignupPage() {
           )}
 
           {step === "provider" && (
-            <motion.div 
+            <motion.div
               key="provider"
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -576,22 +576,22 @@ export default function SignupPage() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        <PrivacyPolicyModal 
-          isOpen={showPrivacyModal} 
-          onClose={() => {
-            setShowPrivacyModal(false);
-            setHasViewedPrivacy(true);
-          }} 
-        />
-        <TermsModal 
-          isOpen={showTermsModal} 
-          onClose={() => {
-            setShowTermsModal(false);
-            setHasViewedTerms(true);
-          }} 
-        />
       </motion.div>
+
+      <PrivacyPolicyModal
+        isOpen={showPrivacyModal}
+        onClose={() => {
+          setShowPrivacyModal(false);
+          setHasViewedPrivacy(true);
+        }}
+      />
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => {
+          setShowTermsModal(false);
+          setHasViewedTerms(true);
+        }}
+      />
     </div>
   );
 }
