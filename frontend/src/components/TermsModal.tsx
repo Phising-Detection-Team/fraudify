@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ShieldCheck, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -11,6 +11,15 @@ interface TermsModalProps {
 
 export function TermsModal({ isOpen, onClose }: TermsModalProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleScroll = () => setShowScrollTop(el.scrollTop > 200);
+    el.addEventListener("scroll", handleScroll);
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [isOpen]);
 
   // Reset scroll position when opened
   useEffect(() => {
@@ -35,7 +44,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-2"
           style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
@@ -46,34 +55,36 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="rounded-2xl w-full max-w-2xl flex flex-col overflow-hidden"
-            style={{ maxHeight: "85vh", backgroundColor: "#ffffff", color: "#111111" }}
+            className="rounded-2xl w-full max-w-6xl flex flex-col overflow-hidden bg-card text-foreground h-[98vh]"
+            style={{}}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="text-accent-cyan" size={22} />
                 <div>
-                  <h2 className="text-lg font-bold tracking-tight">Terms &amp; Agreements</h2>
-                  <p className="text-xs text-gray-500">Sentra — Last updated March 2026</p>
+                  <h2 className="text-lg font-bold tracking-tight text-foreground">Terms &amp; Agreements</h2>
+                  <p className="text-xs text-muted-foreground">Sentra — Last updated March 2026</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent-red/10 hover:bg-accent-red/20 text-accent-red transition-colors font-semibold text-sm"
                 aria-label="Close"
+                title="Close (ESC)"
               >
                 <X size={18} />
+                <span>Close</span>
               </button>
             </div>
 
             {/* Scrollable content */}
             <div
               ref={scrollRef}
-              className="overflow-y-auto flex-1 px-6 py-5 space-y-5 text-sm leading-relaxed text-gray-700"
+              className="overflow-y-auto flex-1 px-6 py-5 space-y-5 text-sm leading-relaxed text-foreground/80"
             >
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">1. Acceptance of Terms</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">1. Acceptance of Terms</h3>
                 <p>
                   By installing, accessing, or utilizing the Sentra browser extension (&ldquo;Extension&rdquo;) or its
                   accompanying web services (&ldquo;Service&rdquo;), you (&ldquo;User&rdquo;) agree to be bound by these
@@ -85,7 +96,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">2. Description of Service</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">2. Description of Service</h3>
                 <p>
                   Sentra provides a real-time security browser extension designed to identify and alert users to potential phishing websites,
                   malicious links, and deceptive online content. The Service evaluates web page safety using machine-learning algorithms,
@@ -99,7 +110,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">3. Eligibility</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">3. Eligibility</h3>
                 <p>
                   You must be at least 13 years old to use the Service. If you are between the ages of 13 and 18, you confirm that a
                   parent or legal guardian has reviewed and consented to these Terms on your behalf. By using Sentra, you represent and
@@ -108,7 +119,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">4. User Account &amp; Registration</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">4. User Account &amp; Registration</h3>
                 <p>
                   Accessing certain features of the Service requires account registration. You agree to provide and maintain accurate,
                   current, and complete information. You are solely responsible for protecting your account credentials and for all activities
@@ -122,7 +133,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">5. Data Collection &amp; Privacy</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">5. Data Collection &amp; Privacy</h3>
                 <p>
                   Your privacy is important to us. Your use of the Service is subject to our Privacy Policy, which is incorporated into these Terms
                   by reference. By using Sentra, you consent to our data practices:
@@ -142,7 +153,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">6. Permitted Use</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">6. Permitted Use</h3>
                 <p>You agree to use Sentra strictly for lawful, intended purposes. You are expressly prohibited from:</p>
                 <ul className="mt-2 ml-4 space-y-1 list-disc list-outside">
                   <li>Reverse-engineering, decompiling, or disassembling the Extension or backend infrastructure.</li>
@@ -155,7 +166,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">7. Intellectual Property</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">7. Intellectual Property</h3>
                 <p>
                   Sentra retains all rights, title, and interest in the Extension, Service, underlying software,
                   machine-learning models, trademarks, and documentation. These Terms grant you a limited, non-exclusive,
@@ -168,7 +179,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">8. Disclaimers &amp; Limitation of Liability</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">8. Disclaimers &amp; Limitation of Liability</h3>
                 <p>
                   THE SERVICE IS PROVIDED STRICTLY ON AN &ldquo;AS IS&rdquo; AND &ldquo;AS AVAILABLE&rdquo; BASIS WITHOUT EXPRESS
                   OR IMPLIED WARRANTIES OF ANY KIND. Sentra cannot guarantee the detection of every malicious site or phishing
@@ -182,7 +193,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">9. Indemnification</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">9. Indemnification</h3>
                 <p>
                   You agree to indemnify, defend, and hold harmless Sentra, its directors, employees, and agents from any claims,
                   damages, liabilities, and expenses (including legal fees) arising from your use of the Service, your breach of
@@ -191,7 +202,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">10. Termination</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">10. Termination</h3>
                 <p>
                   We reserve the right to suspend or terminate your access to the Service at our sole discretion, at any time,
                   and without prior notice or liability, particularly in cases of Terms violations.
@@ -199,7 +210,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">11. Changes to These Terms</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">11. Changes to These Terms</h3>
                 <p>
                   Sentra may modify these Terms periodically. In the event of material changes, we will provide at least 14
                   days&rsquo; notice via email or an in-extension alert before the updates take effect. Continued use of the
@@ -208,7 +219,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">12. Governing Law &amp; Dispute Resolution</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">12. Governing Law &amp; Dispute Resolution</h3>
                 <p>
                   These Terms shall be governed by the laws of the jurisdiction where Sentra is incorporated. Any disputes
                   arising from these Terms will first be addressed through good-faith negotiations. If a resolution cannot be
@@ -217,27 +228,21 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </section>
 
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">13. Contact</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">13. Contact</h3>
                 <p>For any questions or concerns regarding these Terms, please reach out to us:</p>
-                <address className="mt-2 not-italic text-gray-500">
+                <address className="mt-2 not-italic text-muted-foreground">
                   Sentra Support Team<br />
                   <span className="text-accent-cyan">cyberlab.dev@gmail.com</span>
                 </address>
               </section>
 
-              <p className="text-xs text-gray-500 text-center pt-4 border-t border-gray-200">
+              <p className="text-xs text-muted-foreground text-center pt-4 border-t border-border">
                 End of Terms &amp; Agreements &mdash; Version 1.0
               </p>
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 shrink-0 flex justify-end">
-              <button
-                onClick={onClose}
-                className="btn-primary px-6 py-2 text-sm"
-              >
-                Close
-              </button>
+            <div className="px-6 py-4 border-t border-border shrink-0 flex justify-end">
             </div>
           </motion.div>
         </motion.div>
