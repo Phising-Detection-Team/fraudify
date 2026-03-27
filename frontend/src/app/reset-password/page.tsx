@@ -34,7 +34,7 @@ function ResetPasswordForm() {
 
     setLoading(true);
     try {
-      const response = await fetch(config.API.AUTH.RESET_PASSWORD, {
+      const response = await fetch(`${config.API.BASE_URL}${config.API.AUTH.RESET_PASSWORD}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),
@@ -43,7 +43,7 @@ function ResetPasswordForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Failed to reset password. The link may have expired.");
+        setError(data.error || data.message || "Failed to reset password. The link may have expired.");
         return;
       }
 

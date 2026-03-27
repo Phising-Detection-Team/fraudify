@@ -1,6 +1,7 @@
 """User management endpoints."""
 
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from app import db
 from app.models.user import User
 from app.models.log import Log
@@ -10,17 +11,13 @@ users_bp = Blueprint('users', __name__, url_prefix='/api/users')
 
 
 @users_bp.route('', methods=['GET'])
+@jwt_required()
 def get_all_users():
     """Get all users (admin only)."""
-    requester_id = request.args.get('requester_id')
-    
-    if not requester_id:
-        return jsonify({'error': 'requester_id query parameter is required'}), 400
-    
-    # Verify requester is admin
-    requester = User.query.filter_by(id=requester_id).first()
-    if not requester or not requester.is_admin:
-        Log.create_log('warning', f'Unauthorized user list attempt', context={'requester_id': str(requester_id)})
+    claims = get_jwt()
+    if claims.get('role') != 'admin':
+        requester_id = get_jwt_identity()
+        Log.create_log('warning', 'Unauthorized user list attempt', context={'requester_id': requester_id})
         return jsonify({'error': 'Unauthorized - only admins can view all users'}), 403
     
     try:
@@ -39,6 +36,7 @@ def get_all_users():
 
 
 @users_bp.route('/<user_id>', methods=['GET'])
+@jwt_required()
 def get_user(user_id):
     """Get a specific user by ID."""
     try:
@@ -58,6 +56,7 @@ def get_user(user_id):
 
 
 @users_bp.route('/<user_id>/admin', methods=['GET'])
+@jwt_required()
 def check_admin_status(user_id):
     """Check if a user is an admin."""
     try:
@@ -78,10 +77,10 @@ def check_admin_status(user_id):
 
 
 @users_bp.route('/stats', methods=['GET'])
+@jwt_required()
 def get_user_stats():
     """Get statistics for a user or admin."""
-    # This would be replaced by a proper user identification mechanism
-    user_id = request.headers.get('Authorization').split(' ')[1]  # Placeholder
+    user_id = get_jwt_identity()
     user = User.query.get(user_id)
 
     if not user:

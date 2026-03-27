@@ -70,6 +70,8 @@ export const { handlers: { GET, POST }, auth, signIn, signOut } = NextAuth({
             isAdmin: backendUser.is_admin,
             isActive: backendUser.is_active,
             fromBackend: true,
+            accessToken: backendUser.accessToken,
+            refreshToken: backendUser.refreshToken,
           };
         }
 

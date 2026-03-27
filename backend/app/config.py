@@ -57,6 +57,16 @@ class BaseConfig:
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
     OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 
+    # Resend Email Service
+    RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+    RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'noreply@yourapp.com')
+    FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+
+    # JWT
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-dev-secret-change-in-production')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_MINUTES', 60)))
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 30)))
+
 
 class DevelopmentConfig(BaseConfig):
     """Development configuration."""

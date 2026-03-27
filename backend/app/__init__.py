@@ -2,6 +2,7 @@
 
 from flask import Flask
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
 
@@ -11,6 +12,7 @@ from .errors import register_error_handlers
 
 migrate = Migrate()
 socketio = SocketIO()
+jwt = JWTManager()
 
 # Graceful fallbacks for services that may not exist
 try:
@@ -46,6 +48,7 @@ def create_app(config_name=None):
 
     db.init_app(app)
     migrate.init_app(app, db)
+    jwt.init_app(app)
 
     CORS(app, resources={r'/api/*': {'origins': app.config.get('CORS_ORIGINS', '*')}})
     socketio.init_app(app, cors_allowed_origins=app.config.get('CORS_ORIGINS', '*'))

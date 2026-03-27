@@ -7,6 +7,8 @@ declare module "next-auth" {
     role?: string;
     fromDemo?: boolean;
     fromBackend?: boolean;
+    accessToken?: string;
+    refreshToken?: string;
   }
   interface Session {
     user: {
@@ -15,5 +17,6 @@ declare module "next-auth" {
       fromDemo?: boolean;
       fromBackend?: boolean;
     } & DefaultSession["user"]
+    accessToken?: string;
   }
 }

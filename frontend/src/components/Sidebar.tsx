@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { config } from "@/lib/config";
 import { useSession, signOut } from "next-auth/react";
+import { useLoading } from "@/context/LoadingContext";
 import { Logo } from "@/components/Logo";
 
 import {
@@ -45,7 +46,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
   }, [session]);
 
+  const { showLoader } = useLoading();
+
   const handleSignOut = async () => {
+    showLoader("Signing out...");
     localStorage.removeItem("sentra-role");
     localStorage.removeItem(config.STORAGE_KEYS.IS_DEMO);
     await signOut({ redirect: false });

@@ -34,7 +34,7 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-2"
           style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
           onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
@@ -43,37 +43,39 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="rounded-2xl w-full max-w-2xl flex flex-col overflow-hidden"
-            style={{ maxHeight: "85vh", backgroundColor: "#ffffff", color: "#111111" }}
+            className="rounded-2xl w-full max-w-6xl flex flex-col overflow-hidden bg-card text-foreground h-[98vh]"
+            style={{}}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
               <div className="flex items-center gap-3">
                 <Lock className="text-accent-purple" size={22} />
                 <div>
-                  <h2 className="text-lg font-bold tracking-tight" style={{ color: "hsl(var(--accent-purple))" }}>
+                  <h2 className="text-lg font-bold tracking-tight text-accent-purple">
                     Privacy Policy
                   </h2>
-                  <p className="text-xs text-gray-500">Sentra &mdash; Last Updated: March 2026</p>
+                  <p className="text-xs text-muted-foreground">Sentra &mdash; Last Updated: March 2026</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent-red/10 hover:bg-accent-red/20 text-accent-red transition-colors font-semibold text-sm"
                 aria-label="Close"
+                title="Close (ESC)"
               >
                 <X size={18} />
+                <span>Close</span>
               </button>
             </div>
 
             {/* Scrollable content */}
             <div
               ref={scrollRef}
-              className="overflow-y-auto flex-1 px-6 py-5 space-y-5 text-sm leading-relaxed text-gray-700"
+              className="overflow-y-auto flex-1 px-6 py-5 space-y-5 text-sm leading-relaxed text-foreground/80"
             >
               {/* 1 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">1. Introduction</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">1. Introduction</h3>
                 <p>
                   Welcome to Sentra (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;).
                   We respect your privacy and are committed to protecting your personal data. This Privacy Policy explains
@@ -89,13 +91,13 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 2 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">2. Information We Collect</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">2. Information We Collect</h3>
                 <p>
                   We collect information that identifies, relates to, or could reasonably be linked to you
                   (&ldquo;Personal Data&rdquo;) in the following ways:
                 </p>
 
-                <p className="font-semibold mt-3 mb-1 text-gray-800">A. Information You Provide to Us</p>
+                <p className="font-semibold mt-3 mb-1 text-foreground/90">A. Information You Provide to Us</p>
                 <ul className="ml-4 space-y-1 list-disc list-outside">
                   <li>
                     <strong>Account Information:</strong> When you register for an account, we may collect your email
@@ -107,7 +109,7 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
                   </li>
                 </ul>
 
-                <p className="font-semibold mt-3 mb-1 text-gray-800">B. Information We Collect Automatically</p>
+                <p className="font-semibold mt-3 mb-1 text-foreground/90">B. Information We Collect Automatically</p>
                 <p>When you use the Extension, we automatically collect certain information to provide and improve our threat detection:</p>
                 <ul className="mt-2 ml-4 space-y-1 list-disc list-outside">
                   <li>
@@ -125,7 +127,7 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 3 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">3. How We Use Your Information</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">3. How We Use Your Information</h3>
                 <p>We use the collected information for the following purposes:</p>
                 <ul className="mt-2 ml-4 space-y-1 list-disc list-outside">
                   <li>
@@ -149,7 +151,7 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 4 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">4. Data Sharing and Disclosure</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">4. Data Sharing and Disclosure</h3>
                 <p>
                   We do not sell your Personal Data. We may share your information only in the following circumstances:
                 </p>
@@ -168,17 +170,17 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 5 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">5. User Rights and Choices</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">5. User Rights and Choices</h3>
                 <p>Depending on your location, you have specific rights regarding your Personal Data:</p>
 
-                <p className="font-semibold mt-3 mb-1 text-gray-800">A. US State Privacy Rights</p>
+                <p className="font-semibold mt-3 mb-1 text-foreground/90">A. US State Privacy Rights</p>
                 <p>
                   Residents of certain US states (e.g., California, Virginia, Colorado) may have the right to request
                   access to, correction of, or deletion of their Personal Data, as well as the right to opt-out of
                   certain data processing.
                 </p>
 
-                <p className="font-semibold mt-3 mb-1 text-gray-800">B. Vietnam Decree&nbsp;13 Rights</p>
+                <p className="font-semibold mt-3 mb-1 text-foreground/90">B. Vietnam Decree&nbsp;13 Rights</p>
                 <p>Under Vietnam&rsquo;s Decree&nbsp;13, users have the right to:</p>
                 <ul className="mt-2 ml-4 space-y-1 list-disc list-outside">
                   <li>Be informed about the processing of their Personal Data.</li>
@@ -196,7 +198,7 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 6 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">6. Data Security</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">6. Data Security</h3>
                 <p>
                   We implement appropriate technical and organizational measures to protect your Personal Data against
                   unauthorized access, alteration, disclosure, or destruction. However, no internet transmission is
@@ -206,7 +208,7 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 7 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">7. Data Retention</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">7. Data Retention</h3>
                 <p>
                   We retain your Personal Data only for as long as necessary to fulfill the purposes outlined in this
                   Privacy Policy, unless a longer retention period is required or permitted by law. Account data is
@@ -216,7 +218,7 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 8 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">8. Children&rsquo;s Privacy (COPPA Compliance)</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">8. Children&rsquo;s Privacy (COPPA Compliance)</h3>
                 <p>
                   Our Service is not directed to children under the age of 13. We do not knowingly collect Personal Data
                   from children under 13. If we become aware that we have collected Personal Data from a child under 13
@@ -227,7 +229,7 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 9 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">9. International Data Transfers</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">9. International Data Transfers</h3>
                 <p>
                   Sentra operates primarily in the United States and Vietnam. By using the Service, you acknowledge that
                   your information may be transferred to, stored, and processed in countries outside of your country of
@@ -238,7 +240,7 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 10 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">10. Changes to This Privacy Policy</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">10. Changes to This Privacy Policy</h3>
                 <p>
                   We may update this Privacy Policy from time to time. We will notify you of any material changes by
                   posting the new Privacy Policy on this page and updating the &ldquo;Last Updated&rdquo; date. We may
@@ -248,30 +250,24 @@ export function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyModalProps)
 
               {/* 11 */}
               <section>
-                <h3 className="text-base font-semibold mb-2 text-gray-900">11. Contact Us</h3>
+                <h3 className="text-base font-semibold mb-2 text-foreground">11. Contact Us</h3>
                 <p>
                   If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices,
                   please contact us at:
                 </p>
-                <address className="mt-2 not-italic text-gray-500">
+                <address className="mt-2 not-italic text-muted-foreground">
                   Sentra Support Team<br />
                   <span className="text-accent-cyan">cyberlab.dev@gmail.com</span>
                 </address>
               </section>
 
-              <p className="text-xs text-gray-400 text-center pt-4 border-t border-gray-200">
+              <p className="text-xs text-muted-foreground text-center pt-4 border-t border-border">
                 Privacy Policy &mdash; Last Updated: March 2026
               </p>
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 shrink-0 flex justify-end">
-              <button
-                onClick={onClose}
-                className="btn-primary px-6 py-2 text-sm"
-              >
-                Close
-              </button>
+            <div className="px-6 py-4 border-t border-border shrink-0 flex justify-end">
             </div>
           </motion.div>
         </motion.div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signIn } from "next-auth/react";
 import { config } from "@/lib/config";
+import { useLoading } from "@/context/LoadingContext";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -13,6 +14,7 @@ import { ShieldCheck, LogIn, AlertCircle, Eye, EyeOff } from "lucide-react";
 export default function LoginPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { showLoader, hideLoader } = useLoading();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +34,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    showLoader("Signing in...");
 
     console.log("=== Login Attempt Start ===");
     console.log("Email:", email);
@@ -48,28 +51,30 @@ export default function LoginPage() {
 
     if (result?.error || !result?.ok) {
       console.log("NextAuth credentials failed:", result?.error);
+      hideLoader();
       setError("Wrong email or password");
       setLoading(false);
     } else {
       console.log("NextAuth credentials successful!");
-      
+      showLoader("Loading your dashboard...");
+
       const isDemoAdmin = email === config.DEMO_ACCOUNTS.ADMIN.email;
       const isDemoUser = email === config.DEMO_ACCOUNTS.USER.email;
       const isDemo = isDemoAdmin || isDemoUser;
-      
+
       localStorage.setItem(config.STORAGE_KEYS.IS_DEMO, isDemo ? "true" : "false");
-      
-      // Need to wait for session to be fetched or just let the redirect handle the router role. 
+
+      // Need to wait for session to be fetched or just let the redirect handle the router role.
       // Instead of guessing role based on Demo alone, we can fetch session to get role:
       const res = await fetch("/api/auth/session");
       const sessionData = await res.json();
-      
+
       const role = sessionData?.user?.role || "user";
       localStorage.setItem("sentra-role", role);
-      
+
       const targetRoute = role === "admin" ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
       console.log(`${isDemo ? 'Demo' : 'Backend'} login successful - Target route:`, targetRoute);
-      
+
       setLoading(false);
       setTimeout(() => {
         router.replace(targetRoute);

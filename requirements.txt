@@ -8,6 +8,9 @@ Flask-Cors==6.0.2
 Flask-Migrate==4.1.0
 Flask-SocketIO==5.6.0
 
+# Email services
+resend>=0.13.0
+
 # Database
 alembic==1.18.3
 psycopg2-binary>=2.9.5

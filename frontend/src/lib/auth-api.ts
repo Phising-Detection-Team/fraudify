@@ -27,6 +27,8 @@ export interface AuthResponse {
     created_at: string;
     updated_at: string;
   };
+  access_token?: string;
+  refresh_token?: string;
 }
 
 /**
@@ -51,7 +53,7 @@ export async function loginWithBackend(email: string, password: string) {
     }
 
     const data: AuthResponse = await response.json();
-    return data.user;
+    return { ...data.user, accessToken: data.access_token, refreshToken: data.refresh_token };
   } catch (error) {
     console.error('Backend login error:', error);
     return null;
@@ -93,12 +95,13 @@ export async function signupWithBackend(email: string, password: string) {
  * @param requesterAdminId UUID of admin user making the request
  * @returns Array of users if successful, null if failed
  */
-export async function getAllUsers(requesterAdminId: string) {
+export async function getAllUsers(accessToken: string) {
   try {
-    const response = await fetch(`${config.API.BASE_URL}/api/users?requester_id=${requesterAdminId}`, {
+    const response = await fetch(`${config.API.BASE_URL}/api/users`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
       },
     });
 
@@ -120,12 +123,13 @@ export async function getAllUsers(requesterAdminId: string) {
  * @param userId UUID of user to check
  * @returns Object with is_admin status, null if failed
  */
-export async function checkUserAdminStatus(userId: string) {
+export async function checkUserAdminStatus(userId: string, accessToken: string) {
   try {
     const response = await fetch(`${config.API.BASE_URL}/api/users/${userId}/admin`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
       },
     });
 

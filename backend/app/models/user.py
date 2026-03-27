@@ -41,12 +41,16 @@ class User(db.Model):
     terms_agreed = db.Column(db.Boolean, default=False, nullable=False)
     # Optional consent for improving Sentra; nullable preserves unanswered state.
     improve_sentra_opt_in = db.Column(db.Boolean, nullable=True)
+    # Email verification timestamp - tracks when user verified their email
+    email_verified_at = db.Column(db.DateTime, nullable=True, default=None)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
     email_permissions = db.relationship('EmailPermission', back_populates='user', cascade='all, delete-orphan')
     emails = db.relationship('Email', back_populates='owner', passive_deletes=True)
+    email_verification = db.relationship('EmailVerification', back_populates='user', uselist=False, cascade='all, delete-orphan')
+    password_resets = db.relationship('PasswordReset', back_populates='user', cascade='all, delete-orphan')
 
     # APPLICATION-LEVEL METHODS
     @validates('email')
@@ -120,6 +124,7 @@ class User(db.Model):
             'is_admin': self.is_admin,
             'terms_agreed': self.terms_agreed,
             'improve_sentra_opt_in': self.improve_sentra_opt_in,
+            'email_verified_at': self.email_verified_at.isoformat() if self.email_verified_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

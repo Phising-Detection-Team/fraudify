@@ -17,8 +17,8 @@ export const authConfig = {
       if (isOnDashboard) {
         if (!isLoggedIn) return false; // Redirect to login (NextAuth handles this)
         if (isOnAdmin && auth.user.role !== 'admin') {
-          // Redirect non-admin from admin dashboard
-          return false; // Let NextAuth handle the redirect
+          // Redirect non-admin users away from admin routes to their own dashboard
+          return Response.redirect(new URL(config.ROUTES.DASHBOARD_USER, nextUrl));
         }
         return true; // Allow access
       }
@@ -37,6 +37,8 @@ export const authConfig = {
         token.fromBackend = user.fromBackend;
         token.fromDemo = user.fromDemo;
         token.id = user.id;
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
       }
       if (trigger === "update" && session?.role) {
         token.role = session.role;
@@ -50,6 +52,7 @@ export const authConfig = {
         session.user.fromDemo = token.fromDemo as boolean;
         session.user.id = token.id as string;
       }
+      session.accessToken = token.accessToken as string | undefined;
       return session;
     }
   },

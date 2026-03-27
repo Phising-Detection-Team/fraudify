@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { config } from "@/lib/config";
+import { useLoading } from "@/context/LoadingContext";
 import { Logo } from "@/components/Logo";
 import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
 import { TermsModal } from "@/components/TermsModal";
@@ -10,10 +13,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShieldAlert, Database, Mail, ArrowRight, Check, Eye, EyeOff, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
-type SignupStep = "details" | "consent" | "modals" | "provider";
+type SignupStep = "details" | "consent" | "verification" | "provider";
 
 export default function SignupPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const { showLoader, hideLoader } = useLoading();
   const [step, setStep] = useState<SignupStep>("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,6 +28,14 @@ export default function SignupPage() {
   // Default to just read
   const [allowTraining, setAllowTraining] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Email verification states
+  const [userId, setUserId] = useState<string | null>(null);
+  const [verificationInput, setVerificationInput] = useState("");
+  const [verificationMethod, setVerificationMethod] = useState<"code" | "link">("code");
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
 
   // Modal states
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
@@ -69,9 +82,132 @@ export default function SignupPage() {
     }
   };
 
+  const handleSendVerificationEmail = async () => {
+    if (!privacyAgreed || !termsAgreed) {
+      alert("Please agree to Privacy Policy and Terms & Agreements");
+      return;
+    }
+
+    setEmailSending(true);
+    setVerificationError("");
+
+    try {
+      // First create the user account
+      const signupUrl = `${config.API.BASE_URL}${config.API.AUTH.SIGNUP}`;
+      const signupResponse = await fetch(signupUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          name: name || null,
+        })
+      });
+
+      const signupData = await signupResponse.json();
+
+      if (!signupResponse.ok && signupResponse.status !== 409) {
+        setVerificationError(signupData.error || "Failed to create account");
+        setEmailSending(false);
+        return;
+      }
+
+      const newUserId = signupData.user?.id;
+      setUserId(newUserId);
+
+      // Send verification email
+      const verificationUrl = `${config.API.BASE_URL}/api/auth/send-verification-email`;
+      const verificationResponse = await fetch(verificationUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: newUserId,
+          email: email,
+          name: name || null
+        })
+      });
+
+      const verificationData = await verificationResponse.json();
+
+      if (verificationResponse.ok && verificationData.success) {
+        setEmailSent(true);
+        setStep("verification");
+      } else {
+        setVerificationError(verificationData.error || "Failed to send verification email");
+      }
+    } catch (err) {
+      console.error(err);
+      setVerificationError("Error sending verification email");
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    if (!verificationInput.trim()) {
+      setVerificationError("Please enter a verification code or use the link sent to your email");
+      return;
+    }
+
+    setLoading(true);
+    setVerificationError("");
+
+    try {
+      const verifyUrl = `${config.API.BASE_URL}/api/auth/verify-email-code`;
+      const response = await fetch(verifyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          code: verificationMethod === "code" ? verificationInput : undefined,
+          token: verificationMethod === "link" ? verificationInput : undefined
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setVerificationError(data.error || "Verification failed");
+        return;
+      }
+
+      // Email verified — now establish a proper authenticated session via NextAuth
+      showLoader("Signing in...");
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (!result?.ok) {
+        hideLoader();
+        setVerificationError("Email verified but sign-in failed. Please log in manually.");
+        router.push(config.ROUTES.LOGIN);
+        return;
+      }
+
+      // Fetch session to determine role and redirect to the correct dashboard
+      showLoader("Loading your dashboard...");
+      const sessionRes = await fetch("/api/auth/session");
+      const sessionData = await sessionRes.json();
+      const role = sessionData?.user?.role || "user";
+      localStorage.setItem("sentra-role", role);
+
+      const target = role === "admin" ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
+      router.replace(target);
+    } catch (err) {
+      console.error(err);
+      hideLoader();
+      setVerificationError("Error verifying email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleNextToProvider = () => {
-    if (privacyAgreed && termsAgreed) {
-      setStep("provider");
+    if (privacyAgreed && termsAgreed && !emailSent) {
+      // Email hasn't been sent yet, trigger send
+      handleSendVerificationEmail();
     }
   };
 
@@ -86,7 +222,8 @@ export default function SignupPage() {
     try {
       // 1. Create the user account securely BEFORE redirecting,
       // preventing the need to store plaintext password in localStorage.
-      const signupResponse = await fetch(config.API.AUTH.SIGNUP, {
+      const signupUrl = `${config.API.BASE_URL}${config.API.AUTH.SIGNUP}`;
+      const signupResponse = await fetch(signupUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -111,7 +248,8 @@ export default function SignupPage() {
 
       // 2. Obtain the OAuth Redirect URL
       const scope = allowTraining ? "read_and_train" : "read";
-      const authUrlResponse = await fetch(`${config.API.AUTH.AUTH_URL}?provider=${provider}&scope=${scope}`);
+      const authUrlEndpoint = `${config.API.BASE_URL}${config.API.AUTH.AUTH_URL}?provider=${provider}&scope=${scope}`;
+      const authUrlResponse = await fetch(authUrlEndpoint);
       const authUrlData = await authUrlResponse.json();
 
       if (authUrlData.url) {
@@ -412,11 +550,138 @@ export default function SignupPage() {
                   Back
                 </button>
                 <button
-                  onClick={handleNextToProvider}
-                  disabled={!privacyAgreed || !termsAgreed}
-                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleSendVerificationEmail}
+                  disabled={!privacyAgreed || !termsAgreed || emailSending}
+                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Continue
+                  {emailSending ? "Sending..." : "Continue & Verify Email"}
+                  {!emailSending && <ArrowRight className="w-4 h-4" />}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === "verification" && (
+            <motion.div
+              key="verification"
+              initial={{ x: 50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -50, opacity: 0 }}
+              className="space-y-6"
+            >
+              <div className="bg-accent-cyan/10 border border-accent-cyan/20 p-4 rounded-xl">
+                <p className="text-sm text-muted-foreground">
+                  ✉️ We've sent a verification email to <span className="font-semibold text-accent-cyan">{email}</span>
+                </p>
+              </div>
+
+              {/* Verification Method Selection */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-4 rounded-lg border border-border/50 cursor-pointer hover:bg-background/50 transition-colors" style={{
+                  borderColor: verificationMethod === "code" ? "rgb(0, 217, 255)" : undefined,
+                  backgroundColor: verificationMethod === "code" ? "rgba(0, 217, 255, 0.05)" : undefined
+                }}>
+                  <input
+                    type="radio"
+                    value="code"
+                    checked={verificationMethod === "code"}
+                    onChange={(e) => {
+                      setVerificationMethod("code");
+                      setVerificationInput("");
+                      setVerificationError("");
+                    }}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <div>
+                    <h4 className="text-sm font-medium">Enter 6-digit code</h4>
+                    <p className="text-xs text-muted-foreground">Check your email for the code (expires in 15 minutes)</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-4 rounded-lg border border-border/50 cursor-pointer hover:bg-background/50 transition-colors" style={{
+                  borderColor: verificationMethod === "link" ? "rgb(0, 217, 255)" : undefined,
+                  backgroundColor: verificationMethod === "link" ? "rgba(0, 217, 255, 0.05)" : undefined
+                }}>
+                  <input
+                    type="radio"
+                    value="link"
+                    checked={verificationMethod === "link"}
+                    onChange={(e) => {
+                      setVerificationMethod("link");
+                      setVerificationInput("");
+                      setVerificationError("");
+                    }}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <div>
+                    <h4 className="text-sm font-medium">Click link in email</h4>
+                    <p className="text-xs text-muted-foreground">Paste the verification link or click it directly (expires in 24 hours)</p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Input Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  {verificationMethod === "code" ? "Verification Code" : "Verification Link/Token"}
+                </label>
+                <input
+                  type="text"
+                  value={verificationInput}
+                  onChange={(e) => {
+                    setVerificationInput(e.target.value);
+                    setVerificationError("");
+                  }}
+                  placeholder={verificationMethod === "code" ? "Enter 6-digit code" : "Paste token or link"}
+                  className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                />
+              </div>
+
+              {/* Error Message */}
+              {verificationError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-xs text-red-500 flex items-center gap-2">
+                    <AlertCircle size={14} /> {verificationError}
+                  </p>
+                </div>
+              )}
+
+              {/* Resend Option */}
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">
+                  Didn't receive an email?{" "}
+                  <button
+                    type="button"
+                    onClick={handleSendVerificationEmail}
+                    disabled={emailSending}
+                    className="text-accent-cyan hover:text-accent-cyan/80 transition-colors"
+                  >
+                    Resend
+                  </button>
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("consent");
+                    setEmailSent(false);
+                    setVerificationInput("");
+                    setVerificationError("");
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg border border-border/50 hover:bg-background/50 text-sm transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleVerifyEmail}
+                  disabled={loading || !verificationInput.trim()}
+                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? "Verifying..." : "Verify & Continue"}
+                  {!loading && <ArrowRight className="w-4 h-4" />}
                 </button>
               </div>
             </motion.div>
@@ -578,21 +843,22 @@ export default function SignupPage() {
           )}
         </AnimatePresence>
 
-        <PrivacyPolicyModal
-          isOpen={showPrivacyModal}
-          onClose={() => {
-            setShowPrivacyModal(false);
-            setHasViewedPrivacy(true);
-          }}
-        />
-        <TermsModal
-          isOpen={showTermsModal}
-          onClose={() => {
-            setShowTermsModal(false);
-            setHasViewedTerms(true);
-          }}
-        />
       </motion.div>
+
+      <PrivacyPolicyModal
+        isOpen={showPrivacyModal}
+        onClose={() => {
+          setShowPrivacyModal(false);
+          setHasViewedPrivacy(true);
+        }}
+      />
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => {
+          setShowTermsModal(false);
+          setHasViewedTerms(true);
+        }}
+      />
     </div>
   );
 }

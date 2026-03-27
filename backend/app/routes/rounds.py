@@ -11,6 +11,7 @@ import asyncio
 import threading
 from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request, current_app
+from flask_jwt_extended import jwt_required, get_jwt
 from sqlalchemy import desc, asc
 
 from app.models import db, Round, Email
@@ -30,7 +31,11 @@ SORTABLE_FIELDS = {
 
 
 @rounds_bp.route('/rounds', methods=['POST'])
+@jwt_required()
 def create_round():
+    claims = get_jwt()
+    if claims.get('role') != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
     """
     Start a new competition round.
 
@@ -82,6 +87,7 @@ def create_round():
 
 
 @rounds_bp.route('/rounds', methods=['GET'])
+@jwt_required()
 def list_rounds():
     """
     List rounds with pagination, filtering, and sorting.
@@ -120,6 +126,7 @@ def list_rounds():
 
 
 @rounds_bp.route('/rounds/<int:round_id>', methods=['GET'])
+@jwt_required()
 def get_round(round_id):
     """
     Get a single round by ID with computed metrics.
@@ -225,7 +232,11 @@ def _run_orchestration(app, round_id, total_emails):
 
 
 @rounds_bp.route('/rounds/<int:round_id>/run', methods=['POST'])
+@jwt_required()
 def run_round(round_id):
+    claims = get_jwt()
+    if claims.get('role') != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
     """
     Trigger AI orchestration for an existing round.
 
