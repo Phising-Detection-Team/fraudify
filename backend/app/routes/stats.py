@@ -66,6 +66,42 @@ def get_stats():
     }), 200
 
 
+@stats_bp.route('/stats/costs', methods=['GET'])
+@jwt_required()
+def get_cost_breakdown():
+    """
+    Return API cost breakdown grouped by agent type and model.
+
+    Returns items suitable for a pie chart, along with totals.
+    """
+    rows = (
+        db.session.query(
+            APICall.agent_type,
+            APICall.model_name,
+            func.count(APICall.id).label('calls'),
+            func.coalesce(func.sum(APICall.token_used), 0).label('tokens'),
+            func.coalesce(func.sum(APICall.cost), 0).label('cost'),
+        )
+        .group_by(APICall.agent_type, APICall.model_name)
+        .order_by(APICall.agent_type)
+        .all()
+    )
+
+    items = [
+        {
+            'agent_type': row.agent_type,
+            'model_name': row.model_name or 'unknown',
+            'calls': row.calls,
+            'tokens': int(row.tokens),
+            'cost': round(float(row.cost), 6),
+        }
+        for row in rows
+    ]
+    total = round(sum(r['cost'] for r in items), 6)
+
+    return jsonify({'success': True, 'items': items, 'total': total}), 200
+
+
 @stats_bp.route('/agents', methods=['GET'])
 @jwt_required()
 def get_agents():

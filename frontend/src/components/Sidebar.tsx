@@ -16,6 +16,7 @@ import {
   LogOut,
   Users,
   BrainCircuit,
+  ScanText,
   X,
 } from "lucide-react";
 
@@ -58,6 +59,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ]
     : [
         { name: "Dashboard", href: basePath, icon: LayoutDashboard },
+        { name: "Scan Email", href: `${basePath}/scan`, icon: ScanText },
         { name: "Credits", href: `${basePath}/credits`, icon: CreditCard },
         { name: "Settings", href: `${basePath}/settings`, icon: Settings },
       ];

@@ -1,90 +1,244 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
-import { ModelCost } from "@/types";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from "recharts";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { getCostBreakdown, type CostBreakdownItem } from "@/lib/admin-api";
+import { MOCK_ROUNDS } from "@/lib/mock-data";
+import { config } from "@/lib/config";
+import type { ModelCost } from "@/types";
+import { Loader2 } from "lucide-react";
 
-interface CostPieChartProps {
-  data: ModelCost[];
+// Ordered palette — assigned by index, not hardcoded to model name
+const PALETTE = [
+  "hsl(var(--accent-cyan))",
+  "hsl(var(--accent-purple))",
+  "hsl(var(--accent-red))",
+  "hsl(var(--accent-green))",
+  "#f59e0b",
+  "#8b5cf6",
+];
+
+function getColor(index: number) {
+  return PALETTE[index % PALETTE.length];
 }
 
-const COLORS = {
-  "gpt-4o": "hsl(var(--accent-cyan))",
-  "claude-sonnet-4": "hsl(var(--accent-purple))",
-  "gemini-1.5-pro": "hsl(var(--accent-red))",
-};
+function shortLabel(item: CostBreakdownItem) {
+  // Show just the model part after the last "/" if present
+  const model = item.model_name.includes("/")
+    ? item.model_name.split("/").pop()!
+    : item.model_name;
+  return model;
+}
 
-export function CostPieChart({ data }: CostPieChartProps) {
-  const chartData = data.map(d => ({
-    name: d.model,
-    value: d.cost,
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; payload: CostBreakdownItem & { color: string } }>;
+}
+
+function CustomTooltip({ active, payload }: CustomTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-card border border-border rounded-lg px-3 py-2 text-xs shadow-xl">
+      <p className="font-semibold mb-1" style={{ color: d.color }}>{d.model_name}</p>
+      <p className="text-muted-foreground capitalize">{d.agent_type}</p>
+      <p className="mt-1">${d.cost.toFixed(6)} <span className="text-muted-foreground">cost</span></p>
+      <p>{d.calls.toLocaleString()} <span className="text-muted-foreground">calls</span></p>
+      <p>{d.tokens.toLocaleString()} <span className="text-muted-foreground">tokens</span></p>
+    </div>
+  );
+}
+
+interface Props {
+  /** Pass for demo mode only. Real data is self-fetched. */
+  demoCosts?: ModelCost[];
+}
+
+export function CostPieChart({ demoCosts }: Props) {
+  const { data: session } = useSession();
+  const [items, setItems] = useState<CostBreakdownItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
+
+  useEffect(() => {
+    const demo = localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
+    setIsDemo(demo);
+
+    if (demo) {
+      // Convert mock ModelCost[] into our CostBreakdownItem shape
+      const merged = (demoCosts ?? MOCK_ROUNDS.flatMap((r) => r.apiCosts)).reduce<
+        Record<string, CostBreakdownItem>
+      >((acc, mc) => {
+        const key = mc.model;
+        if (!acc[key]) {
+          acc[key] = {
+            agent_type: mc.model.includes("claude") ? "detector" : "generator",
+            model_name: mc.model,
+            calls: 0,
+            tokens: 0,
+            cost: 0,
+          };
+        }
+        acc[key].calls += mc.calls;
+        acc[key].tokens += mc.inputTokens + mc.outputTokens;
+        acc[key].cost += mc.cost;
+        return acc;
+      }, {});
+      const arr = Object.values(merged);
+      setItems(arr);
+      setTotal(arr.reduce((s, i) => s + i.cost, 0));
+      setLoading(false);
+      return;
+    }
+
+    if (!session?.accessToken) {
+      setLoading(false);
+      return;
+    }
+
+    getCostBreakdown(session.accessToken)
+      .then(({ items: fetched, total: t }) => {
+        setItems(fetched);
+        setTotal(t);
+      })
+      .catch(() => {
+        setItems([]);
+        setTotal(0);
+      })
+      .finally(() => setLoading(false));
+  }, [session, demoCosts]);
+
+  const chartData = items.map((item, i) => ({
+    ...item,
+    name: shortLabel(item),
+    value: item.cost,
+    color: getColor(i),
   }));
 
-  const totalCost = data.reduce((acc, curr) => acc + curr.cost, 0);
+  const hasData = chartData.length > 0 && total > 0;
 
   return (
     <div className="glass-panel p-6 rounded-xl flex flex-col h-full">
       <h3 className="text-lg font-semibold mb-4">API Cost Breakdown</h3>
-      
-      <div className="flex-1 min-h-[250px] relative">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={90}
-              paddingAngle={5}
-              dataKey="value"
-              stroke="none"
-            >
-              {chartData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={COLORS[entry.name as keyof typeof COLORS] || "hsl(var(--muted-foreground))"} 
-                  className="hover:opacity-80 transition-all cursor-pointer"
-                />
-              ))}
-            </Pie>
-            <RechartsTooltip 
-              formatter={(value) => [`$${Number(value).toFixed(2)}`, "Cost"]}
-              contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "0.5rem" }}
-              itemStyle={{ color: "hsl(var(--foreground))" }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col mt-4">
-          <span className="text-muted-foreground text-xs font-medium uppercase tracking-widest">Total</span>
-          <span className="text-2xl font-bold">${totalCost.toFixed(2)}</span>
-        </div>
-      </div>
 
-      <div className="mt-6 border-t border-border/50 pt-4">
-        <table className="w-full text-xs text-left">
-          <thead className="text-muted-foreground">
-            <tr>
-              <th className="pb-2 font-medium">Model</th>
-              <th className="pb-2 font-medium text-right">Calls</th>
-              <th className="pb-2 font-medium text-right">Cost</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/20">
-            {data.map((item) => (
-              <tr key={item.model} className="hover:bg-muted/20">
-                <td className="py-2.5 flex items-center gap-2">
-                  <div 
-                    className="w-2.5 h-2.5 rounded-full" 
-                    style={{ backgroundColor: COLORS[item.model as keyof typeof COLORS] || "gray" }}
-                  />
-                  {item.model}
-                </td>
-                <td className="py-2.5 text-right tabular-nums">{item.calls.toLocaleString()}</td>
-                <td className="py-2.5 text-right font-medium tabular-nums">${item.cost.toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center text-muted-foreground gap-2">
+          <Loader2 size={18} className="animate-spin" />
+          <span className="text-sm">Loading…</span>
+        </div>
+      ) : (
+        <>
+          {/* Pie chart */}
+          <div className="relative" style={{ height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={hasData ? chartData : [{ name: "No data", value: 1 }]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={62}
+                  outerRadius={88}
+                  paddingAngle={hasData ? 4 : 0}
+                  dataKey="value"
+                  stroke="none"
+                  isAnimationActive
+                >
+                  {hasData
+                    ? chartData.map((entry, i) => (
+                        <Cell
+                          key={`cell-${i}`}
+                          fill={entry.color}
+                          className="hover:opacity-80 transition-opacity cursor-pointer"
+                        />
+                      ))
+                    : [
+                        <Cell
+                          key="empty"
+                          fill="hsl(var(--muted-foreground) / 0.15)"
+                        />,
+                      ]}
+                </Pie>
+                {hasData && (
+                  <RechartsTooltip content={<CustomTooltip />} />
+                )}
+              </PieChart>
+            </ResponsiveContainer>
+
+            {/* Centre label */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
+                Total
+              </span>
+              <span className="text-2xl font-bold mt-0.5">
+                ${total.toFixed(total < 0.01 ? 6 : 4)}
+              </span>
+            </div>
+          </div>
+
+          {/* Legend / breakdown table */}
+          <div className="mt-4 border-t border-border/50 pt-4 flex-1">
+            {hasData ? (
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="text-muted-foreground">
+                    <th className="pb-2 font-medium">Model</th>
+                    <th className="pb-2 font-medium text-center">Type</th>
+                    <th className="pb-2 font-medium text-right">Calls</th>
+                    <th className="pb-2 font-medium text-right">Cost</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/20">
+                  {chartData.map((item, i) => (
+                    <tr key={i} className="hover:bg-muted/20 transition-colors">
+                      <td className="py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <span className="font-mono truncate max-w-[120px]" title={item.model_name}>
+                            {shortLabel(item)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 text-center">
+                        <span
+                          className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                            item.agent_type === "generator"
+                              ? "bg-accent-cyan/10 text-accent-cyan"
+                              : "bg-accent-purple/10 text-accent-purple"
+                          }`}
+                        >
+                          {item.agent_type}
+                        </span>
+                      </td>
+                      <td className="py-2.5 text-right tabular-nums">
+                        {item.calls.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 text-right font-medium tabular-nums">
+                        ${item.cost.toFixed(item.cost < 0.01 ? 6 : 4)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">
+                No API calls recorded yet. Run a round to see cost data.
+              </p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

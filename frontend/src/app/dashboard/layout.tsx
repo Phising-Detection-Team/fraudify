@@ -2,10 +2,18 @@
 
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { Toaster } from "sonner";
+import { signOut } from "next-auth/react";
+import { registerSignOut } from "@/lib/api-fetch";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Register the signOut function so apiFetch can call it on 401
+  useEffect(() => {
+    registerSignOut(signOut);
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -18,6 +26,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </main>
       </div>
+      <Toaster position="top-right" theme="dark" richColors />
     </div>
   );
 }

@@ -12,10 +12,11 @@ from .role import Role, user_roles
 from .invite_code import InviteCode
 from .training_data_log import TrainingDataLog
 from .extension_instance import ExtensionInstance
+from .user_scan import UserScan
 
 __all__ = [
     'db',
     'Round', 'Email', 'Log', 'API', 'Override',
     'User', 'Role', 'user_roles', 'InviteCode', 'TrainingDataLog',
-    'ExtensionInstance',
+    'ExtensionInstance', 'UserScan',
 ]

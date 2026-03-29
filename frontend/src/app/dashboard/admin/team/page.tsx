@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Search, Users as UsersIcon, ShieldCheck, User as UserIcon, Loader2 } from "lucide-react";
-import { getUsers, type BackendUser } from "@/lib/admin-api";
+import { Search, Users as UsersIcon, ShieldCheck, User as UserIcon, Loader2, Link2, Check as CheckIcon } from "lucide-react";
+import { getUsers, createInviteCode, type BackendUser } from "@/lib/admin-api";
 
 function Initials({ name }: { name: string }) {
   const chars = name.split(/\s+/).map((w) => w[0]?.toUpperCase() ?? "").slice(0, 2).join("");
@@ -25,6 +25,24 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<BackendUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  const handleCopyInviteLink = async () => {
+    if (!session?.accessToken) return;
+    setInviteLoading(true);
+    try {
+      const invite = await createInviteCode(session.accessToken, "user", 7);
+      const link = `${window.location.origin}/signup?invite=${invite.code}`;
+      await navigator.clipboard.writeText(link);
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 3000);
+    } catch {
+      alert("Failed to generate invite link. Please try again.");
+    } finally {
+      setInviteLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!session?.accessToken || !session.user?.fromBackend) {
@@ -52,7 +70,7 @@ export default function AdminUsersPage() {
         </p>
       </div>
 
-      {/* Search + summary */}
+      {/* Search + summary + invite */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="relative w-full sm:w-72">
           <Search
@@ -67,11 +85,27 @@ export default function AdminUsersPage() {
             className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent-cyan"
           />
         </div>
-        {!loading && (
-          <span className="text-sm text-muted-foreground flex-shrink-0">
-            {filtered.length} / {users.length} users
-          </span>
-        )}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {!loading && (
+            <span className="text-sm text-muted-foreground">
+              {filtered.length} / {users.length} users
+            </span>
+          )}
+          <button
+            onClick={handleCopyInviteLink}
+            disabled={inviteLoading || inviteCopied}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/10 transition-colors disabled:opacity-60"
+          >
+            {inviteLoading ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : inviteCopied ? (
+              <CheckIcon size={13} />
+            ) : (
+              <Link2 size={13} />
+            )}
+            {inviteCopied ? "Copied!" : "Copy Invite Link"}
+          </button>
+        </div>
       </div>
 
       {/* Table */}

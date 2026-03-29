@@ -1,5 +1,7 @@
 """Auth routes: /api/auth/*"""
 
+import hashlib
+import secrets
 from datetime import datetime, timezone, timedelta
 
 import redis as redis_lib
@@ -11,8 +13,10 @@ from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required,
 )
+from flask_mail import Message
 from marshmallow import ValidationError
 
+from app import mail, limiter
 from app.models import db, User, Role, InviteCode
 from app.schemas.auth import SignupSchema, LoginSchema, InviteCodeSchema
 
@@ -51,6 +55,7 @@ def _require_role(*role_names):
 # ---------------------------------------------------------------------------
 
 @auth_bp.route('/auth/signup', methods=['POST'])
+@limiter.limit("10 per minute")
 def signup():
     """Self-registration. Assigns 'user' role automatically."""
     try:
@@ -81,6 +86,7 @@ def signup():
 # ---------------------------------------------------------------------------
 
 @auth_bp.route('/auth/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login():
     """Return JWT access + refresh token pair on valid credentials."""
     try:
@@ -176,6 +182,7 @@ def create_invite():
 # ---------------------------------------------------------------------------
 
 @auth_bp.route('/auth/admin/signup', methods=['POST'])
+@limiter.limit("10 per minute")
 def admin_signup():
     """Register a new user using an invite code. Assigns the role from the invite."""
     body = request.get_json(silent=True) or {}
@@ -270,3 +277,101 @@ def change_password():
     db.session.commit()
 
     return jsonify({'success': True, 'message': 'Password updated successfully'}), 200
+
+
+# ---------------------------------------------------------------------------
+# POST /api/auth/forgot-password
+# ---------------------------------------------------------------------------
+
+@auth_bp.route('/auth/forgot-password', methods=['POST'])
+@limiter.limit("5 per minute")
+def forgot_password():
+    """
+    Request a password reset email.
+
+    Always returns 200 to avoid leaking whether an email is registered.
+    """
+    body = request.get_json(silent=True) or {}
+    email = body.get('email', '').strip().lower()
+    if not email:
+        return jsonify({'success': False, 'error': 'email is required'}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        expiry_hours = current_app.config.get('PASSWORD_RESET_EXPIRY_HOURS', 1)
+
+        user.password_reset_token = token_hash
+        user.password_reset_expires = datetime.utcnow() + timedelta(hours=expiry_hours)
+        db.session.commit()
+
+        frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000')
+        reset_link = f"{frontend_url}/reset-password?token={raw_token}"
+
+        try:
+            msg = Message(
+                subject='Reset your Sentra password',
+                recipients=[user.email],
+                body=(
+                    f"Hi {user.username},\n\n"
+                    f"You requested a password reset. Click the link below to set a new password:\n\n"
+                    f"{reset_link}\n\n"
+                    f"This link expires in {expiry_hours} hour(s). If you didn't request this, "
+                    f"you can safely ignore this email.\n\n"
+                    f"— The Sentra Team"
+                ),
+                html=(
+                    f"<p>Hi <strong>{user.username}</strong>,</p>"
+                    f"<p>You requested a password reset. Click the button below to set a new password:</p>"
+                    f"<p><a href='{reset_link}' style='background:#2563eb;color:#fff;padding:10px 20px;"
+                    f"border-radius:6px;text-decoration:none;'>Reset Password</a></p>"
+                    f"<p>This link expires in <strong>{expiry_hours} hour(s)</strong>. "
+                    f"If you didn't request this, you can safely ignore this email.</p>"
+                    f"<p>— The Sentra Team</p>"
+                ),
+            )
+            mail.send(msg)
+        except Exception as exc:
+            current_app.logger.warning('Failed to send password reset email: %s', exc)
+
+    return jsonify({'success': True, 'message': 'If that email is registered you will receive a reset link shortly'}), 200
+
+
+# ---------------------------------------------------------------------------
+# POST /api/auth/reset-password
+# ---------------------------------------------------------------------------
+
+@auth_bp.route('/auth/reset-password', methods=['POST'])
+def reset_password():
+    """
+    Reset the user's password using a valid reset token.
+
+    Body (JSON):
+        token    (str, required): raw token from the reset email link
+        password (str, required): new password (min 8 chars)
+    """
+    body = request.get_json(silent=True) or {}
+    raw_token = body.get('token', '').strip()
+    new_password = body.get('password', '').strip()
+
+    if not raw_token or not new_password:
+        return jsonify({'success': False, 'error': 'token and password are required'}), 400
+
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    now = datetime.utcnow()
+
+    user = User.query.filter_by(password_reset_token=token_hash).first()
+    if not user or not user.password_reset_expires or user.password_reset_expires < now:
+        return jsonify({'success': False, 'error': 'Invalid or expired reset token'}), 400
+
+    try:
+        user.set_password(new_password)
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Password has been reset. You can now sign in.'}), 200

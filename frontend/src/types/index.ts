@@ -18,6 +18,8 @@ export type Agent = {
   lastActive: string;
   emailsProcessed: number;
   successRate: number;
+  totalCost?: number;
+  totalTokens?: number;
   status: "active" | "training" | "offline";
 };
 

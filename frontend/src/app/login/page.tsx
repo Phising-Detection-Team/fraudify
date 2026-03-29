@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signIn } from "next-auth/react";
 import { config } from "@/lib/config";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ShieldCheck, LogIn, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { ShieldCheck, LogIn, AlertCircle, Eye, EyeOff, Clock } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get("expired") === "1";
   const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -76,6 +78,13 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold tracking-tight">Welcome Back</h1>
           <p className="text-muted-foreground text-sm mt-1">Sign in to your Sentra platform</p>
         </div>
+
+        {sessionExpired && (
+          <div className="mb-6 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm p-3 rounded-lg flex items-center gap-2">
+            <Clock size={16} className="flex-shrink-0" />
+            Your session has expired. Please sign in again.
+          </div>
+        )}
 
         <form onSubmit={handleSignIn} className="space-y-6">
           {error && (
@@ -165,5 +174,13 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

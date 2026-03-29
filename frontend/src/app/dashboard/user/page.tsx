@@ -4,7 +4,7 @@ import { config } from "@/lib/config";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { MOCK_STATS_USER } from "@/lib/mock-data";
 import {
-  Mail, ShieldAlert, ShieldCheck, Zap,
+  Mail, ShieldAlert, ShieldCheck,
   Puzzle, CheckCircle2, Circle, Wifi, WifiOff,
   Activity, BarChart3, ShieldCheck as ShieldCheckIcon,
   ArrowRight,
@@ -169,7 +169,7 @@ function PlatformStatsPanel({ token }: { token: string }) {
         setPlatformStats({
           totalEmailsScanned: d.totalEmailsScanned,
           phishingDetected: d.phishingDetected,
-          activeAgents: d.activeAgents,
+          activeAgents: d.activeAgents ?? 0,
         })
       )
       .catch(() => {});

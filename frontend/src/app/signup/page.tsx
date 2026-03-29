@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { config } from "@/lib/config";
 import { Logo } from "@/components/Logo";
 import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
@@ -11,7 +12,10 @@ import Link from "next/link";
 
 type SignupStep = "details" | "consent" | "modals" | "provider";
 
-export default function SignupPage() {
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const inviteCode = searchParams.get("invite") ?? "";
+
   const [step, setStep] = useState<SignupStep>("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -82,16 +86,25 @@ export default function SignupPage() {
   const handleConnectProvider = async (provider: 'gmail' | 'outlook') => {
     setLoading(true);
     try {
-      // 1. Create the user account securely BEFORE redirecting,
-      // preventing the need to store plaintext password in localStorage.
-      const signupResponse = await fetch(`${config.API.BASE_URL}${config.API.AUTH.SIGNUP}`, {
+      // 1. Create the user account securely BEFORE redirecting.
+      // If an invite code is present in the URL, use the admin signup endpoint.
+      const signupEndpoint = inviteCode
+        ? config.API.AUTH.ADMIN_SIGNUP
+        : config.API.AUTH.SIGNUP;
+
+      const signupBody: Record<string, string | null> = {
+        email,
+        password,
+        username: name || email.split("@")[0],
+      };
+      if (inviteCode) {
+        signupBody.invite_code = inviteCode;
+      }
+
+      const signupResponse = await fetch(`${config.API.BASE_URL}${signupEndpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          name: name || null,
-        })
+        body: JSON.stringify(signupBody),
       });
 
       const signupData = await signupResponse.json();
@@ -593,5 +606,13 @@ export default function SignupPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   );
 }

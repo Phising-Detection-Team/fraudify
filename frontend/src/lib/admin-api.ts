@@ -1,5 +1,6 @@
 import { config } from "./config";
 import type { Round, Agent, DashboardStats } from "@/types";
+import { apiFetch } from "./api-fetch";
 
 const API_URL = config.API.BASE_URL;
 
@@ -18,7 +19,7 @@ function mapStatus(status: string): Round["status"] {
 // ---------------------------------------------------------------------------
 
 export const getAdminStats = async (token: string): Promise<DashboardStats> => {
-  const res = await fetch(`${API_URL}/api/stats`, {
+  const res = await apiFetch(`${API_URL}/api/stats`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch stats");
@@ -39,7 +40,7 @@ export const getAdminStats = async (token: string): Promise<DashboardStats> => {
 // ---------------------------------------------------------------------------
 
 export const getAdminRounds = async (token: string): Promise<Round[]> => {
-  const res = await fetch(`${API_URL}/api/rounds`, {
+  const res = await apiFetch(`${API_URL}/api/rounds`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch rounds");
@@ -61,7 +62,7 @@ export const createRound = async (
   token: string,
   totalEmails: number
 ): Promise<{ id: number }> => {
-  const res = await fetch(`${API_URL}/api/rounds`, {
+  const res = await apiFetch(`${API_URL}/api/rounds`, {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ total_emails: totalEmails }),
@@ -79,7 +80,7 @@ export const runRound = async (
   roundId: number,
   parallelWorkflows = 2
 ): Promise<void> => {
-  const res = await fetch(`${API_URL}/api/rounds/${roundId}/run`, {
+  const res = await apiFetch(`${API_URL}/api/rounds/${roundId}/run`, {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ parallel_workflows: parallelWorkflows }),
@@ -91,7 +92,7 @@ export const runRound = async (
 };
 
 export const getRound = async (token: string, roundId: number | string): Promise<Round> => {
-  const res = await fetch(`${API_URL}/api/rounds/${roundId}`, {
+  const res = await apiFetch(`${API_URL}/api/rounds/${roundId}`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch round");
@@ -114,7 +115,7 @@ export const getRound = async (token: string, roundId: number | string): Promise
 // ---------------------------------------------------------------------------
 
 export const getAdminAgents = async (token: string): Promise<Agent[]> => {
-  const res = await fetch(`${API_URL}/api/agents`, {
+  const res = await apiFetch(`${API_URL}/api/agents`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch agents");
@@ -128,8 +129,36 @@ export const getAdminAgents = async (token: string): Promise<Agent[]> => {
     lastActive: String(item.last_active ?? ""),
     emailsProcessed: Number(item.call_count ?? 0),
     successRate: 100,
+    totalCost: Number(item.total_cost ?? 0),
+    totalTokens: Number(item.total_tokens ?? 0),
     status: (item.status as Agent["status"]) ?? "active",
   }));
+};
+
+// ---------------------------------------------------------------------------
+// Cost breakdown (per agent type + model)
+// ---------------------------------------------------------------------------
+
+export interface CostBreakdownItem {
+  agent_type: string;
+  model_name: string;
+  calls: number;
+  tokens: number;
+  cost: number;
+}
+
+export interface CostBreakdown {
+  items: CostBreakdownItem[];
+  total: number;
+}
+
+export const getCostBreakdown = async (token: string): Promise<CostBreakdown> => {
+  const res = await apiFetch(`${API_URL}/api/stats/costs`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch cost breakdown");
+  const json = await res.json();
+  return { items: json.items ?? [], total: json.total ?? 0 };
 };
 
 // ---------------------------------------------------------------------------
@@ -145,7 +174,7 @@ export interface LogEntry {
 }
 
 export const getLogs = async (token: string, limit = 5): Promise<LogEntry[]> => {
-  const res = await fetch(`${API_URL}/api/logs?per_page=${limit}`, {
+  const res = await apiFetch(`${API_URL}/api/logs?per_page=${limit}`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch logs");
@@ -167,7 +196,7 @@ export interface BackendUser {
 }
 
 export const getMe = async (token: string): Promise<BackendUser> => {
-  const res = await fetch(`${API_URL}/api/auth/me`, {
+  const res = await apiFetch(`${API_URL}/api/auth/me`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch profile");
@@ -180,7 +209,7 @@ export const updatePassword = async (
   currentPassword: string,
   newPassword: string
 ): Promise<void> => {
-  const res = await fetch(`${API_URL}/api/auth/me/password`, {
+  const res = await apiFetch(`${API_URL}/api/auth/me/password`, {
     method: "PUT",
     headers: authHeaders(token),
     body: JSON.stringify({
@@ -213,7 +242,7 @@ export interface ExtensionInstance {
 }
 
 export const getExtensionInstances = async (token: string): Promise<ExtensionInstance[]> => {
-  const res = await fetch(`${API_URL}/api/extension/instances`, {
+  const res = await apiFetch(`${API_URL}/api/extension/instances`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch extension instances");
@@ -224,7 +253,7 @@ export const getExtensionInstances = async (token: string): Promise<ExtensionIns
 export const getAllExtensionInstances = async (
   token: string
 ): Promise<{ data: ExtensionInstance[]; total: number; active: number }> => {
-  const res = await fetch(`${API_URL}/api/extension/instances/all`, {
+  const res = await apiFetch(`${API_URL}/api/extension/instances/all`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch all extension instances");
@@ -237,7 +266,7 @@ export const registerExtensionInstance = async (
   browser?: string,
   osName?: string
 ): Promise<ExtensionInstance> => {
-  const res = await fetch(`${API_URL}/api/extension/register`, {
+  const res = await apiFetch(`${API_URL}/api/extension/register`, {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ browser, os_name: osName }),
@@ -255,10 +284,39 @@ export const registerExtensionInstance = async (
 // ---------------------------------------------------------------------------
 
 export const getUsers = async (token: string): Promise<BackendUser[]> => {
-  const res = await fetch(`${API_URL}/api/users`, {
+  const res = await apiFetch(`${API_URL}/api/users`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch users");
   const json = await res.json();
   return (json.items ?? json.data ?? []) as BackendUser[];
+};
+
+// ---------------------------------------------------------------------------
+// Invite codes (admin)
+// ---------------------------------------------------------------------------
+
+export interface InviteCode {
+  code: string;
+  role_name: string;
+  expires_at: string | null;
+  used: boolean;
+}
+
+export const createInviteCode = async (
+  token: string,
+  roleName = "user",
+  expiresInDays = 7
+): Promise<InviteCode> => {
+  const res = await apiFetch(`${API_URL}/api/auth/admin/invite`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ role_name: roleName, expires_in_days: expiresInDays }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error ?? "Failed to create invite code");
+  }
+  const json = await res.json();
+  return json.invite as InviteCode;
 };

@@ -7,554 +7,84 @@
   [next]   - Environments: .env.local
   [next] 
   [next]  ✓ Starting...
-  [next]  ✓ Ready in 1268ms
-  [next]  ✓ Compiled /src/middleware in 239ms (204 modules)
+  [next]  ✓ Ready in 807ms
+  [next]  ○ Compiling /src/middleware ...
+  [next]  ✓ Compiled /src/middleware in 736ms (204 modules)
   [next]  ○ Compiling / ...
-  [next]  ✓ Compiled / in 1440ms (515 modules)
-  [next]  GET / 307 in 1724ms
-  [next]  ✓ Compiled in 283ms (250 modules)
-  [next]  GET / 307 in 33ms
+  [next]  ✓ Compiled / in 1785ms (533 modules)
+  [next]  GET / 307 in 1970ms
+  [next]  ✓ Compiled in 201ms (250 modules)
   [next]  ○ Compiling /login ...
-  [next]  ✓ Compiled /login in 901ms (1385 modules)
-  [next]  GET /login 200 in 1015ms
-  [next]  ✓ Compiled /api/auth/[...nextauth] in 189ms (851 modules)
-  [next]  GET /api/auth/session 200 in 467ms
-  [next]  GET /api/auth/session 200 in 32ms
-  [next]  ○ Compiling /dashboard/admin ...
-  [next]  ✓ Compiled /dashboard/admin in 1228ms (2512 modules)
-  [next]  GET /api/auth/session 200 in 1331ms
-  [next]  GET /api/auth/session 200 in 20ms
-  [next]  GET /api/auth/session 200 in 23ms
-  [next]  GET /api/auth/session 200 in 13ms
-  [next]  GET /api/auth/session 200 in 31ms
-  [next]  GET /api/auth/session 200 in 14ms
-  [next]  GET /api/auth/csrf 200 in 13ms
-  [next]  POST /api/auth/signout 200 in 49ms
-  [next]  GET /api/auth/session 200 in 6ms
-  [next]  ○ Compiling /extension ...
-  [next]  ✓ Compiled /extension in 869ms (2374 modules)
-  [next]  GET /extension 200 in 969ms
-  [next]  ✓ Compiled /api/auth/[...nextauth] in 165ms (1349 modules)
-  [next]  GET /api/auth/session 200 in 245ms
-  [next]  GET /api/auth/session 200 in 8ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  GET /api/auth/session 200 in 6ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/session 200 in 8ms
-  [next]  GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard%2Fadmin 200 in 97ms
-  [next]  GET /api/auth/session 200 in 22ms
-  [next]  GET /api/auth/session 200 in 7ms
-  [next]  GET /api/auth/session 200 in 7ms
-  [next]  GET /api/auth/session 200 in 6ms
-  [next]  GET /api/auth/session 200 in 8ms
-  [next]  GET /api/auth/session 200 in 6ms
-  [next]  GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard%2Fadmin 200 in 22ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  GET /api/auth/session 200 in 6ms
-  [next]  GET /api/auth/session 200 in 8ms
-  [next]  GET /api/auth/session 200 in 7ms
-  [next]  GET /api/auth/session 200 in 7ms
-  [next]  GET /api/auth/providers 200 in 18ms
-  [next]  GET /api/auth/csrf 200 in 6ms
-  [next]  POST /api/auth/callback/credentials? 200 in 285ms
+  [next]  ✓ Compiled /login in 4.3s (1387 modules)
+  [next]  GET /login 200 in 4409ms
+  [next]  GET / 307 in 27ms
+  [next]  GET /login 200 in 17ms
+  [next]  ✓ Compiled /icon.svg in 420ms (852 modules)
+  [next]  ✓ Compiled (881 modules)
+  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 572ms
+  [next]  GET /api/auth/session 200 in 822ms
   [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /api/auth/session 200 in 22ms
-  [next]  ○ Compiling /dashboard/admin/training ...
-  [next]  ✓ Compiled /dashboard/admin/training in 766ms (2648 modules)
-  [next]  GET /api/auth/session 200 in 63ms
-  [next]  GET /api/auth/session 200 in 13ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /api/auth/session 200 in 14ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  GET /api/auth/session 200 in 23ms
-  [next]  GET /api/auth/session 200 in 54ms
-  [next]  GET /api/auth/session 200 in 39ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /api/auth/session 200 in 17ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  ○ Compiling /dashboard/user ...
-  [next]  ✓ Compiled /dashboard/user in 732ms (2664 modules)
-  [next]  GET /dashboard/user 200 in 860ms
-  [next]  GET /api/auth/session 200 in 57ms
-  [next]  GET /api/auth/session 200 in 22ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /api/auth/session 200 in 16ms
-  [next]  GET /api/auth/session 200 in 17ms
-  [next]  GET /api/auth/session 200 in 12ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /api/auth/session 200 in 22ms
-  [next]  GET /api/auth/session 200 in 15ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /api/auth/session 200 in 12ms
-  [next]  GET /api/auth/session 200 in 14ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  GET /api/auth/session 200 in 28ms
-  [next]  GET /api/auth/session 200 in 8ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/session 200 in 45ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /api/auth/session 200 in 17ms
-  [next]  GET /dashboard/admin 200 in 109ms
-  [next]  ○ Compiling /icon.svg ...
-  [next]  ✓ Compiled /icon.svg in 676ms (1451 modules)
-  [next]  GET /api/auth/session 200 in 941ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 1000ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /api/auth/session 200 in 16ms
-  [next]  GET /api/auth/session 200 in 12ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  GET /api/auth/session 200 in 12ms
-  [next]  GET /api/auth/session 200 in 15ms
-  [next]  GET /api/auth/csrf 200 in 8ms
-  [next]  POST /api/auth/signout 200 in 43ms
-  [next]  GET /api/auth/session 200 in 7ms
-  [next]  GET /api/auth/session 200 in 31ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  ○ Compiling /signup ...
-  [next]  ✓ Compiled /signup in 971ms (2711 modules)
-  [next]  GET /signup 200 in 102ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 15ms
-  [next]  GET /api/auth/session 200 in 47ms
-  [next]  GET /api/auth/session 200 in 6ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  GET /api/auth/session 200 in 8ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  ✓ Compiled in 598ms (1481 modules)
-  [next]  ✓ Compiled in 76ms (204 modules)
-  [next]  ✓ Compiled in 37ms (204 modules)
-  [next]  ✓ Compiled in 58ms (204 modules)
-  [next]  ✓ Compiled in 614ms (1264 modules)
-  [next]  ✓ Compiled in 181ms (1264 modules)
-  [next]  ✓ Compiled in 708ms (2527 modules)
-  [next]  ✓ Compiled in 337ms (1264 modules)
-  [next]  ✓ Compiled in 902ms (2541 modules)
-  [next]  ✓ Compiled in 639ms (2543 modules)
-  [next]  ✓ Compiled in 879ms (2733 modules)
-  [next]  ✓ Compiled in 674ms (2733 modules)
-  [next]  ✓ Compiled in 332ms (1265 modules)
-  [next]  ✓ Compiled in 185ms (1265 modules)
-  [next]  ✓ Compiled in 158ms (1265 modules)
-  [next]  ✓ Compiled in 186ms (1265 modules)
-  [next]  ✓ Compiled in 683ms (2747 modules)
-  [next]  ✓ Compiled in 395ms (2733 modules)
-  [next]  ✓ Compiled in 992ms (2543 modules)
-  [next]  ✓ Compiled / in 497ms (1286 modules)
-  [next]  GET / 307 in 704ms
-  [next]  GET /login 200 in 63ms
-  [next]  ○ Compiling /api/auth/[...nextauth] ...
-  [next]  ✓ Compiled /api/auth/[...nextauth] in 515ms (1429 modules)
-  [next]  GET /api/auth/session 200 in 785ms
-  [next]  GET /api/auth/session 200 in 22ms
   [next]  GET /api/auth/session 200 in 7ms
   [next]  GET /api/auth/session 200 in 8ms
-  [next]  ○ Compiling /_not-found ...
-  [next]  ✓ Compiled /_not-found in 733ms (2683 modules)
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 854ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 14ms
-  [next]  GET /login 200 in 46ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 14ms
+  [next]  ✓ Compiled /_not-found in 157ms (1562 modules)
+  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 214ms
   [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 18ms
-  [next]  ✓ Compiled /icon.svg in 260ms (1459 modules)
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 640ms
-  [next]  GET /api/auth/session 200 in 630ms
-  [next]  GET /api/auth/session 200 in 631ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  ○ Compiling /extension ...
-  [next]  ✓ Compiled /extension in 1000ms (2719 modules)
-  [next]  GET /extension 200 in 1109ms
-  [next]  GET /api/auth/session 200 in 64ms
-  [next]  GET /api/auth/session 200 in 14ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /api/auth/session 200 in 13ms
-  [next]  GET /login 200 in 42ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 30ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 19ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 18ms
-  [next]  GET /api/auth/session 200 in 43ms
-  [next]  GET /api/auth/session 200 in 44ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/session 200 in 18ms
-  [next]  GET /api/auth/session 200 in 7ms
-  [next]  ✓ Compiled in 695ms (2671 modules)
-  [next]  GET /api/auth/providers 200 in 44ms
-  [next]  GET /api/auth/csrf 200 in 8ms
-  [next] Login failed: 400 BAD REQUEST
-  [next] [31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
-  [next]     at Module.callback (webpack-internal:///(rsc)/./node_modules/@auth/core/lib/actions/callback/index.js:246:23)
-  [next]     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-  [next]     at async AuthInternal (webpack-internal:///(rsc)/./node_modules/@auth/core/lib/index.js:70:24)
-  [next]     at async Auth (webpack-internal:///(rsc)/./node_modules/@auth/core/index.js:130:34)
-  [next]     at async /home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:57228
-  [next]     at async eT.execute (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:46851)
-  [next]     at async eT.handle (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:58760)
-  [next]     at async doRender (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1366:42)
-  [next]     at async cacheEntry.responseCache.get.routeKind (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1576:40)
-  [next]     at async DevServer.renderToResponseWithComponentsImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1496:28)
-  [next]     at async DevServer.renderPageComponent (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1924:24)
-  [next]     at async DevServer.renderToResponseImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1962:32)
-  [next]     at async DevServer.pipeImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:922:25)
-  [next]     at async NextNodeServer.handleCatchallRenderRequest (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/next-server.js:272:17)
-  [next]     at async DevServer.handleRequestImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:818:17)
-  [next]     at async /home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/dev/next-dev-server.js:339:20
-  [next]     at async Span.traceAsyncFn (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/trace/trace.js:154:20)
-  [next]     at async DevServer.handleRequest (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
-  [next]     at async invokeRender (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/lib/router-server.js:179:21)
-  [next]     at async handleRequest (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/lib/router-server.js:359:24)
-  [next]     at async requestHandlerImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/lib/router-server.js:383:13)
-  [next]     at async Server.requestListener (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/lib/start-server.js:141:13)
-  [next]  POST /api/auth/callback/credentials? 200 in 34ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/providers 200 in 17ms
-  [next]  GET /api/auth/csrf 200 in 8ms
-  [next]  POST /api/auth/callback/credentials? 200 in 295ms
-  [next]  GET /api/auth/session 200 in 20ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/LayoutGroupContext.mjs.map 404 in 67ms
-  [next]  ○ Compiling /dashboard/admin/rounds ...
-  [next]  ✓ Compiled /dashboard/admin/rounds in 1071ms (2669 modules)
-  [next]  GET /_next/static/chunks/app/dashboard/admin/rounds/LayoutGroupContext.mjs.map 404 in 84ms
-  [next]  GET /dashboard/admin/feed 404 in 13ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 13ms
-  [next]  GET /api/auth/session 200 in 68ms
-  [next]  GET /api/auth/session 200 in 64ms
-  [next]  GET /api/auth/session 200 in 16ms
-  [next]  GET /api/auth/session 200 in 15ms
-  [next]  GET /api/auth/session 200 in 22ms
-  [next]  GET /api/auth/session 200 in 12ms
-  [next]  GET /dashboard/admin/rounds 200 in 109ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 17ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/rounds/LayoutGroupContext.mjs.map 404 in 16ms
-  [next]  GET /api/auth/session 200 in 29ms
-  [next]  GET /api/auth/session 200 in 29ms
-  [next]  GET /api/auth/session 200 in 18ms
-  [next]  GET /api/auth/session 200 in 27ms
-  [next]  GET /api/auth/session 200 in 57ms
-  [next]  GET /api/auth/session 200 in 61ms
-  [next]  GET /dashboard/admin/team 404 in 23ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 20ms
-  [next]  GET /api/auth/session 200 in 30ms
-  [next]  GET /api/auth/session 200 in 31ms
-  [next]  GET /api/auth/session 200 in 13ms
-  [next]  GET /api/auth/session 200 in 18ms
-  [next]  GET /api/auth/session 200 in 13ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /dashboard/admin/rounds 200 in 26ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 28ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/rounds/LayoutGroupContext.mjs.map 404 in 19ms
-  [next]  GET /api/auth/session 200 in 25ms
-  [next]  GET /api/auth/session 200 in 28ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /api/auth/session 200 in 20ms
-  [next]  GET /api/auth/session 200 in 15ms
-  [next]  GET /api/auth/session 200 in 17ms
-  [next]  ○ Compiling /dashboard/admin/settings ...
-  [next]  ✓ Compiled /dashboard/admin/settings in 606ms (2668 modules)
-  [next]  GET /api/auth/csrf 200 in 65ms
-  [next]  POST /api/auth/signout 200 in 18ms
-  [next]  GET /api/auth/session 200 in 12ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 41ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/rounds/LayoutGroupContext.mjs.map 404 in 60ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 63ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/LayoutGroupContext.mjs.map 404 in 69ms
-  [next]  GET /login 200 in 56ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 16ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 26ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 22ms
-  [next]  GET /api/auth/session 200 in 35ms
-  [next]  GET /api/auth/session 200 in 36ms
-  [next]  GET /api/auth/session 200 in 20ms
-  [next]  GET /api/auth/session 200 in 23ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  GET /extension 200 in 23ms
-  [next]  GET /api/auth/session 200 in 18ms
-  [next]  GET /api/auth/session 200 in 12ms
-  [next]  GET /api/auth/session 200 in 17ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /api/auth/session 200 in 13ms
-  [next]  GET /api/auth/session 200 in 12ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/session 200 in 14ms
-  [next]  ✓ Compiled in 606ms (2489 modules)
-  [next]  ✓ Compiled in 288ms (2489 modules)
-  [next]  ✓ Compiled in 390ms (2489 modules)
-  [next]  GET /login 200 in 74ms
-  [next]  ✓ Compiled /_not-found in 304ms (2478 modules)
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 389ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 12ms
-  [next]  ○ Compiling /icon.svg ...
-  [next]  ✓ Compiled /icon.svg in 740ms (1365 modules)
-  [next]  ✓ Compiled (1394 modules)
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 846ms
-  [next]  GET /api/auth/session 200 in 942ms
-  [next]  GET /api/auth/session 200 in 951ms
-  [next]  GET /api/auth/session 200 in 7ms
-  [next]  GET /api/auth/session 200 in 6ms
-  [next]  GET /api/auth/providers 200 in 20ms
-  [next]  GET /api/auth/csrf 200 in 14ms
-  [next]  POST /api/auth/callback/credentials? 200 in 303ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/LayoutGroupContext.mjs.map 404 in 52ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/rounds/LayoutGroupContext.mjs.map 404 in 26ms
-  [next]  GET /api/auth/session 200 in 43ms
-  [next]  GET /api/auth/session 200 in 15ms
-  [next]  GET /api/auth/session 200 in 35ms
-  [next]  GET /api/auth/session 200 in 26ms
-  [next]  GET /api/auth/csrf 200 in 26ms
-  [next]  POST /api/auth/signout 200 in 45ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  GET /api/auth/providers 200 in 19ms
-  [next]  GET /api/auth/csrf 200 in 9ms
-  [next] Login failed: 400 BAD REQUEST
-  [next] [31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
-  [next]     at Module.callback (webpack-internal:///(rsc)/./node_modules/@auth/core/lib/actions/callback/index.js:246:23)
-  [next]     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-  [next]     at async AuthInternal (webpack-internal:///(rsc)/./node_modules/@auth/core/lib/index.js:70:24)
-  [next]     at async Auth (webpack-internal:///(rsc)/./node_modules/@auth/core/index.js:130:34)
-  [next]     at async /home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:57228
-  [next]     at async eT.execute (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:46851)
-  [next]     at async eT.handle (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:58760)
-  [next]     at async doRender (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1366:42)
-  [next]     at async cacheEntry.responseCache.get.routeKind (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1576:40)
-  [next]     at async DevServer.renderToResponseWithComponentsImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1496:28)
-  [next]     at async DevServer.renderPageComponent (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1924:24)
-  [next]     at async DevServer.renderToResponseImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:1962:32)
-  [next]     at async DevServer.pipeImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:922:25)
-  [next]     at async NextNodeServer.handleCatchallRenderRequest (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/next-server.js:272:17)
-  [next]     at async DevServer.handleRequestImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/base-server.js:818:17)
-  [next]     at async /home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/dev/next-dev-server.js:339:20
-  [next]     at async Span.traceAsyncFn (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/trace/trace.js:154:20)
-  [next]     at async DevServer.handleRequest (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
-  [next]     at async invokeRender (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/lib/router-server.js:179:21)
-  [next]     at async handleRequest (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/lib/router-server.js:359:24)
-  [next]     at async requestHandlerImpl (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/lib/router-server.js:383:13)
-  [next]     at async Server.requestListener (/home/hoang/projects/phishing_detection/frontend/node_modules/next/dist/server/lib/start-server.js:141:13)
-  [next]  POST /api/auth/callback/credentials? 200 in 20ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard%2Fuser 200 in 68ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 25ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 40ms
-  [next]  GET /api/auth/session 200 in 30ms
-  [next]  GET /api/auth/session 200 in 32ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard%2Fadmin 200 in 22ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 20ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 15ms
-  [next]  GET /api/auth/session 200 in 36ms
-  [next]  GET /api/auth/session 200 in 44ms
-  [next]  GET /api/auth/session 200 in 20ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard%2Fadmin%2Frounds 200 in 23ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 25ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 15ms
-  [next]  GET /api/auth/session 200 in 33ms
-  [next]  GET /api/auth/session 200 in 38ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /api/auth/session 200 in 23ms
-  [next]  GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard%2Fadmin%2Frounds 200 in 19ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 25ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 14ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 9ms
-  [next]  GET /api/auth/session 200 in 32ms
-  [next]  GET /api/auth/session 200 in 30ms
-  [next]  GET /api/auth/session 200 in 16ms
-  [next]  GET /api/auth/session 200 in 16ms
-  [next]  GET /api/auth/providers 200 in 20ms
-  [next]  GET /api/auth/csrf 200 in 12ms
-  [next]  POST /api/auth/callback/credentials? 200 in 290ms
-  [next]  GET /api/auth/session 200 in 22ms
-  [next]  GET /api/auth/session 200 in 17ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/LayoutGroupContext.mjs.map 404 in 16ms
-  [next]  GET /api/auth/csrf 200 in 22ms
-  [next]  POST /api/auth/signout 200 in 44ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /login 200 in 24ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 18ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 12ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 12ms
-  [next]  GET /api/auth/session 200 in 29ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /api/auth/session 200 in 16ms
-  [next]  GET /api/auth/session 200 in 16ms
-  [next]  ○ Compiling /signup ...
-  [next]  ✓ Compiled /signup in 986ms (1407 modules)
-  [next]  GET /_next/static/chunks/app/signup/LayoutGroupContext.mjs.map 404 in 79ms
-  [next]  GET /signup 200 in 47ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 25ms
-  [next]  GET /_next/static/chunks/app/signup/LayoutGroupContext.mjs.map 404 in 16ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 45ms
-  [next]  GET /api/auth/session 200 in 94ms
-  [next]  GET /api/auth/session 200 in 94ms
-  [next]  GET /api/auth/session 200 in 18ms
-  [next]  GET /api/auth/session 200 in 17ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 19ms
-  [next]  GET /api/auth/providers 200 in 32ms
-  [next]  GET /api/auth/csrf 200 in 12ms
-  [next]  POST /api/auth/callback/credentials? 200 in 272ms
-  [next]  GET /api/auth/session 200 in 23ms
-  [next]  GET /api/auth/session 200 in 18ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/LayoutGroupContext.mjs.map 404 in 36ms
-  [next]  GET /dashboard/admin/team 404 in 44ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 12ms
-  [next]  GET /api/auth/session 200 in 44ms
-  [next]  GET /api/auth/session 200 in 41ms
-  [next]  GET /api/auth/session 200 in 27ms
-  [next]  GET /api/auth/session 200 in 33ms
-  [next]  GET /dashboard/admin 200 in 131ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 31ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/LayoutGroupContext.mjs.map 404 in 17ms
-  [next]  GET /api/auth/session 200 in 42ms
-  [next]  GET /api/auth/session 200 in 41ms
-  [next]  GET /api/auth/session 200 in 19ms
-  [next]  GET /api/auth/session 200 in 28ms
-  [next]  GET /api/auth/session 200 in 43ms
-  [next]  GET /api/auth/session 200 in 20ms
-  [next]  GET /api/auth/session 200 in 36ms
-  [next]  GET /api/auth/session 200 in 25ms
-  [next]  ✓ Compiled in 970ms (2496 modules)
-  [next]  ○ Compiling /api/auth/[...nextauth] ...
-  [next]  ✓ Compiled /api/auth/[...nextauth] in 719ms (1371 modules)
-  [next]  GET /api/auth/session 200 in 932ms
-  [next]  GET /api/auth/session 200 in 18ms
-  [next]  ✓ Compiled in 1965ms (2630 modules)
-  [next]  ✓ Compiled in 1148ms (2504 modules)
-  [next]  ✓ Compiled in 199ms (1277 modules)
-  [next]  ✓ Compiled in 145ms (1277 modules)
-  [next]  ✓ Compiled in 377ms (2694 modules)
-  [next]  ✓ Compiled in 123ms (1277 modules)
-  [next]  ✓ Compiled in 471ms (2694 modules)
-  [next]  ✓ Compiled in 643ms (2504 modules)
-  [next]  ✓ Compiled in 132ms (1277 modules)
-  [next]  ✓ Compiled in 137ms (1277 modules)
-  [next]  ✓ Compiled in 363ms (2694 modules)
-  [next]  GET /dashboard/admin 200 in 213ms
-  [next]  ○ Compiling /_not-found ...
-  [next]  ✓ Compiled /_not-found in 815ms (2493 modules)
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 890ms
-  [next]  ○ Compiling /api/auth/[...nextauth] ...
-  [next]  ✓ Compiled /api/auth/[...nextauth] in 1348ms (2670 modules)
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 1501ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/LayoutGroupContext.mjs.map 404 in 1353ms
-  [next]  GET /api/auth/session 200 in 1553ms
-  [next]  GET /api/auth/session 200 in 1549ms
-  [next]  GET /api/auth/session 200 in 23ms
-  [next]  GET /api/auth/session 200 in 15ms
-  [next]  ○ Compiling /dashboard/admin/team ...
-  [next]  ✓ Compiled /dashboard/admin/team in 1177ms (2682 modules)
-  [next]  ○ Compiling /dashboard/admin/feed ...
-  [next]  ✓ Compiled /dashboard/admin/feed in 831ms (2692 modules)
-  [next]  GET /_next/static/chunks/app/dashboard/admin/rounds/LayoutGroupContext.mjs.map 404 in 66ms
-  [next]  GET /api/auth/csrf 200 in 52ms
-  [next]  POST /api/auth/signout 200 in 10ms
-  [next]  GET /api/auth/session 200 in 5ms
-  [next]  ○ Compiling /login ...
-  [next]  ✓ Compiled /login in 545ms (1417 modules)
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 40ms
-  [next]  GET /login 200 in 71ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 28ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 15ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 26ms
-  [next]  GET /api/auth/session 200 in 43ms
-  [next]  GET /api/auth/session 200 in 43ms
-  [next]  GET /api/auth/session 200 in 8ms
-  [next]  GET /api/auth/session 200 in 8ms
-  [next]  GET /api/auth/providers 200 in 24ms
-  [next]  GET /api/auth/csrf 200 in 8ms
-  [next]  POST /api/auth/callback/credentials? 200 in 271ms
-  [next]  GET /api/auth/session 200 in 20ms
-  [next]  GET /api/auth/session 200 in 14ms
-  [next]  ✓ Compiled /dashboard/user in 378ms (1426 modules)
-  [next]  GET /_next/static/chunks/app/dashboard/user/LayoutGroupContext.mjs.map 404 in 29ms
-  [next]  ✓ Compiled /dashboard/user/rounds in 454ms (2707 modules)
-  [next]  ✓ Compiled /dashboard/user/feed in 449ms (2715 modules)
-  [next]  GET /dashboard/user/credits 404 in 30ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 19ms
-  [next]  GET /api/auth/session 200 in 47ms
-  [next]  GET /api/auth/session 200 in 59ms
-  [next]  GET /api/auth/session 200 in 18ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /dashboard/user/feed 200 in 34ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 29ms
-  [next]  GET /api/auth/session 200 in 56ms
-  [next]  GET /api/auth/session 200 in 65ms
-  [next]  GET /api/auth/session 200 in 14ms
-  [next]  GET /api/auth/session 200 in 18ms
-  [next]  ✓ Compiled /dashboard/user/settings in 313ms (2705 modules)
-  [next]  GET /_next/static/chunks/app/dashboard/user/LayoutGroupContext.mjs.map 404 in 33ms
-  [next]  GET /dashboard/user 200 in 58ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 34ms
-  [next]  GET /_next/static/chunks/app/dashboard/user/LayoutGroupContext.mjs.map 404 in 17ms
-  [next]  GET /api/auth/session 200 in 45ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 67ms
-  [next]  GET /api/auth/session 200 in 83ms
-  [next]  GET /api/auth/session 200 in 37ms
-  [next]  GET /api/auth/session 200 in 23ms
-  [next]  GET /api/auth/csrf 200 in 23ms
-  [next]  POST /api/auth/signout 200 in 42ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 20ms
-  [next]  GET /login 200 in 30ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 19ms
-  [next]  GET /_next/static/chunks/app/login/LayoutGroupContext.mjs.map 404 in 10ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 6ms
-  [next]  GET /api/auth/session 200 in 34ms
-  [next]  GET /api/auth/session 200 in 33ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /api/auth/providers 200 in 20ms
-  [next]  GET /api/auth/csrf 200 in 9ms
-  [next]  POST /api/auth/callback/credentials? 200 in 245ms
-  [next]  GET /api/auth/session 200 in 24ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/LayoutGroupContext.mjs.map 404 in 16ms
-  [next]  GET /_next/static/chunks/app/dashboard/admin/rounds/LayoutGroupContext.mjs.map 404 in 18ms
-  [next]  ✓ Compiled /dashboard/admin/training in 498ms (1485 modules)
-  [next]  GET /_next/static/chunks/app/dashboard/admin/training/LayoutGroupContext.mjs.map 404 in 41ms
-  [next]  ✓ Compiled /dashboard/admin/settings in 225ms (1487 modules)
-  [next]  GET /api/auth/csrf 200 in 24ms
-  [next]  POST /api/auth/signout 200 in 43ms
-  [next]  GET /api/auth/session 200 in 9ms
-  [next]  GET /api/auth/providers 200 in 20ms
+  [next]  GET /api/auth/providers 200 in 31ms
   [next]  GET /api/auth/csrf 200 in 7ms
-  [next]  POST /api/auth/callback/credentials? 200 in 250ms
-  [next]  GET /api/auth/session 200 in 23ms
-  [next]  GET /api/auth/session 200 in 21ms
-  [next]  GET /_next/static/chunks/app/dashboard/user/LayoutGroupContext.mjs.map 404 in 42ms
-  [next]  GET /dashboard/user 200 in 34ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 20ms
-  [next]  GET /_next/static/chunks/app/dashboard/user/LayoutGroupContext.mjs.map 404 in 12ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 9ms
-  [next]  GET /api/auth/session 200 in 28ms
-  [next]  GET /api/auth/session 200 in 28ms
-  [next]  GET /api/auth/session 200 in 10ms
-  [next]  GET /api/auth/session 200 in 11ms
-  [next]  GET /dashboard/user/settings 200 in 27ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 12ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 21ms
-  [next]  GET /api/auth/session 200 in 43ms
-  [next]  GET /api/auth/session 200 in 41ms
+  [next]  POST /api/auth/callback/credentials? 200 in 275ms
+  [next]  GET /api/auth/session 200 in 15ms
   [next]  GET /api/auth/session 200 in 22ms
+  [next]  ○ Compiling /dashboard/admin ...
+  [next]  ✓ Compiled /dashboard/admin in 1716ms (2554 modules)
+  [next]  GET /_next/static/chunks/app/dashboard/admin/LayoutGroupContext.mjs.map 404 in 40ms
+  [next]  ✓ Compiled /dashboard/admin/rounds in 264ms (2566 modules)
+  [next]  GET /_next/static/chunks/app/dashboard/admin/rounds/LayoutGroupContext.mjs.map 404 in 36ms
+  [next]  ✓ Compiled /dashboard/admin/feed in 241ms (2580 modules)
+  [next]  ✓ Compiled /dashboard/admin/team in 382ms (2596 modules)
+  [next]  GET /dashboard/admin/rounds 200 in 103ms
+  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 17ms
+  [next]  GET /api/auth/session 200 in 31ms
+  [next]  GET /api/auth/session 200 in 14ms
+  [next]  GET /api/auth/session 200 in 28ms
+  [next]  GET /api/auth/session 200 in 12ms
+  [next]  GET /api/auth/session 200 in 16ms
+  [next]  GET /api/auth/session 200 in 17ms
   [next]  GET /api/auth/session 200 in 20ms
-  [next]  GET /dashboard/user/settings 200 in 21ms
-  [next]  GET /.well-known/appspecific/com.chrome.devtools.json 404 in 20ms
-  [next]  GET /icon.svg?5bf91561ea2791d9 200 in 6ms
-  [next]  GET /api/auth/session 200 in 32ms
-  [next]  GET /api/auth/session 200 in 32ms
-  [nex
+  [next]  GET /api/auth/session 200 in 19ms
+  [next]  GET /api/auth/session 200 in 21ms
+  [next]  GET /api/auth/session 200 in 25ms
+  [next]  GET /api/auth/session 200 in 10ms
+  [next]  GET /api/auth/session 200 in 10ms
+  [next]  GET /api/auth/session 200 in 23ms
+  [next]  GET /api/auth/session 200 in 13ms
+  [next]  GET /api/auth/session 200 in 19ms
+  [next]  GET /api/auth/session 200 in 21ms
+  [next]  GET /api/auth/session 200 in 21ms
+  [next]  GET /api/auth/session 200 in 15ms
+  [next]  GET /api/auth/session 200 in 19ms
+  [next]  GET /api/auth/session 200 in 11ms
+  [next]  GET /api/auth/session 200 in 18ms
+  [next]  GET /api/auth/session 200 in 19ms
+  [next]  GET /api/auth/session 200 in 12ms
+  [next]  GET /api/auth/session 200 in 12ms
+  [next]  GET /api/auth/session 200 in 21ms
+  [next]  GET /api/auth/session 200 in 10ms
+  [next]  GET /api/auth/session 200 in 8ms
+  [next]  ✓ Compiled /dashboard/admin/rounds/[id] in 446ms (2606 modules)
+  [next]  GET /api/auth/session 200 in 21ms
+  [next]  GET /api/auth/session 200 in 9ms
+  [next]  GET /api/auth/session 200 in 14ms
+  [next]  GET /api/auth/session 200 in 15ms
+  [next]  GET /api/auth/session 200 in 9ms
+  [next]  GET /api/auth/session 200 in 11ms
+  [next]  GET /dashboard/admin/feed 200 in 93ms
+  [next]  GET /api/auth/session 200 in 28ms
+  [next]  GET /api/auth/session 200 in 13ms
+  [next]  GET /api/auth/session 200 in 16ms
+  [next]  GET /api/auth/session 200 in 10ms
+  [next]  GET /api/auth/session 200 in 15ms
+  [next]  GET /api/auth/session 200 in 17ms
+  [next]  GET /api/auth/session 200 in 24ms
+  [next]  GET /api/auth/session 200 in 11ms
+  [next]  GET /api/auth/session 200 in 12ms
+  [next]  GET /api/auth/session 200

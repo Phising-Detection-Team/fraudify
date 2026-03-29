@@ -125,7 +125,7 @@ PROMPTS = {
     # ==========================================
     # DETECTOR AGENT PROMPTS
     # ==========================================
-    "detector_system": """You are an elite cybersecurity expert specializing in advanced threat detection, social engineering analysis, and sophisticated scam identification. You have decades of experience analyzing both obvious and highly sophisticated fraud attempts. You never miss subtle indicators.""",
+    "detector_system": """You are an elite cybersecurity expert specializing in advanced threat detection, social engineering analysis, and sophisticated scam identification. You have decades of experience analyzing both obvious and highly sophisticated fraud attempts. You never miss subtle indicators. You always respond with a single valid JSON object containing exactly these keys: verdict, confidence, scam_score, reasoning. No markdown, no extra text.""",
 
     "detector_analysis": """You are an elite email security analyst with expertise in detecting sophisticated scams and social engineering attacks.
 
@@ -204,43 +204,27 @@ PROMPTS = {
         - Out-of-pattern behavior claims
 
     === COMPREHENSIVE EVALUATION ===
-    OVERALL SCAM SCORE: [0-100]
-    CONFIDENCE LEVEL: [0-100]%
-    VERDICT: [SCAM/LIKELY SCAM/SUSPICIOUS/LIKELY LEGITIMATE/LEGITIMATE]
+    Using your layered analysis above, produce your final assessment. Consider all indicators carefully before deciding.
 
-    SCAM CATEGORY: [Specific type if detected, or "N/A"]
-    SOPHISTICATION LEVEL: [LOW/MEDIUM/HIGH/VERY HIGH]
+    REQUIRED OUTPUT FORMAT:
+    After completing your analysis, output ONLY a valid JSON object — no markdown, no code blocks, no text before or after.
 
-    === DETAILED REASONING ===
-    PRIMARY RED FLAGS:
-    - [Most critical indicator 1 with specific evidence]
-    - [Most critical indicator 2 with specific evidence]
-    - [Most critical indicator 3 with specific evidence]
+    {{
+        "verdict": "<one of: SCAM | LIKELY SCAM | SUSPICIOUS | LIKELY LEGITIMATE | LEGITIMATE>",
+        "confidence": <float 0.0–1.0, how confident you are in this verdict>,
+        "scam_score": <float 0.0–100.0, overall scam probability score>,
+        "reasoning": "<2–4 sentence concise explanation of your verdict, citing the strongest indicators>"
+    }}
 
-    SUBTLE INDICATORS:
-    - [Subtle warning sign 1]
-    - [Subtle warning sign 2]
-    - [Subtle warning sign 3]
+    VERDICT GUIDELINES:
+    - SCAM: Clear, unambiguous phishing/scam (score >= 80)
+    - LIKELY SCAM: Strong indicators but not conclusive (score 60–79)
+    - SUSPICIOUS: Multiple warning signs, uncertain intent (score 40–59)
+    - LIKELY LEGITIMATE: Minor concerns but mostly clean (score 20–39)
+    - LEGITIMATE: No meaningful scam indicators (score < 20)
 
-    LEGITIMACY MARKERS (if any):
-    - [Legitimate aspect 1]
-    - [Legitimate aspect 2]
-
-    EVASION TACTICS DETECTED:
-    - [How the scam tries to appear legitimate]
-    - [Sophisticated techniques employed]
-
-    === RISK ASSESSMENT ===
-    THREAT LEVEL: [CRITICAL/HIGH/MEDIUM/LOW/MINIMAL]
-    POTENTIAL IMPACT: [Description of harm if victim falls for it]
-    TARGET AUDIENCE: [Who this scam is designed to fool]
-
-    === RECOMMENDATIONS ===
-    - [Specific action item 1]
-    - [Specific action item 2]
-    - [What to verify or check]
-
-    Analyze with extreme care - sophisticated scams mimic legitimate communications very well.""",
+    Analyze with extreme care — sophisticated scams mimic legitimate communications very well.
+    Output ONLY the JSON object, nothing else.""",
 
     # ==========================================
     # ORCHESTRATION AGENT PROMPTS
@@ -326,12 +310,15 @@ PROMPTS = {
     - For detector_agent_status: Copy EXACTLY from detector function result (DO NOT modify or assume)
     - For generated_subject: Look for "Subject:" in the email and extract the line
     - For generated_body: Extract everything after the Subject line
-    - For detection_risk_score: Find "OVERALL SCAM SCORE: [X]" and convert X/100 to decimal (e.g., 85 -> 0.85)
-    - For detection_confidence: Find "CONFIDENCE LEVEL: [X]%" and convert X/100 to decimal (e.g., 92 -> 0.92)
-    - For scam_type: Find "SCAM CATEGORY: [...]" in detector response
-    - For threat_level: Find "THREAT LEVEL: [...]" in detector response
-    - For verdict: Find "VERDICT: [...]" in detector response
-    - For sophistication: Find "SOPHISTICATION LEVEL: [...]" in detector response
+    - The detector now returns a JSON object in detector_agent_response. Parse it as JSON to extract:
+      * detection_risk_score: parse detector JSON field "scam_score" and convert to 0.0-1.0 (e.g., 85.0 -> 0.85)
+      * detection_confidence: parse detector JSON field "confidence" (already 0.0-1.0, use as-is)
+      * verdict (in generated_email_metadata): parse detector JSON field "verdict"
+      * detection_verdict: create a 20-word summary using detector JSON fields "verdict" and "reasoning"
+      * detection_reasoning: use detector JSON field "reasoning"
+    - For scam_type: not available in new format, use null
+    - For threat_level: not available in new format, use null
+    - For sophistication: not available in new format, use null
     - For token usage: Extract directly from generator_agent_token_usage and detector_agent_token_usage
     - For total_tokens: Sum generator_agent_token_usage.total_tokens + detector_agent_token_usage.total_tokens
 

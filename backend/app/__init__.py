@@ -2,6 +2,7 @@
 
 from flask import Flask
 from flask_cors import CORS
+from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
 from flask_jwt_extended import JWTManager
@@ -16,6 +17,7 @@ migrate = Migrate()
 socketio = SocketIO()
 jwt = JWTManager()
 limiter = Limiter(key_func=get_remote_address)
+mail = Mail()
 
 # Graceful fallbacks for services that may not exist
 try:
@@ -53,6 +55,7 @@ def create_app(config_name=None):
     migrate.init_app(app, db)
     jwt.init_app(app)
     limiter.init_app(app)
+    mail.init_app(app)
 
     CORS(app, resources={r'/api/*': {'origins': app.config.get('CORS_ORIGINS', '*')}})
     socketio.init_app(app, cors_allowed_origins=app.config.get('CORS_ORIGINS', '*'))
@@ -80,6 +83,7 @@ def create_app(config_name=None):
         from .models.invite_code import InviteCode  # noqa: F401
         from .models.training_data_log import TrainingDataLog  # noqa: F401
         from .models.extension_instance import ExtensionInstance  # noqa: F401
+        from .models.user_scan import UserScan  # noqa: F401
 
     _register_blueprints(app)
 
@@ -119,6 +123,7 @@ def _register_blueprints(app):
     from .routes.stats import stats_bp
     from .routes.extension import extension_bp
     from .routes.users import users_bp
+    from .routes.scan import scan_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(rounds_bp, url_prefix='/api')
@@ -129,3 +134,4 @@ def _register_blueprints(app):
     app.register_blueprint(stats_bp, url_prefix='/api')
     app.register_blueprint(extension_bp, url_prefix='/api')
     app.register_blueprint(users_bp, url_prefix='/api')
+    app.register_blueprint(scan_bp, url_prefix='/api')

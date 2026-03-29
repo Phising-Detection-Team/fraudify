@@ -15,6 +15,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    password_reset_token = db.Column(db.String(128), unique=True, nullable=True, index=True)
+    password_reset_expires = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

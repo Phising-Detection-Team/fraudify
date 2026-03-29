@@ -4,6 +4,7 @@ export const config = {
     AUTH: {
       LOGIN: '/api/auth/login',
       SIGNUP: '/api/auth/signup',
+      ADMIN_SIGNUP: '/api/auth/admin/signup',
       FORGOT_PASSWORD: '/api/auth/forgot-password',
       RESET_PASSWORD: '/api/auth/reset-password',
       VERIFY_EMAIL: '/api/auth/verify-email',

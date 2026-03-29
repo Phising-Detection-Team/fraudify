@@ -169,6 +169,11 @@ done
 
 # ── 5. Next.js frontend ───────────────────────────────────────────────────────
 step "Starting Next.js frontend (port 3000)"
+# Clear stale build cache to prevent vendor-chunk 404s after package changes
+if [ -d "$FRONTEND_DIR/.next" ]; then
+  info "Clearing stale .next cache..."
+  rm -rf "$FRONTEND_DIR/.next"
+fi
 (
   cd "$FRONTEND_DIR"
   npm run dev 2>&1 | sed 's/^/  [next] /'
@@ -176,9 +181,9 @@ step "Starting Next.js frontend (port 3000)"
 FRONTEND_PID=$!
 PIDS+=($FRONTEND_PID)
 
-info "Waiting for Next.js to be ready..."
-for i in $(seq 1 40); do
-  if curl -sf http://localhost:3000 &>/dev/null; then
+info "Waiting for Next.js to be ready (cold compile can take ~60s)..."
+for i in $(seq 1 90); do
+  if curl -sfL http://localhost:3000 &>/dev/null; then
     success "Next.js frontend is ready at http://localhost:3000"
     break
   fi
@@ -187,8 +192,8 @@ for i in $(seq 1 40); do
     tail -20 "$LOG_DIR/frontend.log"
     exit 1
   fi
-  if [ "$i" -eq 40 ]; then
-    warn "Next.js health check timed out — it may still be compiling."
+  if [ "$i" -eq 90 ]; then
+    warn "Next.js health check timed out — it may still be compiling. Check $LOG_DIR/frontend.log"
   fi
   sleep 1
 done

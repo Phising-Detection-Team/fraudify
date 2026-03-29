@@ -20,7 +20,7 @@ import {
   getAdminAgents,
 } from "@/lib/admin-api";
 import { config } from "@/lib/config";
-import type { Round, Agent, ModelCost, DashboardStats } from "@/types";
+import type { Round, Agent, ModelCost, DashboardStats } from "@/types"; // ModelCost used for demo mergedCosts
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
@@ -81,6 +81,7 @@ export default function AdminDashboard() {
     }
     return [...acc, { ...curr }];
   }, []);
+  // mergedCosts is used only for demo mode; real data is self-fetched inside CostPieChart
 
   if (loading) return null;
 
@@ -139,7 +140,7 @@ export default function AdminDashboard() {
           transition={{ duration: 0.5, delay: 0.6 }}
         >
           <div className="flex-1 min-h-[300px]">
-            <CostPieChart data={mergedCosts} />
+            <CostPieChart demoCosts={isDemo ? mergedCosts : undefined} />
           </div>
           <div className="flex-1 min-h-[350px]">
             <AgentLogsTable agents={agents} />

@@ -69,6 +69,21 @@ class BaseConfig:
     # OpenAI Agents SDK orchestrator (POST /api/rounds/<id>/run)
     ORCHESTRATION_PARALLEL_WORKFLOWS = int(os.environ.get('ORCHESTRATION_PARALLEL_WORKFLOWS', '2'))
 
+    # Flask-Mail
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() == 'true'
+    MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() == 'true'
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@sentra.app')
+
+    # Frontend base URL (used to build links in emails)
+    FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+
+    # Password reset token expiry
+    PASSWORD_RESET_EXPIRY_HOURS = int(os.environ.get('PASSWORD_RESET_EXPIRY_HOURS', 1))
+
 
 class DevelopmentConfig(BaseConfig):
     """Development configuration."""
