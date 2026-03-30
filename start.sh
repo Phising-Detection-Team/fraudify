@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # start.sh — Start the full Sentra stack
-# Usage: ./start.sh [--no-seed] [--reset-db]
+# Usage: ./start.sh [--no-seed] [--reset-db] [--detach]
 #
 #   --no-seed   Skip database seeding (use when DB already has data)
 #   --reset-db  Drop and recreate the public schema before migrating (fresh start)
+#   --detach    Run all services in the background and exit
 
 set -euo pipefail
 
@@ -13,6 +14,7 @@ VENV="$SCRIPT_DIR/.venv/bin"
 BACKEND_DIR="$SCRIPT_DIR/backend"
 FRONTEND_DIR="$SCRIPT_DIR/frontend"
 LOG_DIR="$SCRIPT_DIR/.logs"
+
 
 # ── Colours ──────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -27,10 +29,12 @@ step()    { echo -e "\n${BOLD}${CYAN}▶  $*${RESET}"; }
 # ── Options ──────────────────────────────────────────────────────────────────
 SEED=true
 RESET_DB=false
+DETACH=false
 for arg in "$@"; do
   case $arg in
     --no-seed)  SEED=false ;;
     --reset-db) RESET_DB=true ;;
+    --detach)   DETACH=true ;;
     *) error "Unknown option: $arg"; exit 1 ;;
   esac
 done
@@ -39,6 +43,11 @@ done
 PIDS=()
 
 cleanup() {
+  # In detached mode the trap only fires if startup itself fails;
+  # normal shutdown is handled by stop.sh.
+  if [ "$DETACH" = true ]; then
+    return
+  fi
   echo ""
   step "Shutting down..."
   for pid in "${PIDS[@]}"; do
@@ -146,7 +155,7 @@ step "Starting Flask backend (port 5000)"
 (
   cd "$BACKEND_DIR"
   "$VENV/python" run.py 2>&1 | sed 's/^/  [flask] /'
-) > "$LOG_DIR/backend.log" 2>&1 &
+) >> "$LOG_DIR/backend.log" 2>&1 &
 BACKEND_PID=$!
 PIDS+=($BACKEND_PID)
 
@@ -169,7 +178,6 @@ done
 
 # ── 5. Next.js frontend ───────────────────────────────────────────────────────
 step "Starting Next.js frontend (port 3000)"
-# Clear stale build cache to prevent vendor-chunk 404s after package changes
 if [ -d "$FRONTEND_DIR/.next" ]; then
   info "Clearing stale .next cache..."
   rm -rf "$FRONTEND_DIR/.next"
@@ -177,7 +185,7 @@ fi
 (
   cd "$FRONTEND_DIR"
   npm run dev 2>&1 | sed 's/^/  [next] /'
-) > "$LOG_DIR/frontend.log" 2>&1 &
+) >> "$LOG_DIR/frontend.log" 2>&1 &
 FRONTEND_PID=$!
 PIDS+=($FRONTEND_PID)
 
@@ -209,6 +217,17 @@ echo -e "  ${BOLD}Postgres${RESET}   →  localhost:5432"
 echo -e "  ${BOLD}Redis${RESET}      →  localhost:6379"
 echo ""
 echo -e "  ${BOLD}Logs${RESET}       →  $LOG_DIR/"
+
+# ── Detach mode: save PIDs and exit ──────────────────────────────────────────
+if [ "$DETACH" = true ]; then
+  echo -e "  ${CYAN}Run ./stop.sh to stop all services.${RESET}"
+  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  echo ""
+  # Detach child processes from this shell so they survive after exit
+  disown "${PIDS[@]}"
+  exit 0
+fi
+
 echo -e "  ${CYAN}Press Ctrl+C to stop all services.${RESET}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 echo ""
@@ -218,5 +237,4 @@ tail -f "$LOG_DIR/backend.log" "$LOG_DIR/frontend.log" &
 TAIL_PID=$!
 PIDS+=($TAIL_PID)
 
-# Wait for any child to die unexpectedly
 wait -n "${PIDS[@]}" 2>/dev/null || true
