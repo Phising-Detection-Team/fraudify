@@ -130,6 +130,15 @@ def register_error_handlers(app):
             message='This HTTP method is not allowed for this endpoint'
         )), 405
 
+    @app.errorhandler(429)
+    def handle_429(e):
+        """Too Many Requests -- rate limit exceeded."""
+        log_error_to_db(level='warning', message=f'429 Too Many Requests: {e}')
+        return jsonify(error_response(
+            code='TOO_MANY_REQUESTS',
+            message='You have sent too many requests in a short period. Please try again later.'
+        )), 429
+
     @app.errorhandler(500)
     def handle_500(e):
         """Internal Server Error -- unexpected failure."""
