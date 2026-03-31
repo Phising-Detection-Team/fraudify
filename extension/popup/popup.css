@@ -18,10 +18,19 @@ body {
 }
 
 .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 700;
   font-size: 15px;
   color: #22d3ee;
   letter-spacing: 0.5px;
+}
+
+.logo-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .status-dot {
