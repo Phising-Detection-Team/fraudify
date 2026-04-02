@@ -109,8 +109,11 @@ def signup():
             }), 409
         return jsonify({'success': False, 'error': 'Email already registered'}), 409
 
-    username = data.get('username') or _generate_username(data['email'])
+    explicit_username = data.get('username')
+    username = explicit_username or _generate_username(data['email'])
     if User.query.filter_by(username=username).first():
+        if explicit_username:
+            return jsonify({'success': False, 'error': 'Username already taken'}), 409
         username = _generate_username(data['email'])
 
     user_role = Role.query.filter_by(name='user').first()
