@@ -50,6 +50,18 @@ class BaseConfig:
     # Redis
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 
+    # Scan result cache TTL in seconds (default 1 hour)
+    SCAN_CACHE_TTL = int(os.environ.get('SCAN_CACHE_TTL', 3600))
+
+    # Celery broker transport options — retry on transient Redis connection resets
+    BROKER_TRANSPORT_OPTIONS = {
+        'max_retries': 5,
+        'interval_start': 0.2,
+        'interval_step': 0.5,
+        'interval_max': 3.0,
+        'socket_keepalive': True,
+    }
+
     # Google Gemini API
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
@@ -112,6 +124,10 @@ class TestingConfig(BaseConfig):
     # Use memory storage for rate limiter in tests (no Redis needed)
     RATELIMIT_STORAGE_URI = 'memory://'
     RATELIMIT_ENABLED = False
+    # Run Celery tasks synchronously in tests (no broker/Redis needed)
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = False
+    CELERY_RESULT_BACKEND = 'cache+memory://'
 
 
 class ProductionConfig(BaseConfig):

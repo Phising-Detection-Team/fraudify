@@ -7,6 +7,7 @@ const {
   scanEmail,
   registerInstance,
   sendHeartbeat,
+  pollScanResult,
   DEFAULT_API_URL,
 } = require('../utils/api');
 
@@ -194,5 +195,73 @@ describe('sendHeartbeat', () => {
     mockFetch(404, { success: false });
 
     await expect(sendHeartbeat(API_URL, INSTANCE_TOKEN)).rejects.toThrow('404');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pollScanResult
+// ---------------------------------------------------------------------------
+
+describe('pollScanResult', () => {
+  it('returns result data when first poll returns complete', async () => {
+    mockFetch(200, { success: true, data: { verdict: 'safe', confidence: 0.95, status: 'complete' } });
+
+    const result = await pollScanResult(API_URL, AUTH_TOKEN, 'job-abc', 3, 0);
+
+    expect(result.verdict).toBe('safe');
+    expect(result.confidence).toBe(0.95);
+    expect(result.status).toBe('complete');
+  });
+
+  it('polls GET /api/scan/status/<jobId>', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({ success: true, data: { verdict: 'phishing', confidence: 0.9, status: 'complete' } }),
+    });
+    global.fetch = fetchMock;
+
+    await pollScanResult(API_URL, AUTH_TOKEN, 'job-xyz', 3, 0);
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain('/api/scan/status/job-xyz');
+  });
+
+  it('retries while status is pending', async () => {
+    let callCount = 0;
+    global.fetch = jest.fn().mockImplementation(() => {
+      callCount++;
+      const status = callCount < 3 ? 'pending' : 'complete';
+      const data = status === 'complete'
+        ? { verdict: 'safe', confidence: 0.8, status: 'complete' }
+        : { status: 'pending' };
+      return Promise.resolve({
+        ok: true, status: 200,
+        json: jest.fn().mockResolvedValue({ success: true, data }),
+      });
+    });
+
+    const result = await pollScanResult(API_URL, AUTH_TOKEN, 'job-retry', 5, 0);
+
+    expect(callCount).toBe(3);
+    expect(result.verdict).toBe('safe');
+  });
+
+  it('throws when task status is failed', async () => {
+    mockFetch(200, { success: true, data: { status: 'failed', error: 'LLM error' } });
+
+    await expect(pollScanResult(API_URL, AUTH_TOKEN, 'job-fail', 3, 0)).rejects.toThrow('LLM error');
+  });
+
+  it('throws after maxAttempts with no result', async () => {
+    mockFetch(200, { success: true, data: { status: 'pending' } });
+
+    await expect(pollScanResult(API_URL, AUTH_TOKEN, 'job-timeout', 2, 0)).rejects.toThrow('timed out');
+  });
+
+  it('throws on non-2xx response from status endpoint', async () => {
+    mockFetch(500, { success: false });
+
+    await expect(pollScanResult(API_URL, AUTH_TOKEN, 'job-err', 3, 0)).rejects.toThrow('500');
   });
 });

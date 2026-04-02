@@ -62,14 +62,15 @@
     background-size: 30px 30px;
     z-index: -1;
     pointer-events: none;
+    transform: translateZ(0);
   }
 }
 
 .glass-panel {
-  @apply bg-card/60 backdrop-blur-md border border-border/50 shadow-sm transition-all;
+  @apply bg-card/85 border border-border/50 shadow-sm transition-colors;
 }
 .dark .glass-panel {
-  @apply bg-card/40 border-accent-cyan/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)];
+  @apply bg-card/70 border-accent-cyan/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)];
 }
 
 .neon-text {

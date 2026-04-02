@@ -1,6 +1,6 @@
 import React from 'react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
 
 // ---------------------------------------------------------------------------
 // Mock framer-motion
@@ -61,17 +61,10 @@ vi.mock('lucide-react', () => ({
   Target:  () => <svg data-testid="target-icon" />,
   TrendingUp: () => <svg data-testid="trending-icon" />,
   AlertTriangle: () => <svg data-testid="alert-icon" />,
+  Database: () => <svg data-testid="database-icon" />,
 }))
 
-// ---------------------------------------------------------------------------
-// Mock admin-api
-// ---------------------------------------------------------------------------
-vi.mock('@/lib/admin-api', () => ({
-  getIntelligenceStats: vi.fn(),
-}))
-
-import { getIntelligenceStats } from '@/lib/admin-api'
-import type { IntelligenceStats } from '@/lib/admin-api'
+import type { IntelligenceStats, CacheStats } from '@/lib/admin-api'
 import IntelligencePanel from '@/components/admin/IntelligencePanel'
 
 // ---------------------------------------------------------------------------
@@ -96,15 +89,18 @@ function makeStats(overrides: Partial<IntelligenceStats> = {}): IntelligenceStat
       { round_id: 2, false_positive_rate: 0.02, false_negative_rate: 0.08 },
     ],
     top_phishing_words: [
-      { word: 'urgent', count: 45 },
-      { word: 'verify', count: 30 },
+      { word: 'urgent',  count: 45 },
+      { word: 'verify',  count: 30 },
       { word: 'account', count: 22 },
-      { word: 'secure', count: 18 },
-      { word: 'click', count: 12 },
+      { word: 'secure',  count: 18 },
+      { word: 'click',   count: 12 },
     ],
     ...overrides,
   }
 }
+
+const CACHE_STATS_AVAILABLE: CacheStats = { cached_keys: 42, available: true }
+const CACHE_STATS_UNAVAILABLE: CacheStats = { cached_keys: 0, available: false }
 
 const EMPTY_STATS: IntelligenceStats = {
   confidence_distribution: [],
@@ -118,41 +114,21 @@ const EMPTY_STATS: IntelligenceStats = {
 // ---------------------------------------------------------------------------
 
 describe('IntelligencePanel', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
 
   // -------------------------------------------------------------------------
-  // 1. Loading skeleton
+  // 1. Cache stats chip
   // -------------------------------------------------------------------------
-  describe('loading state', () => {
-    it('shows loading skeleton while fetching data', async () => {
-      // Keep the promise pending so loading state persists
-      let resolveStats!: (value: IntelligenceStats) => void
-      vi.mocked(getIntelligenceStats).mockReturnValue(
-        new Promise<IntelligenceStats>((resolve) => { resolveStats = resolve })
-      )
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      expect(screen.getByTestId('intelligence-loading')).toBeTruthy()
-
-      // Resolve to avoid pending promise after test
-      await act(async () => { resolveStats(makeStats()) })
+  describe('cache stats chip', () => {
+    it('renders cache chip with key count when available', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
+      const chip = screen.getByTestId('cache-stats-chip')
+      expect(chip.textContent).toMatch(/42/)
     })
 
-    it('hides loading skeleton after data loads', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('intelligence-loading')).toBeNull()
-      })
+    it('renders cache chip when unavailable', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_UNAVAILABLE} />)
+      const chip = screen.getByTestId('cache-stats-chip')
+      expect(chip.textContent).toMatch(/0/)
     })
   })
 
@@ -160,26 +136,15 @@ describe('IntelligencePanel', () => {
   // 2. Confidence distribution chart
   // -------------------------------------------------------------------------
   describe('confidence distribution chart', () => {
-    it('renders a BarChart for confidence distribution', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        expect(screen.getByTestId('confidence-distribution-chart')).toBeTruthy()
-      })
+    it('renders a BarChart for confidence distribution', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
+      expect(screen.getByTestId('confidence-distribution-chart')).toBeTruthy()
     })
 
-    it('renders inside the chart container', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        const chart = screen.getByTestId('confidence-distribution-chart')
-        // Should contain a bar-chart stub
-        expect(chart.querySelector('[data-testid="bar-chart"]')).toBeTruthy()
-      })
+    it('renders inside the chart container', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
+      const chart = screen.getByTestId('confidence-distribution-chart')
+      expect(chart.querySelector('[data-testid="bar-chart"]')).toBeTruthy()
     })
   })
 
@@ -187,25 +152,15 @@ describe('IntelligencePanel', () => {
   // 3. Accuracy trend chart
   // -------------------------------------------------------------------------
   describe('accuracy trend chart', () => {
-    it('renders a LineChart for accuracy over rounds', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        expect(screen.getByTestId('accuracy-trend-chart')).toBeTruthy()
-      })
+    it('renders a LineChart for accuracy over rounds', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
+      expect(screen.getByTestId('accuracy-trend-chart')).toBeTruthy()
     })
 
-    it('contains a line element for accuracy', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        const chart = screen.getByTestId('accuracy-trend-chart')
-        expect(chart.querySelector('[data-testid="line-accuracy"]')).toBeTruthy()
-      })
+    it('contains a line element for accuracy', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
+      const chart = screen.getByTestId('accuracy-trend-chart')
+      expect(chart.querySelector('[data-testid="line-accuracy"]')).toBeTruthy()
     })
   })
 
@@ -213,26 +168,16 @@ describe('IntelligencePanel', () => {
   // 4. FP/FN rates chart
   // -------------------------------------------------------------------------
   describe('FP/FN rates chart', () => {
-    it('renders a dual-line chart for FP and FN rates', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        expect(screen.getByTestId('fpfn-rates-chart')).toBeTruthy()
-      })
+    it('renders a dual-line chart for FP and FN rates', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
+      expect(screen.getByTestId('fpfn-rates-chart')).toBeTruthy()
     })
 
-    it('contains line elements for both FP and FN rates', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        const chart = screen.getByTestId('fpfn-rates-chart')
-        expect(chart.querySelector('[data-testid="line-false_positive_rate"]')).toBeTruthy()
-        expect(chart.querySelector('[data-testid="line-false_negative_rate"]')).toBeTruthy()
-      })
+    it('contains line elements for both FP and FN rates', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
+      const chart = screen.getByTestId('fpfn-rates-chart')
+      expect(chart.querySelector('[data-testid="line-false_positive_rate"]')).toBeTruthy()
+      expect(chart.querySelector('[data-testid="line-false_negative_rate"]')).toBeTruthy()
     })
   })
 
@@ -240,29 +185,15 @@ describe('IntelligencePanel', () => {
   // 5. Word chip cloud
   // -------------------------------------------------------------------------
   describe('top phishing words chip cloud', () => {
-    it('renders a chip for each top phishing word', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        expect(screen.getByTestId('word-cloud')).toBeTruthy()
-      })
-
+    it('renders a chip for each top phishing word', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
       const wordCloud = screen.getByTestId('word-cloud')
       const chips = wordCloud.querySelectorAll('[data-testid^="word-chip-"]')
       expect(chips.length).toBe(5)
     })
 
-    it('renders chip text matching the word', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        expect(screen.getByTestId('word-chip-urgent')).toBeTruthy()
-      })
-
+    it('renders chip text matching the word', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
       expect(screen.getByTestId('word-chip-urgent').textContent).toBe('urgent')
     })
   })
@@ -271,18 +202,13 @@ describe('IntelligencePanel', () => {
   // 6. data-testid on word chips
   // -------------------------------------------------------------------------
   describe('word chip data-testid attributes', () => {
-    it('each word chip has data-testid="word-chip-{word}"', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        expect(screen.getByTestId('word-chip-urgent')).toBeTruthy()
-        expect(screen.getByTestId('word-chip-verify')).toBeTruthy()
-        expect(screen.getByTestId('word-chip-account')).toBeTruthy()
-        expect(screen.getByTestId('word-chip-secure')).toBeTruthy()
-        expect(screen.getByTestId('word-chip-click')).toBeTruthy()
-      })
+    it('each word chip has data-testid="word-chip-{word}"', () => {
+      render(<IntelligencePanel stats={makeStats()} cacheStats={CACHE_STATS_AVAILABLE} />)
+      expect(screen.getByTestId('word-chip-urgent')).toBeTruthy()
+      expect(screen.getByTestId('word-chip-verify')).toBeTruthy()
+      expect(screen.getByTestId('word-chip-account')).toBeTruthy()
+      expect(screen.getByTestId('word-chip-secure')).toBeTruthy()
+      expect(screen.getByTestId('word-chip-click')).toBeTruthy()
     })
   })
 
@@ -290,92 +216,38 @@ describe('IntelligencePanel', () => {
   // 7. Empty data "No data available" message
   // -------------------------------------------------------------------------
   describe('empty data states', () => {
-    it('shows "No data available" when confidence_distribution is empty', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(
-        makeStats({ confidence_distribution: [] })
-      )
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        const panel = screen.getByTestId('confidence-distribution-chart')
-        expect(panel.textContent).toMatch(/no data available/i)
-      })
+    it('shows "No data available" when confidence_distribution is empty', () => {
+      render(<IntelligencePanel stats={makeStats({ confidence_distribution: [] })} cacheStats={CACHE_STATS_AVAILABLE} />)
+      const panel = screen.getByTestId('confidence-distribution-chart')
+      expect(panel.textContent).toMatch(/no data available/i)
     })
 
-    it('shows "No data available" when accuracy_over_rounds is empty', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(
-        makeStats({ accuracy_over_rounds: [] })
-      )
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        const panel = screen.getByTestId('accuracy-trend-chart')
-        expect(panel.textContent).toMatch(/no data available/i)
-      })
+    it('shows "No rounds completed yet" when accuracy_over_rounds is empty', () => {
+      render(<IntelligencePanel stats={makeStats({ accuracy_over_rounds: [] })} cacheStats={CACHE_STATS_AVAILABLE} />)
+      const panel = screen.getByTestId('accuracy-trend-chart')
+      expect(panel.textContent).toMatch(/no rounds completed yet/i)
     })
 
-    it('shows "No data available" when fp_fn_rates is empty', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(
-        makeStats({ fp_fn_rates: [] })
-      )
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        const panel = screen.getByTestId('fpfn-rates-chart')
-        expect(panel.textContent).toMatch(/no data available/i)
-      })
+    it('shows "No rounds completed yet" when fp_fn_rates is empty', () => {
+      render(<IntelligencePanel stats={makeStats({ fp_fn_rates: [] })} cacheStats={CACHE_STATS_AVAILABLE} />)
+      const panel = screen.getByTestId('fpfn-rates-chart')
+      expect(panel.textContent).toMatch(/no rounds completed yet/i)
     })
 
-    it('shows "No data available" when top_phishing_words is empty', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(
-        makeStats({ top_phishing_words: [] })
-      )
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        const panel = screen.getByTestId('word-cloud')
-        expect(panel.textContent).toMatch(/no data available/i)
-      })
+    it('shows "No data available" when top_phishing_words is empty', () => {
+      render(<IntelligencePanel stats={makeStats({ top_phishing_words: [] })} cacheStats={CACHE_STATS_AVAILABLE} />)
+      const panel = screen.getByTestId('word-cloud')
+      expect(panel.textContent).toMatch(/no data available/i)
     })
 
-    it('renders all empty states when all arrays are empty', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(EMPTY_STATS)
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        const allNoData = screen.getAllByText(/no data available/i)
-        expect(allNoData.length).toBeGreaterThanOrEqual(4)
-      })
-    })
-  })
-
-  // -------------------------------------------------------------------------
-  // 8. API call with correct token
-  // -------------------------------------------------------------------------
-  describe('API integration', () => {
-    it('calls getIntelligenceStats with the provided token', async () => {
-      vi.mocked(getIntelligenceStats).mockResolvedValue(makeStats())
-
-      await act(async () => { render(<IntelligencePanel token="my-secret-token" />) })
-
-      await waitFor(() => {
-        expect(vi.mocked(getIntelligenceStats)).toHaveBeenCalledWith('my-secret-token')
-      })
-    })
-
-    it('does not crash when getIntelligenceStats rejects', async () => {
-      vi.mocked(getIntelligenceStats).mockRejectedValue(new Error('Network error'))
-
-      await act(async () => { render(<IntelligencePanel token="test-token" />) })
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('intelligence-loading')).toBeNull()
-      })
+    it('renders empty states for all sections when all arrays are empty', () => {
+      render(<IntelligencePanel stats={EMPTY_STATS} cacheStats={CACHE_STATS_AVAILABLE} />)
+      // Confidence distribution + word cloud use "No data available"
+      const noDataMessages = screen.getAllByText(/no data available/i)
+      expect(noDataMessages.length).toBeGreaterThanOrEqual(2)
+      // Accuracy + FP/FN charts use "No rounds completed yet"
+      const noRoundsMessages = screen.getAllByText(/no rounds completed yet/i)
+      expect(noRoundsMessages.length).toBeGreaterThanOrEqual(2)
     })
   })
 })

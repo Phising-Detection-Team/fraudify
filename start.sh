@@ -176,6 +176,27 @@ for i in $(seq 1 20); do
   sleep 1
 done
 
+# ── 4.5. Celery worker ────────────────────────────────────────────────────────
+step "Starting Celery worker"
+# Kill any leftover workers from a previous run before starting fresh
+_stale_celery=$(ps aux | grep "[c]elery" | awk '{print $2}') || true
+if [ -n "$_stale_celery" ]; then
+  echo "$_stale_celery" | xargs kill -9 2>/dev/null || true
+  sleep 1
+fi
+(
+  cd "$BACKEND_DIR"
+  ../.venv/bin/celery -A celery_worker worker --loglevel=info --concurrency=2 2>&1 | sed 's/^/  [celery] /'
+) >> "$LOG_DIR/celery.log" 2>&1 &
+CELERY_PID=$!
+PIDS+=($CELERY_PID)
+sleep 3
+if kill -0 "$CELERY_PID" 2>/dev/null; then
+  success "Celery worker started (PID $CELERY_PID)"
+else
+  error "Celery worker crashed. Check $LOG_DIR/celery.log"
+fi
+
 # ── 5. Next.js frontend ───────────────────────────────────────────────────────
 step "Starting Next.js frontend (port 3000)"
 

@@ -19,7 +19,7 @@ if (typeof importScripts !== 'undefined') {
   importScripts('../utils/api.js');
 }
 /* istanbul ignore next */
-const _api = (typeof require !== 'undefined') ? require('../utils/api') : { scanEmail, registerInstance, sendHeartbeat, DEFAULT_API_URL };
+const _api = (typeof require !== 'undefined') ? require('../utils/api') : { scanEmail, registerInstance, sendHeartbeat, pollScanResult, DEFAULT_API_URL };
 
 const HEARTBEAT_ALARM = 'heartbeat';
 const HEARTBEAT_PERIOD_MINUTES = 4;
@@ -52,8 +52,8 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     const browser = _detectBrowser();
     const os_name = _detectOS();
     const result = await _api.registerInstance(_apiUrl(stored), stored.sentra_auth_token, { browser, os_name });
-    if (result && result.instance_token) {
-      await chrome.storage.local.set({ sentra_instance_token: result.instance_token });
+    if (result && result.data && result.data.instance_token) {
+      await chrome.storage.local.set({ sentra_instance_token: result.data.instance_token });
     }
   } catch (err) {
     // Registration failure is non-fatal; user can retry via popup
@@ -120,8 +120,8 @@ async function _handleSetAuthToken(message) {
         message.token,
         { browser, os_name }
       );
-      if (result && result.instance_token) {
-        await chrome.storage.local.set({ sentra_instance_token: result.instance_token });
+      if (result && result.data && result.data.instance_token) {
+        await chrome.storage.local.set({ sentra_instance_token: result.data.instance_token });
       }
     } catch (err) {
       console.warn('[Sentra] Auto-registration failed:', err.message);
@@ -144,10 +144,19 @@ async function _handleScanRequest(message, sendResponse) {
       message.subject || '',
       message.body || ''
     );
-    if (result && result.verdict) {
-      await _cacheScanResult(message.subject, result.verdict, result.confidence);
+
+    if (result && result.data && result.data.status === 'complete') {
+      // Cache hit — verdict available immediately
+      const verdictData = result.data;
+      await _cacheScanResult(message.subject, verdictData.verdict, verdictData.confidence);
+      sendResponse(verdictData);
+    } else if (result && result.data && result.data.job_id) {
+      // Cache miss — let the content script drive polling (service workers can be
+      // suspended during setTimeout delays, breaking the async sendResponse channel)
+      sendResponse({ success: true, job_id: result.data.job_id, status: 'queued' });
+    } else {
+      sendResponse({ success: false, error: 'Scan did not return a verdict.' });
     }
-    sendResponse(result);
   } catch (err) {
     sendResponse({ success: false, error: `Scan failed: ${err.message}` });
   }

@@ -107,6 +107,36 @@ function removeOverlay() {
   if (el) el.remove();
 }
 
+/** Inject a temporary "Analyzing…" placeholder while scanning. */
+function injectScanning() {
+  const existing = document.getElementById(OVERLAY_ID);
+  if (existing) existing.remove();
+
+  const container = document.querySelector('.a3s') || document.querySelector('.gs');
+  if (!container) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div id="${OVERLAY_ID}" style="
+      background:#4b5563;
+      color:#ffffff;
+      padding:8px 14px;
+      border-radius:6px;
+      font-family:sans-serif;
+      font-size:13px;
+      font-weight:600;
+      margin-bottom:8px;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.2);
+    ">
+      <span>⟳ Sentra: Analyzing…</span>
+    </div>
+  `.trim();
+  container.prepend(wrapper.firstChild);
+}
+
 // ---------------------------------------------------------------------------
 // Email-open observer
 // ---------------------------------------------------------------------------
@@ -155,14 +185,72 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
     const { subject, body } = extractEmailFromDOM();
     if (!body) return;
 
-    chrome.runtime.sendMessage({ type: 'SCAN_EMAIL', subject, body }, (response) => {
-      if (chrome.runtime.lastError) return;
-      if (response) injectOverlay(response);
-    });
+    injectScanning();
+    _scanAndShow(subject, body);
   });
+}
+
+/* istanbul ignore next */
+async function _scanAndShow(subject, body) {
+  try {
+    const stored = await chrome.storage.local.get(['sentra_api_url', 'sentra_auth_token']);
+    const apiUrl = stored.sentra_api_url || DEFAULT_API_URL;
+    const token = stored.sentra_auth_token;
+    if (!token) { removeOverlay(); return; }
+
+    const result = await scanEmail(apiUrl, token, subject, body);
+    const data = result && result.data;
+
+    let verdictData = null;
+    if (data && data.status === 'complete') {
+      // Synchronous result (primary path) or cache hit — verdict available immediately
+      verdictData = data;
+    } else if (data && data.job_id) {
+      // Legacy async path: poll until complete (kept for backward compat)
+      verdictData = await pollScanResult(apiUrl, token, data.job_id);
+    }
+
+    removeOverlay();
+    if (verdictData && verdictData.verdict) {
+      injectOverlay(verdictData);
+    } else {
+      // Scan ran but returned no verdict — show neutral state
+      injectOverlay({ verdict: 'suspicious', confidence: 0, reasoning: 'Unable to determine verdict.' });
+    }
+  } catch (_) {
+    // Network error or scan timeout — show a non-blocking error state
+    _injectError('Sentra: Analysis unavailable');
+  }
+}
+
+/** Inject a subtle error banner when scanning fails entirely. */
+/* istanbul ignore next */
+function _injectError(message) {
+  const existing = document.getElementById(OVERLAY_ID);
+  if (existing) existing.remove();
+
+  const container = document.querySelector('.a3s') || document.querySelector('.gs');
+  if (!container) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div id="${OVERLAY_ID}" style="
+      background:#374151;
+      color:#9ca3af;
+      padding:6px 14px;
+      border-radius:6px;
+      font-family:sans-serif;
+      font-size:12px;
+      margin-bottom:8px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.15);
+    ">
+      ${_escapeHtml(message)}
+    </div>
+  `.trim();
+  container.prepend(wrapper.firstChild);
 }
 
 // CommonJS export for Jest
 if (typeof module !== 'undefined') {
-  module.exports = { extractEmailFromDOM, buildOverlayHTML, injectOverlay, removeOverlay, getOverlayId, watchForEmailOpen };
+  module.exports = { extractEmailFromDOM, buildOverlayHTML, injectOverlay, injectScanning, removeOverlay, getOverlayId, watchForEmailOpen };
 }

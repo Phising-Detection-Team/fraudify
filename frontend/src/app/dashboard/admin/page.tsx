@@ -5,10 +5,10 @@ import { RoundTable } from "@/components/dashboard/RoundTable";
 import { CostPieChart } from "@/components/dashboard/CostPieChart";
 import { AgentLogsTable } from "@/components/dashboard/AgentLogsTable";
 import { RecentLogsSection } from "@/components/dashboard/RecentLogsSection";
+import RecentScansTable from "@/components/admin/RecentScansTable";
 import IntelligencePanel from "@/components/admin/IntelligencePanel";
 import { Mail, ShieldAlert, BadgeDollarSign, Activity } from "lucide-react";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   MOCK_STATS_ADMIN,
@@ -19,9 +19,19 @@ import {
   getAdminStats,
   getAdminRounds,
   getAdminAgents,
+  getCostBreakdown,
+  getLogs,
+  getIntelligenceStats,
+  getCacheStats,
+  getAdminRecentScans,
+  type CostBreakdown,
+  type LogEntry,
+  type IntelligenceStats,
+  type CacheStats,
+  type AdminScansPage,
 } from "@/lib/admin-api";
 import { config } from "@/lib/config";
-import type { Round, Agent, ModelCost, DashboardStats } from "@/types"; // ModelCost used for demo mergedCosts
+import type { Round, Agent, ModelCost, DashboardStats } from "@/types";
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
@@ -39,6 +49,22 @@ export default function AdminDashboard() {
   });
   const [rounds, setRounds] = useState<Round[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [costBreakdown, setCostBreakdown] = useState<CostBreakdown>({ items: [], total: 0 });
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [intelStats, setIntelStats] = useState<IntelligenceStats>({
+    confidence_distribution: [],
+    accuracy_over_rounds: [],
+    fp_fn_rates: [],
+    top_phishing_words: [],
+  });
+  const [cacheStats, setCacheStats] = useState<CacheStats>({ cached_keys: 0, available: false });
+  const [initialScans, setInitialScans] = useState<AdminScansPage>({
+    scans: [],
+    total: 0,
+    page: 1,
+    per_page: 10,
+    pages: 1,
+  });
 
   useEffect(() => {
     const demoFlag =
@@ -51,38 +77,76 @@ export default function AdminDashboard() {
       setAgents(MOCK_AGENTS as Agent[]);
       setLoading(false);
     } else if (session?.user?.fromBackend) {
-      const fetchData = async () => {
+      const token = session.accessToken ?? "";
+      const fetchAll = async () => {
         try {
-          const [statsData, roundsData, agentsData] = await Promise.all([
-            getAdminStats(session.accessToken ?? ''),
-            getAdminRounds(session.accessToken ?? ''),
-            getAdminAgents(session.accessToken ?? ''),
+          // All 8 requests in one parallel batch — single round-trip window
+          const [
+            statsData,
+            roundsData,
+            agentsData,
+            costData,
+            logsData,
+            intelData,
+            cacheData,
+            scansData,
+          ] = await Promise.all([
+            getAdminStats(token),
+            getAdminRounds(token),
+            getAdminAgents(token),
+            getCostBreakdown(token).catch(() => ({ items: [], total: 0 } as CostBreakdown)),
+            getLogs(token, 5).catch(() => [] as LogEntry[]),
+            getIntelligenceStats(token).catch(() => ({
+              confidence_distribution: [],
+              accuracy_over_rounds: [],
+              fp_fn_rates: [],
+              top_phishing_words: [],
+            } as IntelligenceStats)),
+            getCacheStats(token).catch(() => ({ cached_keys: 0, available: false } as CacheStats)),
+            getAdminRecentScans(token, 1, 10).catch(() => ({
+              scans: [],
+              total: 0,
+              page: 1,
+              per_page: 10,
+              pages: 1,
+            } as AdminScansPage)),
           ]);
           setStats(statsData);
           setRounds(roundsData);
           setAgents(agentsData);
+          setCostBreakdown(costData);
+          setLogs(logsData);
+          setIntelStats(intelData);
+          setCacheStats(cacheData);
+          setInitialScans(scansData);
         } catch (error) {
           console.error("Failed to fetch admin data:", error);
         } finally {
           setLoading(false);
         }
       };
-      fetchData();
+      fetchAll();
     } else {
       setLoading(false);
     }
   }, [session]);
 
-  const mergedCosts = rounds.flatMap(r => r.apiCosts).reduce<ModelCost[]>((acc, curr) => {
-    const idx = acc.findIndex(a => a.model === curr.model);
-    if (idx >= 0) {
-      return acc.map((a, i) =>
-        i === idx ? { ...a, cost: a.cost + curr.cost, calls: a.calls + curr.calls } : a
-      );
-    }
-    return [...acc, { ...curr }];
-  }, []);
-  // mergedCosts is used only for demo mode; real data is self-fetched inside CostPieChart
+  // Only used for demo mode; real data is passed from costBreakdown above
+  const mergedCosts = useMemo(
+    () =>
+      rounds.flatMap((r) => r.apiCosts).reduce<ModelCost[]>((acc, curr) => {
+        const idx = acc.findIndex((a) => a.model === curr.model);
+        if (idx >= 0) {
+          return acc.map((a, i) =>
+            i === idx
+              ? { ...a, cost: a.cost + curr.cost, calls: a.calls + curr.calls }
+              : a
+          );
+        }
+        return [...acc, { ...curr }];
+      }, []),
+    [rounds]
+  );
 
   if (loading) return null;
 
@@ -90,7 +154,9 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Overview</h1>
-        <p className="text-muted-foreground mt-2">System performance, cost analysis, and active agents.</p>
+        <p className="text-muted-foreground mt-2">
+          System performance, cost analysis, and active agents.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -106,51 +172,50 @@ export default function AdminDashboard() {
           title="Active Agents"
           value={stats.activeAgents || 0}
           icon={Activity}
-          delay={0.2}
+          delay={0.15}
         />
         <StatCard
           title="Global Scanning"
           value={stats.totalEmailsScanned.toLocaleString()}
           icon={Mail}
-          delay={0.3}
+          delay={0.2}
         />
         <StatCard
           title="Total Threats Detected"
           value={stats.phishingDetected.toLocaleString()}
           icon={ShieldAlert}
           valueClassName="text-accent-red"
-          delay={0.4}
+          delay={0.25}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div
-          className="lg:col-span-2 flex flex-col gap-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
+        <div className="lg:col-span-2 flex flex-col gap-6">
           <RoundTable rounds={rounds} />
-          {session?.user?.fromBackend && <RecentLogsSection />}
-        </motion.div>
+          {session?.user?.fromBackend && (
+            <RecentScansTable initialData={initialScans} />
+          )}
+          {session?.user?.fromBackend && <RecentLogsSection logs={logs} />}
+        </div>
 
-        <motion.div
-          className="lg:col-span-1 flex flex-col gap-6 h-full"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
+        <div className="lg:col-span-1 flex flex-col gap-6 h-full">
           <div className="flex-1 min-h-[300px]">
-            <CostPieChart demoCosts={isDemo ? mergedCosts : undefined} />
+            <CostPieChart
+              demoCosts={isDemo ? mergedCosts : undefined}
+              serverData={isDemo ? undefined : costBreakdown}
+            />
           </div>
           <div className="flex-1 min-h-[350px]">
             <AgentLogsTable agents={agents} />
           </div>
-        </motion.div>
+        </div>
       </div>
 
-      {session?.user?.fromBackend && session.accessToken && (
-        <IntelligencePanel token={session.accessToken} />
+      {session?.user?.fromBackend && (
+        <IntelligencePanel
+          stats={intelStats}
+          cacheStats={cacheStats}
+        />
       )}
     </div>
   );

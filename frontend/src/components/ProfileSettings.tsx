@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   Eye, EyeOff, CheckCircle2, AlertCircle, Loader2,
-  Puzzle, Plus, Copy, Check, Wifi, WifiOff,
+  Puzzle, Copy, Check, Wifi, WifiOff, Trash2,
 } from "lucide-react";
 import {
-  getMe, updatePassword, getExtensionInstances, registerExtensionInstance,
+  getMe, updatePassword, getExtensionInstances, deleteExtensionInstance,
   type BackendUser, type ExtensionInstance,
 } from "@/lib/admin-api";
+import { parseUTC } from "@/lib/utils";
 
 function Initials({ name }: { name?: string | null }) {
   const initials = (name ?? "?")
@@ -60,8 +61,8 @@ export function ProfileSettings() {
   // Extension instances
   const [instances, setInstances] = useState<ExtensionInstance[]>([]);
   const [loadingInstances, setLoadingInstances] = useState(true);
-  const [registering, setRegistering] = useState(false);
-  const [regError, setRegError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session?.accessToken || !session.user?.fromBackend) {
@@ -107,17 +108,17 @@ export function ProfileSettings() {
     }
   }
 
-  async function handleRegisterInstance() {
+  async function handleRemoveInstance(instanceId: number) {
     if (!session?.accessToken) return;
-    setRegistering(true);
-    setRegError(null);
+    setDeletingId(instanceId);
+    setDeleteError(null);
     try {
-      const inst = await registerExtensionInstance(session.accessToken);
-      setInstances((prev) => [inst, ...prev]);
+      await deleteExtensionInstance(session.accessToken, instanceId);
+      setInstances((prev) => prev.filter((i) => i.id !== instanceId));
     } catch (err) {
-      setRegError((err as Error).message ?? "Failed to register instance.");
+      setDeleteError((err as Error).message ?? "Failed to remove instance.");
     } finally {
-      setRegistering(false);
+      setDeletingId(null);
     }
   }
 
@@ -125,7 +126,7 @@ export function ProfileSettings() {
   const displayEmail = session?.user?.email ?? profile?.email ?? "";
   const roles = profile?.roles ?? (session?.user?.role ? [session.user.role] : []);
   const memberSince = profile?.created_at
-    ? new Date(profile.created_at).toLocaleDateString(undefined, {
+    ? parseUTC(profile.created_at).toLocaleDateString(undefined, {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -307,33 +308,19 @@ export function ProfileSettings() {
 
       {/* Browser Extension */}
       <div className="glass-panel rounded-xl p-6 space-y-5">
-        <div className="flex items-center justify-between border-b border-border/50 pb-3">
-          <div className="flex items-center gap-2">
-            <Puzzle size={18} className="text-accent-cyan" />
-            <h2 className="text-lg font-semibold">Browser Extension</h2>
-          </div>
-          {session?.user?.fromBackend && (
-            <button
-              type="button"
-              onClick={handleRegisterInstance}
-              disabled={registering}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-cyan/10 text-accent-cyan text-xs font-semibold hover:bg-accent-cyan/20 transition-colors disabled:opacity-50"
-            >
-              {registering ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-              Add Instance
-            </button>
-          )}
+        <div className="flex items-center gap-2 border-b border-border/50 pb-3">
+          <Puzzle size={18} className="text-accent-cyan" />
+          <h2 className="text-lg font-semibold">Browser Extension</h2>
         </div>
 
-        {/* How to use callout */}
+        {/* How it works callout */}
         <div className="rounded-lg border border-accent-cyan/20 bg-accent-cyan/5 px-4 py-4 space-y-3">
           <p className="text-xs font-semibold text-accent-cyan uppercase tracking-wider">How it works</p>
           <ol className="space-y-2">
             {[
-              "Click \"Add Instance\" above to generate a unique device token.",
-              "Install the Sentra browser extension (Chrome / Firefox — coming soon).",
-              "Open the extension, paste your token in the settings, and click Connect.",
-              "The extension sends a heartbeat every 5 minutes — your instance will show Active here once it connects.",
+              "Install the Sentra browser extension (Chrome / Edge).",
+              "Log in to the Sentra dashboard.",
+              "The extension automatically connects — your instance will appear here.",
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                 <span className="flex-shrink-0 w-4 h-4 rounded-full bg-accent-cyan/20 text-accent-cyan flex items-center justify-center text-[10px] font-bold mt-0.5">
@@ -343,9 +330,6 @@ export function ProfileSettings() {
               </li>
             ))}
           </ol>
-          <p className="text-[11px] text-muted-foreground pt-1 border-t border-accent-cyan/10">
-            Keep your token private — anyone with it can send heartbeats on your behalf.
-          </p>
         </div>
 
         {!session?.user?.fromBackend ? (
@@ -362,8 +346,7 @@ export function ProfileSettings() {
             <WifiOff size={24} className="mx-auto text-muted-foreground" />
             <p className="text-sm font-medium">No instances registered yet</p>
             <p className="text-xs text-muted-foreground">
-              Click <span className="font-semibold text-foreground">Add Instance</span> to generate
-              your first token, then follow the steps above.
+              Install the extension and log in — your instance will appear here automatically.
             </p>
           </div>
         ) : (
@@ -379,7 +362,7 @@ export function ProfileSettings() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium truncate">
-                      {inst.browser ?? "Unregistered extension"}
+                      {inst.browser ?? "Unknown browser"}
                     </span>
                     {inst.os_name && (
                       <span className="text-xs text-muted-foreground">· {inst.os_name}</span>
@@ -402,22 +385,34 @@ export function ProfileSettings() {
                   </div>
                   {inst.last_seen ? (
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Last heartbeat {new Date(inst.last_seen).toLocaleString()}
+                      Last heartbeat {parseUTC(inst.last_seen).toLocaleString()}
                     </p>
                   ) : (
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      No heartbeat received yet — paste this token into the extension to connect.
+                      No heartbeat received yet — check the extension is installed and you are logged in.
                     </p>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveInstance(inst.id)}
+                  disabled={deletingId === inst.id}
+                  className="flex-shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-red-400 transition-colors disabled:opacity-50"
+                  title="Remove instance"
+                  data-testid={`remove-instance-${inst.id}`}
+                >
+                  {deletingId === inst.id
+                    ? <Loader2 size={14} className="animate-spin" />
+                    : <Trash2 size={14} />}
+                </button>
               </li>
             ))}
           </ul>
         )}
 
-        {regError && (
-          <p className="text-sm text-accent-red bg-accent-red/10 rounded-lg px-3 py-2">
-            {regError}
+        {deleteError && (
+          <p className="text-sm text-red-400 bg-red-400/10 rounded-lg px-3 py-2">
+            {deleteError}
           </p>
         )}
       </div>

@@ -1,5 +1,6 @@
 """Flask application factory and initialization."""
 
+from celery import Celery
 from flask import Flask
 from flask_cors import CORS
 from flask_mail import Mail
@@ -19,6 +20,9 @@ jwt = JWTManager()
 limiter = Limiter(key_func=get_remote_address)
 mail = Mail()
 
+# Module-level Celery instance (configured inside create_app)
+celery = Celery(__name__)
+
 # Graceful fallbacks for services that may not exist
 try:
     from .services.kernel_service import KernelService
@@ -26,10 +30,6 @@ try:
 except ImportError:
     kernel_service = None
 
-try:
-    from .services.cache_service import cache
-except ImportError:
-    cache = None
 
 
 def create_app(config_name=None):
@@ -57,6 +57,29 @@ def create_app(config_name=None):
     limiter.init_app(app)
     mail.init_app(app)
 
+    # ── Celery ────────────────────────────────────────────────────────────────
+    redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379/0')
+    celery.conf.update(
+        broker_url=redis_url,
+        result_backend=app.config.get('CELERY_RESULT_BACKEND', redis_url),
+        task_serializer='json',
+        result_serializer='json',
+        accept_content=['json'],
+        task_track_started=True,
+        task_always_eager=app.config.get('CELERY_TASK_ALWAYS_EAGER', False),
+        task_eager_propagates=app.config.get('CELERY_TASK_EAGER_PROPAGATES', False),
+        broker_transport_options=app.config.get('BROKER_TRANSPORT_OPTIONS', {}),
+        broker_connection_retry=True,
+        broker_connection_retry_on_startup=True,
+    )
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
+
     CORS(app, resources={r'/api/*': {'origins': app.config.get('CORS_ORIGINS', '*')}})
     socketio.init_app(app, cors_allowed_origins=app.config.get('CORS_ORIGINS', '*'))
 
@@ -64,9 +87,6 @@ def create_app(config_name=None):
 
     if kernel_service:
         kernel_service.init_app(app)
-
-    if cache:
-        cache.init_app(app)
 
     # Register JWT token blacklist checker (uses Redis in production, skipped in tests)
     _register_jwt_callbacks(app)

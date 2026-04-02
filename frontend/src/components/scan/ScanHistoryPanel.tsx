@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { History, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { getScanHistory, type ScanHistoryItem, type ScanVerdict } from "@/lib/user-api";
+import { parseUTC } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,8 +49,9 @@ function truncate(text: string, max: number): string {
 }
 
 function relativeTime(isoDate: string): string {
-  const diff = Date.now() - new Date(isoDate).getTime();
+  const diff = Date.now() - parseUTC(isoDate).getTime();
   const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "Just now";
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
@@ -64,7 +66,7 @@ function buildChartData(scans: ScanHistoryItem[]): ChartDataPoint[] {
   const byDate: Record<string, ChartDataPoint> = {};
 
   for (const scan of scans) {
-    const d = new Date(scan.scanned_at);
+    const d = parseUTC(scan.scanned_at);
     if (d < cutoff) continue;
     const key = d.toISOString().slice(0, 10);
     if (!byDate[key]) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Search, Users as UsersIcon, ShieldCheck, User as UserIcon, Loader2, Link2, Check as CheckIcon } from "lucide-react";
 import { getUsers, createInviteCode, type BackendUser } from "@/lib/admin-api";
+import { parseUTC } from "@/lib/utils";
 import InvitePanel from "@/components/admin/InvitePanel";
 
 function Initials({ name }: { name: string }) {
@@ -170,7 +171,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 text-muted-foreground text-xs">
                       {user.created_at
-                        ? new Date(user.created_at).toLocaleDateString(undefined, {
+                        ? parseUTC(user.created_at).toLocaleDateString(undefined, {
                             year: "numeric",
                             month: "short",
                             day: "numeric",

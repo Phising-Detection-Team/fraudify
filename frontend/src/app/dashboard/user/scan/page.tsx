@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import {
   ScanText,
@@ -12,11 +12,25 @@ import {
 } from "lucide-react";
 import {
   scanEmail,
-  type ScanResult,
+  getScanStatus,
   type ScanVerdict,
+  type ScanStatusResult,
+  type ScanCacheHitResult,
 } from "@/lib/user-api";
+import dynamic from "next/dynamic";
 import VerdictDisplay from "@/components/scan/VerdictDisplay";
-import ScanHistoryPanel from "@/components/scan/ScanHistoryPanel";
+const ScanHistoryPanel = dynamic(() => import("@/components/scan/ScanHistoryPanel"), { ssr: false });
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface ScanDisplayResult {
+  verdict: ScanVerdict;
+  confidence: number;
+  scam_score: number;
+  reasoning: string;
+}
 
 // ---------------------------------------------------------------------------
 // Verdict helpers
@@ -75,7 +89,7 @@ function VerdictBadge({ verdict }: { verdict: ScanVerdict }) {
 // Result Card
 // ---------------------------------------------------------------------------
 
-function ResultCard({ result }: { result: ScanResult }) {
+function ResultCard({ result }: { result: ScanDisplayResult }) {
   const cfg = VERDICT_CONFIG[result.verdict] ?? VERDICT_CONFIG.suspicious;
   const scorePercent = Math.round(result.scam_score ?? 0);
   const confidencePercent = Math.round((result.confidence ?? 0) * 100);
@@ -128,6 +142,9 @@ function ResultCard({ result }: { result: ScanResult }) {
 // Page
 // ---------------------------------------------------------------------------
 
+const POLL_INTERVAL_MS = 1500;
+const MAX_POLL_ATTEMPTS = 120; // 3 minutes maximum
+
 export default function ScanEmailPage() {
   const { data: session } = useSession();
   const token = session?.accessToken as string | undefined;
@@ -135,21 +152,102 @@ export default function ScanEmailPage() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<ScanResult | null>(null);
+  const [result, setResult] = useState<ScanDisplayResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Polling state
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollAttemptsRef = useRef(0);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const stopPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    pollAttemptsRef.current = 0;
+  };
+
+  const handlePollResult = (statusResult: ScanStatusResult) => {
+    if (statusResult.status === 'complete') {
+      stopPolling();
+      setScanning(false);
+      setResult({
+        verdict: statusResult.verdict ?? 'suspicious',
+        confidence: statusResult.confidence ?? 0,
+        scam_score: statusResult.scam_score ?? 0,
+        reasoning: statusResult.reasoning ?? '',
+      });
+    } else if (statusResult.status === 'failed') {
+      stopPolling();
+      setScanning(false);
+      setError(statusResult.error ?? 'Detection failed. Please try again.');
+    }
+    // 'pending' — keep polling
+  };
+
+  const startPolling = (jobId: string, authToken: string) => {
+    pollAttemptsRef.current = 0;
+
+    pollIntervalRef.current = setInterval(async () => {
+      pollAttemptsRef.current += 1;
+
+      if (pollAttemptsRef.current > MAX_POLL_ATTEMPTS) {
+        stopPolling();
+        setScanning(false);
+        setError('Scan timed out. Please try again.');
+        return;
+      }
+
+      try {
+        const statusResult = await getScanStatus(authToken, jobId);
+        handlePollResult(statusResult);
+      } catch {
+        stopPolling();
+        setScanning(false);
+        setError('Failed to check scan status. Please try again.');
+      }
+    }, POLL_INTERVAL_MS);
+  };
+
+  const isCacheHit = (result: ReturnType<typeof scanEmail> extends Promise<infer T> ? T : never): result is ScanCacheHitResult =>
+    'cached' in result && result.cached === true && result.status === 'complete';
 
   const handleScan = async () => {
     if (!token || !body.trim()) return;
+
+    stopPolling();
     setScanning(true);
     setResult(null);
     setError(null);
+
     try {
-      const res = await scanEmail(token, subject.trim(), body.trim());
-      setResult(res);
+      const submitResult = await scanEmail(token, subject.trim(), body.trim());
+
+      if (isCacheHit(submitResult)) {
+        // Cache hit — render verdict immediately, no polling needed
+        setScanning(false);
+        setResult({
+          verdict: submitResult.verdict,
+          confidence: submitResult.confidence,
+          scam_score: submitResult.scam_score,
+          reasoning: submitResult.reasoning,
+        });
+      } else {
+        // Cache miss — start polling with the returned job_id
+        startPolling(submitResult.job_id, token);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Scan failed. Please try again.");
-    } finally {
       setScanning(false);
+      setError(err instanceof Error ? err.message : "Scan failed. Please try again.");
     }
   };
 

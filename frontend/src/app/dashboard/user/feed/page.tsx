@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Wifi, WifiOff, RefreshCw, Puzzle } from "lucide-react";
 import { getExtensionInstances, type ExtensionInstance } from "@/lib/admin-api";
+import { parseUTC } from "@/lib/utils";
 import Link from "next/link";
 
 export default function UserLiveFeedPage() {
@@ -32,9 +33,32 @@ export default function UserLiveFeedPage() {
       return;
     }
     fetchData();
-    intervalRef.current = setInterval(fetchData, 10_000);
+
+    function startPolling() {
+      if (!intervalRef.current) {
+        intervalRef.current = setInterval(fetchData, 30_000);
+      }
+    }
+    function stopPolling() {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        fetchData();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    }
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
@@ -132,7 +156,7 @@ export default function UserLiveFeedPage() {
                   </p>
                   {inst.last_seen && (
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Last seen {new Date(inst.last_seen).toLocaleString()}
+                      Last seen {parseUTC(inst.last_seen).toLocaleString()}
                     </p>
                   )}
                 </div>

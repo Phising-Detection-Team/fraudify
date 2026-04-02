@@ -18,6 +18,18 @@ else
   info "Flask was not running."
 fi
 
+# ── 1.5. Kill Celery workers ──────────────────────────────────────────────────
+step "Stopping Celery workers"
+_celery_pids=$(ps aux | grep "[c]elery" | awk '{print $2}') || true
+if [ -n "$_celery_pids" ]; then
+  echo "$_celery_pids" | xargs kill -TERM 2>/dev/null || true
+  sleep 1
+  echo "$_celery_pids" | xargs kill -9 2>/dev/null || true
+  success "Celery workers stopped."
+else
+  info "Celery workers were not running."
+fi
+
 # ── 2. Kill Next.js (port 3000 + any orphaned next-server processes) ──────────
 step "Stopping Next.js frontend"
 _next_stopped=false

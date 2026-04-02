@@ -15,7 +15,7 @@ export interface UserStats {
 }
 
 export const getUserStats = async (token: string): Promise<UserStats> => {
-  const res = await apiFetch(`${API_URL}/api/stats`, {
+  const res = await apiFetch(`${API_URL}/api/stats/me`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch stats");
@@ -23,9 +23,9 @@ export const getUserStats = async (token: string): Promise<UserStats> => {
   const d = json.data ?? json;
   return {
     totalEmailsScanned: d.total_emails_scanned ?? 0,
-    phishingDetected: d.threats_detected ?? 0,
-    markedSafe: 0,
-    creditsRemaining: 1000,
+    phishingDetected:   d.threats_detected     ?? 0,
+    markedSafe:         d.marked_safe          ?? 0,
+    creditsRemaining:   1000,
   };
 };
 
@@ -54,6 +54,33 @@ export interface ScanResult {
   scanned_at: string;
 }
 
+export type ScanJobStatus = "queued" | "pending" | "complete" | "failed";
+
+export interface ScanEnqueueResult {
+  job_id: string;
+  status: ScanJobStatus;
+}
+
+export interface ScanCacheHitResult {
+  status: "complete";
+  cached: true;
+  verdict: ScanVerdict;
+  confidence: number;
+  scam_score: number;
+  reasoning: string;
+}
+
+export type ScanSubmitResult = ScanEnqueueResult | ScanCacheHitResult;
+
+export interface ScanStatusResult {
+  status: ScanJobStatus;
+  verdict?: ScanVerdict;
+  confidence?: number;
+  scam_score?: number;
+  reasoning?: string;
+  error?: string;
+}
+
 export interface ScanHistoryItem {
   id: number;
   user_id: number;
@@ -70,17 +97,32 @@ export const scanEmail = async (
   token: string,
   subject: string,
   body: string
-): Promise<ScanResult> => {
+): Promise<ScanSubmitResult> => {
   const res = await apiFetch(`${API_URL}/api/scan`, {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ subject, body }),
   });
-  const json = await res.json();
+  const json = await res.json() as { success: boolean; data?: ScanSubmitResult; error?: string };
   if (!res.ok) {
-    throw new Error((json as { error?: string }).error ?? "Scan failed");
+    throw new Error(json.error ?? "Scan failed");
   }
-  return json as ScanResult;
+  // 200 = cache hit (full verdict inline), 202 = enqueued (job_id for polling)
+  return json.data as ScanSubmitResult;
+};
+
+export const getScanStatus = async (
+  token: string,
+  jobId: string
+): Promise<ScanStatusResult> => {
+  const res = await apiFetch(`${API_URL}/api/scan/status/${jobId}`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json() as { success: boolean; data?: ScanStatusResult; error?: string };
+  if (!res.ok) {
+    throw new Error(json.error ?? "Status check failed");
+  }
+  return json.data as ScanStatusResult;
 };
 
 export const getScanHistory = async (

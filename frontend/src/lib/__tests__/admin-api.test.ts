@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   getExtensionInstances,
   getAllExtensionInstances,
-  registerExtensionInstance,
+  deleteExtensionInstance,
   getUsers,
   updatePassword,
   overrideEmailVerdict,
@@ -92,33 +92,28 @@ describe('getAllExtensionInstances', () => {
 })
 
 // ---------------------------------------------------------------------------
-// registerExtensionInstance
+// deleteExtensionInstance
 // ---------------------------------------------------------------------------
 
-describe('registerExtensionInstance', () => {
-  it('POSTs to the register endpoint and returns the new instance', async () => {
-    const fake = { id: 5, user_id: 1, instance_token: 'xyz123', is_active: true }
-    mockFetch({ success: true, data: fake }, true, 201)
-
-    const result = await registerExtensionInstance('token', 'Chrome 124', 'Linux')
-    expect(result.instance_token).toBe('xyz123')
-    expect(result.id).toBe(5)
-  })
-
-  it('sends browser and os_name in the request body', async () => {
+describe('deleteExtensionInstance', () => {
+  it('DELETEs the correct instance endpoint', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      status: 201,
-      json: async () => ({ success: true, data: { id: 1, instance_token: 'tok' } }),
+      status: 200,
+      json: async () => ({ success: true }),
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    await registerExtensionInstance('token', 'Firefox 125', 'Windows 11')
+    await deleteExtensionInstance('token', 42)
 
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    const body = JSON.parse(init.body as string)
-    expect(body.browser).toBe('Firefox 125')
-    expect(body.os_name).toBe('Windows 11')
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toContain('/api/extension/instances/42')
+    expect(init.method).toBe('DELETE')
+  })
+
+  it('resolves without error on success', async () => {
+    mockFetch({ success: true }, true, 200)
+    await expect(deleteExtensionInstance('token', 1)).resolves.toBeUndefined()
   })
 
   it('throws with the server error message on failure', async () => {
@@ -126,11 +121,11 @@ describe('registerExtensionInstance', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
-        status: 400,
-        json: async () => ({ message: 'Invalid payload' }),
+        status: 404,
+        json: async () => ({ message: 'Instance not found' }),
       })
     )
-    await expect(registerExtensionInstance('token')).rejects.toThrow('Invalid payload')
+    await expect(deleteExtensionInstance('token', 99)).rejects.toThrow('Instance not found')
   })
 })
 

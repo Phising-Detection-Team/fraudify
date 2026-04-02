@@ -8,7 +8,6 @@ POST /api/rounds/<id>/run - Trigger AI orchestration for a round
 """
 
 import os
-import threading
 from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required
@@ -17,7 +16,7 @@ from sqlalchemy import desc, asc
 from app.models import db, Round
 from app.errors import ValidationError, NotFoundError, ConflictError
 from app.utils import paginate, require_role
-from app.services.openai_orchestration_runner import run_openai_round_in_thread
+from app.tasks.round_tasks import run_round_task
 
 rounds_bp = Blueprint('rounds', __name__)
 
@@ -194,13 +193,7 @@ def run_round(round_id):
     except (TypeError, ValueError):
         raise ValidationError('parallel_workflows must be a positive integer')
 
-    app = current_app._get_current_object()
-    thread = threading.Thread(
-        target=run_openai_round_in_thread,
-        args=(app, round_id, round_obj.total_emails, workflows),
-        daemon=True,
-    )
-    thread.start()
+    run_round_task.delay(round_id, round_obj.total_emails, workflows)
 
     return jsonify({
         'success': True,

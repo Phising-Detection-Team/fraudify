@@ -16,7 +16,7 @@ const itemVariants = { hidden: { opacity: 0, x: -12 }, visible: { opacity: 1, x:
 const shieldVariants = { hidden: { opacity: 0, scale: 0.5, y: -20 }, visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring" as const, stiffness: 400, damping: 18 } } };
 const verdictTextVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.3 } } };
 
-function useCountUp(target: number, duration = 1200) {
+function useCountUp(target: number, duration = 400) {
   const [count, setCount] = useState(0);
   const rafRef = useRef<number | null>(null);
 
@@ -103,7 +103,7 @@ export default function VerdictDisplay({
                 className={arcColor}
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: confidence }}
-                transition={{ duration: 1.2, ease: "easeOut" }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
                 style={{ strokeDashoffset: 0 }}
               />
             </svg>
@@ -150,7 +150,7 @@ export default function VerdictDisplay({
               className={`h-full rounded-full bg-gradient-to-r ${meterGradient}`}
               initial={{ width: "0%" }}
               animate={{ width: `${confidencePercent}%` }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             />
           </div>
         </div>

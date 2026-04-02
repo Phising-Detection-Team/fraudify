@@ -13,8 +13,8 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { getUserStats, type UserStats } from "@/lib/user-api";
-import { getExtensionInstances, type ExtensionInstance } from "@/lib/admin-api";
-import { getAdminStats } from "@/lib/admin-api";
+import { getExtensionInstances, type ExtensionInstance, getAdminStats } from "@/lib/admin-api";
+import { parseUTC } from "@/lib/utils";
 import Link from "next/link";
 
 // ---------------------------------------------------------------------------
@@ -136,7 +136,7 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
                 <p className="text-sm font-medium truncate">{inst.browser ?? "Extension"}</p>
                 {inst.last_seen && (
                   <p className="text-[11px] text-muted-foreground">
-                    Last seen {new Date(inst.last_seen).toLocaleString()}
+                    Last seen {parseUTC(inst.last_seen).toLocaleString()}
                   </p>
                 )}
               </div>
@@ -168,25 +168,13 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
 // Platform stats panel
 // ---------------------------------------------------------------------------
 
-function PlatformStatsPanel({ token }: { token: string }) {
-  const [platformStats, setPlatformStats] = useState<{
-    totalEmailsScanned: number;
-    phishingDetected: number;
-    activeAgents: number;
-  } | null>(null);
+type PlatformStats = {
+  totalEmailsScanned: number;
+  phishingDetected: number;
+  activeAgents: number;
+} | null;
 
-  useEffect(() => {
-    getAdminStats(token)
-      .then((d) =>
-        setPlatformStats({
-          totalEmailsScanned: d.totalEmailsScanned,
-          phishingDetected: d.phishingDetected,
-          activeAgents: d.activeAgents ?? 0,
-        })
-      )
-      .catch(() => {});
-  }, [token]);
-
+function PlatformStatsPanel({ platformStats }: { platformStats: PlatformStats }) {
   const rows = [
     {
       icon: Mail,
@@ -252,6 +240,7 @@ export default function UserDashboard() {
     creditsRemaining: 1000,
   });
   const [instances, setInstances] = useState<ExtensionInstance[]>([]);
+  const [platformStats, setPlatformStats] = useState<PlatformStats>(null);
 
   useEffect(() => {
     const demoFlag = localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
@@ -265,6 +254,15 @@ export default function UserDashboard() {
       Promise.all([
         getUserStats(token).then(setStats).catch(() => {}),
         getExtensionInstances(token).then(setInstances).catch(() => {}),
+        getAdminStats(token)
+          .then((d) =>
+            setPlatformStats({
+              totalEmailsScanned: d.totalEmailsScanned,
+              phishingDetected: d.phishingDetected,
+              activeAgents: d.activeAgents ?? 0,
+            })
+          )
+          .catch(() => {}),
       ]).finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -326,7 +324,7 @@ export default function UserDashboard() {
           className="lg:col-span-2"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
+          transition={{ duration: 0.15, delay: 0.15 }}
         >
           <OnboardingPanel instances={isDemo ? [] : instances} />
         </motion.div>
@@ -335,10 +333,10 @@ export default function UserDashboard() {
           className="lg:col-span-1"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
+          transition={{ duration: 0.15, delay: 0.2 }}
         >
           {session?.user?.fromBackend && session.accessToken ? (
-            <PlatformStatsPanel token={session.accessToken} />
+            <PlatformStatsPanel platformStats={platformStats} />
           ) : (
             <div className="glass-panel rounded-xl p-6 space-y-3">
               <div className="flex items-center gap-2 border-b border-border/50 pb-3">

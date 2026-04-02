@@ -1,7 +1,8 @@
 """
 Stats and agent info API endpoints.
 
-GET /api/stats               - Aggregated dashboard statistics
+GET /api/stats               - Aggregated dashboard statistics (admin)
+GET /api/stats/me            - Per-user scan statistics (current user only)
 GET /api/stats/costs         - Cost breakdown by agent/model
 GET /api/stats/intelligence  - Threat intelligence panel data
 GET /api/agents              - List of known agents with live usage stats
@@ -10,10 +11,11 @@ GET /api/agents              - List of known agents with live usage stats
 from collections import Counter
 
 from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import func, case
 
 from app.models import db, Round, Email, API as APICall
+from app.models.user_scan import UserScan
 from app.utils import require_role
 
 stats_bp = Blueprint('stats', __name__)
@@ -52,12 +54,20 @@ def get_stats():
         func.coalesce(func.sum(APICall.cost), 0)
     ).scalar()
 
-    total_emails_scanned = db.session.query(
+    # Round-based emails (generator/detector pipeline)
+    round_emails_scanned = db.session.query(
         func.coalesce(func.sum(Round.processed_emails), 0)
     ).scalar()
 
-    threats_detected = db.session.query(func.count(Email.id)).filter(
+    round_threats_detected = db.session.query(func.count(Email.id)).filter(
         Email.detector_verdict == 'phishing'
+    ).scalar()
+
+    # User-submitted extension scans
+    user_scans_total = db.session.query(func.count(UserScan.id)).scalar()
+
+    user_threats_detected = db.session.query(func.count(UserScan.id)).filter(
+        UserScan.verdict.in_(['phishing', 'likely_phishing'])
     ).scalar()
 
     return jsonify({
@@ -65,8 +75,45 @@ def get_stats():
         'data': {
             'total_api_cost': round(float(total_api_cost), 6),
             'active_agents': 2,
-            'total_emails_scanned': int(total_emails_scanned),
+            'total_emails_scanned': int(round_emails_scanned) + int(user_scans_total),
+            'threats_detected': int(round_threats_detected) + int(user_threats_detected),
+        },
+    }), 200
+
+
+@stats_bp.route('/stats/me', methods=['GET'])
+@jwt_required()
+def get_my_stats():
+    """
+    Return scan statistics scoped to the currently authenticated user.
+
+    Returns:
+        total_emails_scanned:  number of emails this user has scanned via the extension
+        threats_detected:      count of this user's scans with verdict phishing/likely_phishing
+        marked_safe:           count of this user's scans with verdict legitimate/likely_legitimate
+    """
+    user_id = get_jwt_identity()
+
+    emails_scanned = db.session.query(func.count(UserScan.id)).filter(
+        UserScan.user_id == user_id
+    ).scalar()
+
+    threats_detected = db.session.query(func.count(UserScan.id)).filter(
+        UserScan.user_id == user_id,
+        UserScan.verdict.in_(['phishing', 'likely_phishing']),
+    ).scalar()
+
+    marked_safe = db.session.query(func.count(UserScan.id)).filter(
+        UserScan.user_id == user_id,
+        UserScan.verdict.in_(['legitimate', 'likely_legitimate']),
+    ).scalar()
+
+    return jsonify({
+        'success': True,
+        'data': {
+            'total_emails_scanned': int(emails_scanned),
             'threats_detected': int(threats_detected),
+            'marked_safe': int(marked_safe),
         },
     }), 200
 
@@ -180,34 +227,42 @@ def get_intelligence():
     Requires admin or super_admin role.
 
     Returns:
-        confidence_distribution: Email counts grouped into 5 confidence buckets
-        accuracy_over_rounds:    Per-round detector accuracy (correct / total)
-        fp_fn_rates:             Per-round false-positive and false-negative rates
-        top_phishing_words:      Top-20 words from phishing email subjects
+        confidence_distribution: Email + UserScan counts grouped into 5 confidence buckets
+        accuracy_over_rounds:    Per-round detector accuracy (correct / total) — pipeline only
+        fp_fn_rates:             Per-round FP/FN rates — pipeline only (needs ground-truth label)
+        top_phishing_words:      Top-20 words from phishing subjects (pipeline + extension scans)
     """
     forbidden = require_role('admin', 'super_admin')
     if forbidden:
         return forbidden
 
     # -- 1. Confidence distribution ----------------------------------------
-    all_emails = (
+    # Merge pipeline Email confidence with extension UserScan confidence values
+    pipeline_confidences = (
         db.session.query(Email.detector_confidence)
         .filter(Email.detector_confidence.isnot(None))
         .all()
     )
+    extension_confidences = (
+        db.session.query(UserScan.confidence)
+        .filter(UserScan.confidence.isnot(None))
+        .all()
+    )
+
     bucket_counts: dict[str, int] = {label: 0 for label, _, _ in _CONFIDENCE_BUCKETS}
-    for (conf,) in all_emails:
-        for label, lo, hi in _CONFIDENCE_BUCKETS:
-            if lo <= conf < hi:
-                bucket_counts[label] += 1
-                break
+    for confidences in (pipeline_confidences, extension_confidences):
+        for (conf,) in confidences:
+            for label, lo, hi in _CONFIDENCE_BUCKETS:
+                if lo <= conf < hi:
+                    bucket_counts[label] += 1
+                    break
 
     confidence_distribution = [
         {'bucket': label, 'count': bucket_counts[label]}
         for label, _, _ in _CONFIDENCE_BUCKETS
     ]
 
-    # -- 2. Accuracy over rounds -------------------------------------------
+    # -- 2. Accuracy over rounds (pipeline only — requires ground-truth label) --
     completed_rounds = (
         db.session.query(Round)
         .filter(Round.status == 'completed')
@@ -254,8 +309,8 @@ def get_intelligence():
             'false_negative_rate': round(fn_rate, 4),
         })
 
-    # -- 3. Top phishing words ---------------------------------------------
-    phishing_subjects = (
+    # -- 3. Top phishing words (pipeline + extension scans) ----------------
+    pipeline_subjects = (
         db.session.query(Email.generated_subject)
         .filter(
             Email.detector_verdict == 'phishing',
@@ -263,15 +318,24 @@ def get_intelligence():
         )
         .all()
     )
+    extension_subjects = (
+        db.session.query(UserScan.subject)
+        .filter(
+            UserScan.verdict.in_(['phishing', 'likely_phishing']),
+            UserScan.subject.isnot(None),
+        )
+        .all()
+    )
 
     word_counter: Counter[str] = Counter()
-    for (subject,) in phishing_subjects:
-        tokens = subject.lower().split()
-        for token in tokens:
-            # Strip punctuation at boundaries
-            clean = token.strip('.,!?;:\'"()[]{}')
-            if clean and clean not in _STOPWORDS and len(clean) > 1:
-                word_counter[clean] += 1
+    for subjects in (pipeline_subjects, extension_subjects):
+        for (subject,) in subjects:
+            tokens = subject.lower().split()
+            for token in tokens:
+                # Strip punctuation at boundaries
+                clean = token.strip('.,!?;:\'"()[]{}')
+                if clean and clean not in _STOPWORDS and len(clean) > 1:
+                    word_counter[clean] += 1
 
     top_phishing_words = [
         {'word': word, 'count': count}
@@ -287,3 +351,28 @@ def get_intelligence():
             'top_phishing_words': top_phishing_words,
         },
     }), 200
+
+
+# ---------------------------------------------------------------------------
+# Cache stats (Sprint 7 — R6)
+# ---------------------------------------------------------------------------
+
+@stats_bp.route('/stats/cache', methods=['GET'])
+@jwt_required()
+def cache_stats():
+    """
+    Return scan result cache statistics.
+
+    Requires admin or super_admin role.
+
+    Returns:
+        cached_keys  (int):  number of active cache entries
+        available    (bool): True when Redis is reachable
+    """
+    forbidden = require_role('admin', 'super_admin')
+    if forbidden:
+        return forbidden
+
+    from app.cache import get_cache_stats
+    stats = get_cache_stats()
+    return jsonify({'success': True, 'data': stats}), 200

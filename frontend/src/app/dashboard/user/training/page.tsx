@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Pause, RotateCcw, BrainCircuit, ChevronLeft, ChevronRight } from "lucide-react";
+import dynamic from "next/dynamic";
 import { PhaseNav } from "@/components/training/PhaseNav";
-import { Phase1Data } from "@/components/training/Phase1Data";
-import { Phase2QLoRA } from "@/components/training/Phase2QLoRA";
-import { Phase3LoRA } from "@/components/training/Phase3LoRA";
-import { Phase4Training } from "@/components/training/Phase4Training";
-import { Phase5Results } from "@/components/training/Phase5Results";
 import { NeuralBackground } from "@/components/training/NeuralBackground";
+const Phase1Data    = dynamic(() => import("@/components/training/Phase1Data").then((m) => ({ default: m.Phase1Data })), { ssr: false });
+const Phase2QLoRA   = dynamic(() => import("@/components/training/Phase2QLoRA").then((m) => ({ default: m.Phase2QLoRA })), { ssr: false });
+const Phase3LoRA    = dynamic(() => import("@/components/training/Phase3LoRA").then((m) => ({ default: m.Phase3LoRA })), { ssr: false });
+const Phase4Training = dynamic(() => import("@/components/training/Phase4Training").then((m) => ({ default: m.Phase4Training })), { ssr: false });
+const Phase5Results = dynamic(() => import("@/components/training/Phase5Results").then((m) => ({ default: m.Phase5Results })), { ssr: false });
 
 const PHASES = [
   { id: 1, label: "Data Pipeline",     duration: 18000 },

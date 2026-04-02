@@ -56,7 +56,7 @@ describe('onInstalled', () => {
 
   it('calls registerInstance when auth token is present', async () => {
     await chrome.storage.local.set({ sentra_auth_token: 'jwt-abc', sentra_api_url: 'http://localhost:5000' });
-    mockFetch(201, { success: true, instance_token: 'tok123' });
+    mockFetch(201, { success: true, data: { instance_token: 'tok123' } });
 
     await installedListener({ reason: 'install' });
 
@@ -76,7 +76,7 @@ describe('onInstalled', () => {
 
   it('stores instance_token in chrome.storage after registration', async () => {
     await chrome.storage.local.set({ sentra_auth_token: 'jwt-abc' });
-    mockFetch(201, { success: true, instance_token: 'newtoken99' });
+    mockFetch(201, { success: true, data: { instance_token: 'newtoken99' } });
 
     await installedListener({ reason: 'install' });
 
@@ -94,7 +94,7 @@ describe('onInstalled', () => {
 
   it('does not store token when response has no instance_token', async () => {
     await chrome.storage.local.set({ sentra_auth_token: 'jwt-abc' });
-    mockFetch(201, { success: true }); // no instance_token field
+    mockFetch(201, { success: true, data: {} }); // no instance_token field in data
 
     await installedListener({ reason: 'install' });
 
@@ -212,21 +212,44 @@ describe('onMessage (SCAN_EMAIL)', () => {
     expect(messageListener).toBeInstanceOf(Function);
   });
 
-  it('calls scan API and sends verdict back via sendResponse', async () => {
+  it('sends verdict back via sendResponse for a cache-hit (200, status complete)', async () => {
     await chrome.storage.local.set({
       sentra_auth_token: 'jwt-abc',
       sentra_api_url: 'http://localhost:5000',
     });
-    mockFetch(201, { success: true, verdict: 'phishing', confidence: 0.92 });
+    // Cache hit: POST /api/scan returns 200 with data.status === 'complete'
+    mockFetch(200, {
+      success: true,
+      data: { verdict: 'phishing', confidence: 0.92, status: 'complete' },
+    });
 
     const sendResponse = jest.fn();
     messageListener({ type: 'SCAN_EMAIL', subject: 'Win a prize', body: 'Click here' }, {}, sendResponse);
 
-    // Allow async to complete
     await new Promise((r) => setTimeout(r, 0));
 
     expect(sendResponse).toHaveBeenCalledWith(
-      expect.objectContaining({ verdict: 'phishing' })
+      expect.objectContaining({ verdict: 'phishing', confidence: 0.92 })
+    );
+  });
+
+  it('returns job_id immediately when API returns 202 cache miss (content script polls)', async () => {
+    await chrome.storage.local.set({
+      sentra_auth_token: 'jwt-abc',
+      sentra_api_url: 'http://localhost:5000',
+    });
+
+    // POST /api/scan returns 202 with job_id (cache miss)
+    mockFetch(202, { success: true, data: { job_id: 'job-xyz', status: 'queued' } });
+
+    const sendResponse = jest.fn();
+    messageListener({ type: 'SCAN_EMAIL', subject: 'Hello', body: 'Normal email' }, {}, sendResponse);
+
+    await new Promise((r) => setTimeout(r, 0));
+
+    // Service worker returns job_id immediately — content script drives polling
+    expect(sendResponse).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true, job_id: 'job-xyz', status: 'queued' })
     );
   });
 

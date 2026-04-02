@@ -2,10 +2,11 @@
 
 import { Agent } from "@/types";
 import { Activity, BrainCircuit, Cpu, Coins, Clock } from "lucide-react";
+import { parseUTC } from "@/lib/utils";
 
 function formatLastActive(iso: string): string {
   if (!iso || iso === "null" || iso === "undefined") return "Never";
-  const date = new Date(iso);
+  const date = parseUTC(iso);
   if (isNaN(date.getTime())) return iso;
 
   const now = new Date();

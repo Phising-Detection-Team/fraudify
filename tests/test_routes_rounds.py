@@ -1,7 +1,6 @@
 """Unit tests for /api/rounds endpoints."""
 
 import json
-import threading
 import pytest
 from datetime import datetime, timezone
 from app.models import Round
@@ -248,14 +247,8 @@ class TestRunRound:
         monkeypatch.setenv('GOOGLE_API_KEY', 'test-google-key')
         monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-anthropic-key')
 
-        class _DummyThread:
-            def __init__(self, *args, **kwargs):
-                pass
-
-            def start(self):
-                pass
-
-        monkeypatch.setattr(threading, 'Thread', _DummyThread)
+        import app.tasks.round_tasks as round_tasks
+        monkeypatch.setattr(round_tasks.run_round_task, 'delay', lambda *a, **kw: None)
 
         response = client.post(f'/api/rounds/{sample_round.id}/run', headers=self.headers)
         assert response.status_code == 202

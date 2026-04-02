@@ -261,22 +261,18 @@ export const getAllExtensionInstances = async (
   return { data: json.data ?? [], total: json.total ?? 0, active: json.active ?? 0 };
 };
 
-export const registerExtensionInstance = async (
+export const deleteExtensionInstance = async (
   token: string,
-  browser?: string,
-  osName?: string
-): Promise<ExtensionInstance> => {
-  const res = await apiFetch(`${API_URL}/api/extension/register`, {
-    method: "POST",
+  instanceId: number
+): Promise<void> => {
+  const res = await apiFetch(`${API_URL}/api/extension/instances/${instanceId}`, {
+    method: "DELETE",
     headers: authHeaders(token),
-    body: JSON.stringify({ browser, os_name: osName }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as { message?: string }).message ?? "Failed to register instance");
+    throw new Error((err as { message?: string }).message ?? "Failed to remove instance");
   }
-  const json = await res.json();
-  return json.data as ExtensionInstance;
 };
 
 // ---------------------------------------------------------------------------
@@ -405,6 +401,70 @@ export async function getIntelligenceStats(token: string): Promise<IntelligenceS
   const json = await res.json();
   return json.data as IntelligenceStats;
 }
+
+// ---------------------------------------------------------------------------
+// Cache stats (Sprint 7 — R6)
+// ---------------------------------------------------------------------------
+
+export interface CacheStats {
+  cached_keys: number;
+  available: boolean;
+}
+
+export async function getCacheStats(token: string): Promise<CacheStats> {
+  const res = await apiFetch(`${API_URL}/api/stats/cache`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error('Failed to fetch cache stats');
+  const json = await res.json();
+  return json.data as CacheStats;
+}
+
+// ---------------------------------------------------------------------------
+// Admin recent scans
+// ---------------------------------------------------------------------------
+
+export interface AdminScanItem {
+  id: number;
+  user_id: number;
+  user_email: string;
+  subject: string | null;
+  body_snippet: string | null;
+  full_body: string | null;
+  verdict: string;
+  confidence: number | null;
+  scam_score: number | null;
+  reasoning: string | null;
+  scanned_at: string;
+}
+
+export interface AdminScansPage {
+  scans: AdminScanItem[];
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+}
+
+export const getAdminRecentScans = async (
+  token: string,
+  page = 1,
+  perPage = 20
+): Promise<AdminScansPage> => {
+  const res = await apiFetch(
+    `${API_URL}/api/scan/admin/recent?page=${page}&per_page=${perPage}`,
+    { headers: authHeaders(token) }
+  );
+  if (!res.ok) throw new Error('Failed to fetch admin scans');
+  const json = await res.json();
+  return {
+    scans: json.scans ?? [],
+    total: json.total ?? 0,
+    page: json.page ?? page,
+    per_page: json.per_page ?? perPage,
+    pages: json.pages ?? 1,
+  };
+};
 
 export const createInviteCode = async (
   token: string,

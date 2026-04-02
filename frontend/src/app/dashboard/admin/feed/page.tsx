@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Wifi, WifiOff, RefreshCw, Users, Activity, Clock } from "lucide-react";
 import { getAllExtensionInstances, type ExtensionInstance } from "@/lib/admin-api";
+import { parseUTC } from "@/lib/utils";
 
 function StatCard({ label, value, icon: Icon, highlight }: {
   label: string;
@@ -63,9 +64,32 @@ export default function AdminLiveFeedPage() {
       return;
     }
     fetchData();
-    intervalRef.current = setInterval(fetchData, 10_000);
+
+    function startPolling() {
+      if (!intervalRef.current) {
+        intervalRef.current = setInterval(fetchData, 30_000);
+      }
+    }
+    function stopPolling() {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        fetchData();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    }
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
@@ -73,7 +97,7 @@ export default function AdminLiveFeedPage() {
   // Count instances active in last 24h
   const last24h = instances.filter((i) => {
     if (!i.last_seen) return false;
-    return Date.now() - new Date(i.last_seen).getTime() < 86_400_000;
+    return Date.now() - parseUTC(i.last_seen).getTime() < 86_400_000;
   }).length;
 
   return (
@@ -165,7 +189,7 @@ export default function AdminLiveFeedPage() {
                     <td className="px-6 py-4 text-muted-foreground">{inst.os_name ?? "—"}</td>
                     <td className="px-6 py-4 text-muted-foreground text-xs">
                       {inst.last_seen
-                        ? new Date(inst.last_seen).toLocaleString()
+                        ? parseUTC(inst.last_seen).toLocaleString()
                         : "Never"}
                     </td>
                     <td className="px-6 py-4">

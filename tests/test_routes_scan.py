@@ -12,7 +12,7 @@ that mechanism.  We test the business-logic guards we own:
 """
 
 import pytest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, MagicMock
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ class TestScanEmail:
         data = resp.get_json()
         assert data['success'] is False
 
-    @patch('app.routes.scan._run_detector', new_callable=AsyncMock)
+    @patch('app.routes.scan._run_detector_sync')
     def test_scan_success_phishing(self, mock_detector, client, db, auth_headers_user):
         """Valid email is scanned; verdict is normalised and scan is persisted."""
         mock_detector.return_value = FAKE_DETECTION
@@ -86,25 +86,24 @@ class TestScanEmail:
             'body': 'Click here to claim your $1 000 reward immediately!',
         }, headers=auth_headers_user)
 
-        assert resp.status_code == 201
+        assert resp.status_code == 200
         data = resp.get_json()
         assert data['success'] is True
-        assert data['verdict'] == 'phishing'   # 'scam' normalised → 'phishing'
-        assert 'id' in data
-        assert 0.0 <= data['confidence'] <= 1.0
-        assert isinstance(data['reasoning'], str)
+        assert data['data']['verdict'] == 'phishing'   # 'scam' normalised → 'phishing'
+        assert 0.0 <= data['data']['confidence'] <= 1.0
+        assert isinstance(data['data']['reasoning'], str)
 
-    @patch('app.routes.scan._run_detector', new_callable=AsyncMock)
+    @patch('app.routes.scan._run_detector_sync')
     def test_scan_success_without_subject(self, mock_detector, client, db, auth_headers_user):
         """Subject is optional; scan must succeed with body only."""
         mock_detector.return_value = {**FAKE_DETECTION, 'verdict': 'legitimate'}
 
         resp = client.post('/api/scan', json={'body': 'Plain email with no subject.'}, headers=auth_headers_user)
 
-        assert resp.status_code == 201
+        assert resp.status_code == 200
         assert resp.get_json()['success'] is True
 
-    @patch('app.routes.scan._run_detector', new_callable=AsyncMock)
+    @patch('app.routes.scan._run_detector_sync')
     def test_scan_detector_failure_returns_503(self, mock_detector, client, db, auth_headers_user):
         """Detection service failure must return 503, not 500."""
         mock_detector.side_effect = RuntimeError('AI service unavailable')
@@ -117,15 +116,15 @@ class TestScanEmail:
         # Must not leak internal error details to the client
         assert 'RuntimeError' not in data.get('error', '')
 
-    @patch('app.routes.scan._run_detector', new_callable=AsyncMock)
+    @patch('app.routes.scan._run_detector_sync')
     def test_scan_confidence_normalised_from_100_scale(self, mock_detector, client, db, auth_headers_user):
         """Confidence values in 0-100 range must be normalised to 0-1."""
         mock_detector.return_value = {**FAKE_DETECTION, 'confidence': 87}
 
         resp = client.post('/api/scan', json={'body': 'Test email.'}, headers=auth_headers_user)
 
-        assert resp.status_code == 201
-        assert resp.get_json()['confidence'] == pytest.approx(0.87, abs=0.001)
+        assert resp.status_code == 200
+        assert resp.get_json()['data']['confidence'] == pytest.approx(0.87, abs=0.001)
 
 
 # ---------------------------------------------------------------------------
@@ -148,7 +147,7 @@ class TestScanHistory:
         assert data['scans'] == []
         assert data['total'] == 0
 
-    @patch('app.routes.scan._run_detector', new_callable=AsyncMock)
+    @patch('app.routes.scan._run_detector_sync')
     def test_history_returns_user_scans(self, mock_detector, client, db, auth_headers_user):
         """History endpoint returns the user's own past scans."""
         mock_detector.return_value = FAKE_DETECTION

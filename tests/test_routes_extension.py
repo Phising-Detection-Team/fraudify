@@ -65,16 +65,42 @@ class TestRegister:
         assert inst['browser'] == 'Chrome 124'
         assert inst['os_name'] == 'Windows 11'
 
-    def test_register_multiple_instances_same_user(
+    def test_register_same_browser_os_returns_existing(
         self, client, db, sample_user, auth_headers_user
     ):
-        r1 = client.post('/api/extension/register', json={}, headers=auth_headers_user)
-        r2 = client.post('/api/extension/register', json={}, headers=auth_headers_user)
+        """Second registration with same browser+OS returns the existing instance (200)."""
+        r1 = client.post(
+            '/api/extension/register',
+            json={'browser': 'Chrome 124', 'os_name': 'Windows 11'},
+            headers=auth_headers_user,
+        )
+        r2 = client.post(
+            '/api/extension/register',
+            json={'browser': 'Chrome 124', 'os_name': 'Windows 11'},
+            headers=auth_headers_user,
+        )
+        assert r1.status_code == 201
+        assert r2.status_code == 200  # existing returned
+        assert r1.get_json()['data']['instance_token'] == r2.get_json()['data']['instance_token']
+        assert r1.get_json()['data']['id'] == r2.get_json()['data']['id']
+
+    def test_register_different_browser_creates_new_instance(
+        self, client, db, sample_user, auth_headers_user
+    ):
+        """Different browser/OS combinations create separate instances."""
+        r1 = client.post(
+            '/api/extension/register',
+            json={'browser': 'Chrome 124', 'os_name': 'Windows 11'},
+            headers=auth_headers_user,
+        )
+        r2 = client.post(
+            '/api/extension/register',
+            json={'browser': 'Edge 124', 'os_name': 'Windows 11'},
+            headers=auth_headers_user,
+        )
         assert r1.status_code == 201
         assert r2.status_code == 201
-        t1 = r1.get_json()['data']['instance_token']
-        t2 = r2.get_json()['data']['instance_token']
-        assert t1 != t2
+        assert r1.get_json()['data']['instance_token'] != r2.get_json()['data']['instance_token']
 
     def test_register_sets_last_seen(self, client, db, sample_user, auth_headers_user):
         resp = client.post('/api/extension/register', json={}, headers=auth_headers_user)
@@ -236,10 +262,79 @@ class TestListInstances:
             assert key in inst
 
     def test_list_instances_multiple(self, client, db, sample_user, auth_headers_user):
-        _create_instance(db, sample_user.id)
-        _create_instance(db, sample_user.id)
+        _create_instance(db, sample_user.id, last_seen=datetime.now(timezone.utc))
+        _create_instance(db, sample_user.id, last_seen=datetime.now(timezone.utc))
         resp = client.get('/api/extension/instances', headers=auth_headers_user)
         assert len(resp.get_json()['data']) == 2
+
+    def test_list_auto_purges_stale_instances(
+        self, client, db, sample_user, auth_headers_user
+    ):
+        """Instances with last_seen older than 30 days are deleted on list."""
+        old_time = datetime.now(timezone.utc) - timedelta(days=31)
+        stale = _create_instance(db, sample_user.id, last_seen=old_time)
+        stale_id = stale.id
+        fresh = _create_instance(db, sample_user.id, last_seen=datetime.now(timezone.utc))
+
+        resp = client.get('/api/extension/instances', headers=auth_headers_user)
+        returned_ids = [i['id'] for i in resp.get_json()['data']]
+
+        assert fresh.id in returned_ids
+        assert stale_id not in returned_ids
+        assert db.session.get(ExtensionInstance, stale_id) is None
+
+    def test_list_purges_never_seen_old_instances(
+        self, client, db, sample_user, auth_headers_user
+    ):
+        """Instances with NULL last_seen and created_at > 30 days ago are deleted."""
+        old_inst = ExtensionInstance(user_id=sample_user.id)
+        db.session.add(old_inst)
+        db.session.commit()
+        # Back-date created_at
+        old_inst.created_at = datetime.now(timezone.utc) - timedelta(days=31)
+        db.session.commit()
+        old_id = old_inst.id
+
+        client.get('/api/extension/instances', headers=auth_headers_user)
+        assert db.session.get(ExtensionInstance, old_id) is None
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/extension/instances/<id>
+# ---------------------------------------------------------------------------
+
+class TestDeleteInstance:
+    def test_delete_requires_jwt(self, client, db, sample_user):
+        inst = _create_instance(db, sample_user.id)
+        resp = client.delete(f'/api/extension/instances/{inst.id}')
+        assert resp.status_code == 401
+
+    def test_delete_own_instance(self, client, db, sample_user, auth_headers_user):
+        inst = _create_instance(db, sample_user.id)
+        inst_id = inst.id
+        resp = client.delete(
+            f'/api/extension/instances/{inst_id}',
+            headers=auth_headers_user,
+        )
+        assert resp.status_code == 200
+        assert resp.get_json()['success'] is True
+        assert db.session.get(ExtensionInstance, inst_id) is None
+
+    def test_delete_other_users_instance_returns_404(
+        self, client, db, sample_user, sample_admin, auth_headers_admin
+    ):
+        inst = _create_instance(db, sample_user.id)
+        resp = client.delete(
+            f'/api/extension/instances/{inst.id}',
+            headers=auth_headers_admin,
+        )
+        assert resp.status_code == 404
+
+    def test_delete_nonexistent_instance_returns_404(
+        self, client, db, auth_headers_user
+    ):
+        resp = client.delete('/api/extension/instances/99999', headers=auth_headers_user)
+        assert resp.status_code == 404
 
 
 # ---------------------------------------------------------------------------

@@ -7,13 +7,10 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
 } from "recharts";
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { getCostBreakdown, type CostBreakdownItem } from "@/lib/admin-api";
+import { useMemo } from "react";
+import { type CostBreakdownItem, type CostBreakdown } from "@/lib/admin-api";
 import { MOCK_ROUNDS } from "@/lib/mock-data";
-import { config } from "@/lib/config";
 import type { ModelCost } from "@/types";
-import { Loader2 } from "lucide-react";
 
 // Ordered palette — assigned by index, not hardcoded to model name
 const PALETTE = [
@@ -57,23 +54,21 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 interface Props {
-  /** Pass for demo mode only. Real data is self-fetched. */
+  /** Pass mock ModelCost[] for demo mode. */
   demoCosts?: ModelCost[];
+  /** Pass pre-fetched CostBreakdown for real mode (from parent Promise.all). */
+  serverData?: CostBreakdown;
 }
 
-export function CostPieChart({ demoCosts }: Props) {
-  const { data: session } = useSession();
-  const [items, setItems] = useState<CostBreakdownItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const demo = localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
-
-    if (demo) {
-      // Convert mock ModelCost[] into our CostBreakdownItem shape
-      const merged = (demoCosts ?? MOCK_ROUNDS.flatMap((r) => r.apiCosts)).reduce<
-        Record<string, CostBreakdownItem>
-      >((acc, mc) => {
+export function CostPieChart({ demoCosts, serverData }: Props) {
+  const { items, total } = useMemo(() => {
+    if (serverData) {
+      return serverData;
+    }
+    // Demo mode: convert mock ModelCost[] into CostBreakdownItem shape
+    const mockCosts = demoCosts ?? MOCK_ROUNDS.flatMap((r) => r.apiCosts);
+    const merged = mockCosts.reduce<Record<string, CostBreakdownItem>>(
+      (acc, mc) => {
         const key = mc.model;
         if (!acc[key]) {
           acc[key] = {
@@ -88,30 +83,12 @@ export function CostPieChart({ demoCosts }: Props) {
         acc[key].tokens += mc.inputTokens + mc.outputTokens;
         acc[key].cost += mc.cost;
         return acc;
-      }, {});
-      const arr = Object.values(merged);
-      setItems(arr);
-      setTotal(arr.reduce((s, i) => s + i.cost, 0));
-      setLoading(false);
-      return;
-    }
-
-    if (!session?.accessToken) {
-      setLoading(false);
-      return;
-    }
-
-    getCostBreakdown(session.accessToken)
-      .then(({ items: fetched, total: t }) => {
-        setItems(fetched);
-        setTotal(t);
-      })
-      .catch(() => {
-        setItems([]);
-        setTotal(0);
-      })
-      .finally(() => setLoading(false));
-  }, [session, demoCosts]);
+      },
+      {}
+    );
+    const arr = Object.values(merged);
+    return { items: arr, total: arr.reduce((s, i) => s + i.cost, 0) };
+  }, [demoCosts, serverData]);
 
   const chartData = items.map((item, i) => ({
     ...item,
@@ -126,28 +103,22 @@ export function CostPieChart({ demoCosts }: Props) {
     <div className="glass-panel p-6 rounded-xl flex flex-col h-full">
       <h3 className="text-lg font-semibold mb-4">API Cost Breakdown</h3>
 
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground gap-2">
-          <Loader2 size={18} className="animate-spin" />
-          <span className="text-sm">Loading…</span>
-        </div>
-      ) : (
-        <>
-          {/* Pie chart */}
-          <div className="relative" style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={hasData ? chartData : [{ name: "No data", value: 1 }]}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={62}
-                  outerRadius={88}
-                  paddingAngle={hasData ? 4 : 0}
-                  dataKey="value"
-                  stroke="none"
-                  isAnimationActive
-                >
+      <>
+        {/* Pie chart */}
+        <div className="relative" style={{ height: 220 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={hasData ? chartData : [{ name: "No data", value: 1 }]}
+                cx="50%"
+                cy="50%"
+                innerRadius={62}
+                outerRadius={88}
+                paddingAngle={hasData ? 4 : 0}
+                dataKey="value"
+                stroke="none"
+                isAnimationActive={false}
+              >
                   {hasData
                     ? chartData.map((entry, i) => (
                         <Cell
@@ -234,7 +205,6 @@ export function CostPieChart({ demoCosts }: Props) {
             )}
           </div>
         </>
-      )}
     </div>
   );
 }

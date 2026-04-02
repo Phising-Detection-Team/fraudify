@@ -54,7 +54,9 @@ All items below are **fully implemented and running** in the current codebase.
 - ✅ User management: registration, login, password change, forgot/reset-password (Flask-Mail)
 - ✅ Invite-code based registration — regular users never see the mechanism
 - ✅ Browser extension instance registration and tracking
-- ✅ User-specific email scanning: `POST /api/scan` + `GET /api/scan/history`
+- ✅ User-specific email scanning: `POST /api/scan` (synchronous, 1–5 s) + `GET /api/scan/history`
+- ✅ Admin view of all user scans: `GET /api/scan/admin/recent` (paginated, role-protected)
+- ✅ Dashboard stats include both round-based emails and user extension scans
 - ✅ Per-model API cost breakdown: `GET /api/stats/costs`
 - ✅ Rate limiting on auth endpoints (Flask-Limiter + Redis)
 - ✅ Database seeding with admin + regular user test accounts
@@ -64,6 +66,7 @@ All items below are **fully implemented and running** in the current codebase.
 - ✅ Dark-mode dashboard with Tailwind CSS and `framer-motion` animations
 - ✅ NextAuth.js credential-based auth with JWT session
 - ✅ **Admin dashboard**: stats cards, round management, live feed, system logs, users panel, extension instances, settings
+- ✅ **Recent User Scans** table on admin dashboard — paginated, clickable rows open Framer Motion modal with full email body + detector reasoning
 - ✅ **User dashboard**: onboarding checklist, extension setup guide, scan email form + history, profile settings
 - ✅ Round detail page with clickable email rows → full-content dialog (subject, body, detector reasoning, ground truth)
 - ✅ API Cost Breakdown pie chart fetching live per-model cost data
@@ -72,10 +75,17 @@ All items below are **fully implemented and running** in the current codebase.
 - ✅ Rate-limit (429) feedback toast
 - ✅ Invite-link copy button for admins (generates a signed invite code, builds `?invite=` URL)
 
+### Browser Extension
+- ✅ Gmail + Outlook content scripts — inject verdict banner above email body
+- ✅ Synchronous scan path — banner transitions from "Analyzing…" → verdict in 1–5 s without polling
+- ✅ Graceful error state ("Analysis unavailable") if the backend is unreachable
+- ✅ Auth bridge (`sentra_bridge.js`) — syncs JWT token from Next.js to extension storage
+- ✅ Popup for login status + manual token management
+
 ### Infrastructure
-- ✅ `start.sh` — one-command startup script (Docker, migrations, Flask, Next.js)
+- ✅ `start.sh` — one-command startup script (Docker, migrations, Flask, Celery worker, Next.js)
 - ✅ Docker Compose for PostgreSQL 16 + Redis 7
-- ✅ 237+ backend unit and integration tests (pytest)
+- ✅ 250+ backend unit and integration tests (pytest)
 
 ---
 
@@ -342,8 +352,10 @@ All endpoints require `Authorization: Bearer <access_token>` except `/api/auth/s
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/scan` | Submit email for phishing scan |
-| GET | `/api/scan/history` | User's scan history |
+| POST | `/api/scan` | Submit email for synchronous phishing analysis (returns verdict immediately) |
+| GET | `/api/scan/status/<job_id>` | Legacy: poll async task status (kept for backward compat) |
+| GET | `/api/scan/history` | User's scan history (paginated) |
+| GET | `/api/scan/admin/recent` | All user scans (admin only, paginated) |
 
 ### Extension
 
@@ -458,13 +470,24 @@ phishing_detection/
 │       │       ├── AgentLogsTable.tsx # Agent cards with cost + relative time
 │       │       ├── RecentLogsSection.tsx
 │       │       └── LiveFeed.tsx
+│               ├── components/admin/
+│       │   └── RecentScansTable.tsx  # Admin recent-scans table + modal
 │       └── lib/
-│           ├── admin-api.ts          # Admin API functions + getCostBreakdown
+│           ├── admin-api.ts          # Admin API functions + getCostBreakdown + getAdminRecentScans
 │           ├── user-api.ts           # User API functions + scanEmail
 │           ├── api-fetch.ts          # Shared fetch wrapper (401/429 handling)
 │           └── config.ts             # API base URL + route constants
 │
-├── tests/                            # ✅ 237+ backend tests
+├── extension/
+│   ├── content_scripts/
+│   │   ├── gmail.js                  # Gmail DOM observer + synchronous scan + verdict overlay
+│   │   └── outlook.js                # Outlook DOM observer + synchronous scan + verdict overlay
+│   ├── utils/api.js                  # scanEmail, pollScanResult (legacy), registerInstance
+│   ├── background/service-worker.js  # Chrome service worker (token storage, install handler)
+│   ├── content_scripts/sentra_bridge.js  # JWT bridge from Next.js → extension storage
+│   └── tests/                        # Jest tests for extension scripts
+│
+├── tests/                            # ✅ 250+ backend tests
 │   ├── conftest.py                   # pytest fixtures (app, client, tokens)
 │   ├── test_models.py
 │   ├── test_models_auth.py
@@ -472,7 +495,8 @@ phishing_detection/
 │   ├── test_routes_auth.py
 │   ├── test_routes_rounds.py
 │   ├── test_routes_emails.py
-│   ├── test_routes_stats.py
+│   ├── test_routes_stats.py          # Updated: includes UserScan count assertions
+│   ├── test_routes_scan.py           # Scan status 500-fix + admin/recent auth tests
 │   ├── test_routes_costs.py
 │   ├── test_routes_logs.py
 │   ├── test_routes_extension.py
@@ -493,12 +517,12 @@ phishing_detection/
 
 | Phase | Focus | Status | Key Deliverables |
 |-------|-------|--------|-----------------|
-| **Phase 1**: Foundation | AI pipeline + backend | ✅ Complete | OpenAI Agents SDK pipeline, Flask API, PostgreSQL schema, Alembic migrations, 237+ tests |
+| **Phase 1**: Foundation | AI pipeline + backend | ✅ Complete | OpenAI Agents SDK pipeline, Flask API, PostgreSQL schema, Alembic migrations, 250+ tests |
 | **Phase 2**: Dashboard | Admin UI | ✅ Complete | Next.js dashboard, round management, live logs, API cost pie chart, agent stats |
-| **Phase 3**: User Features | Auth + scanning | ✅ Complete | JWT auth, password reset, invite codes, user scan endpoint + history, session expiry UX |
-| **Phase 4**: Extension Tracking | Browser extension infra | ✅ Complete | Extension instance registration, admin instance view, invite-link generation |
-| **Phase 5**: Fine-tuning | On-device model | 🔄 Planned | LoRA/QLoRA fine-tune on round data, browser extension inference |
-| **Phase 6**: Extension | Chrome/Firefox | ⏳ Future | Real-time Gmail/Outlook scanning, risk overlay |
+| **Phase 3**: User Features | Auth + scanning | ✅ Complete | JWT auth, password reset, invite codes, synchronous user scan + history, session expiry UX |
+| **Phase 4**: Extension Tracking | Browser extension infra | ✅ Complete | Gmail/Outlook content scripts, synchronous verdict banner, auth bridge, instance registration |
+| **Phase 5**: Admin Visibility | Recent scans + dashboard | ✅ Complete | Admin recent-scans table + modal, stats UserScan counts, scan status 500-fix |
+| **Phase 6**: Fine-tuning | On-device model | 🔄 Planned | LoRA/QLoRA fine-tune on round data, browser extension on-device inference |
 
 ---
 
@@ -540,4 +564,4 @@ phishing_detection/
 
 ---
 
-**Status**: ✅ Full-Stack MVP Complete | **Last Updated**: March 28, 2026
+**Status**: ✅ Full-Stack MVP + Extension Complete | **Last Updated**: April 2, 2026

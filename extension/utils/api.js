@@ -68,8 +68,34 @@ async function sendHeartbeat(apiUrl, instanceToken) {
   return res.json();
 }
 
+/**
+ * Poll GET /api/scan/status/<jobId> until the result is complete.
+ *
+ * @param {string} apiUrl       - Backend base URL
+ * @param {string} authToken    - User's JWT access token
+ * @param {string} jobId        - Celery task ID from POST /api/scan
+ * @param {number} maxAttempts  - Max poll attempts before timeout (default 40 = 60s)
+ * @param {number} intervalMs   - Milliseconds between polls (default 1500)
+ * @returns {Promise<object>}   - { verdict, confidence, scam_score, reasoning, status }
+ */
+async function pollScanResult(apiUrl, authToken, jobId, maxAttempts = 40, intervalMs = 1500) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+    const res = await fetch(`${apiUrl}/api/scan/status/${encodeURIComponent(jobId)}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    if (!res.ok) throw new Error(`${res.status}`);
+    const json = await res.json();
+    const data = json.data || {};
+    if (data.status === 'complete') return data;
+    if (data.status === 'failed') throw new Error(data.error || 'Scan failed');
+    // status === 'pending' — keep polling
+  }
+  throw new Error('Scan timed out');
+}
+
 // CommonJS export for Jest; in the extension itself the functions are globals.
 /* istanbul ignore next */
 if (typeof module !== 'undefined') {
-  module.exports = { scanEmail, registerInstance, sendHeartbeat, DEFAULT_API_URL };
+  module.exports = { scanEmail, registerInstance, sendHeartbeat, pollScanResult, DEFAULT_API_URL };
 }

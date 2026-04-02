@@ -318,13 +318,10 @@ export function RoundDetailView() {
                     </td>
                   </tr>
                 ) : (
-                  <AnimatePresence>
+                  <>
                     {displayEmails.map((email, idx) => (
-                      <motion.tr
+                      <tr
                         key={email.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(idx * 0.05, 0.5) }}
                         onClick={() => {
                           setSelectedEmail(email);
                           setOverrideVerdict("legitimate");
@@ -370,9 +367,9 @@ export function RoundDetailView() {
                         <td className="px-6 py-4 text-right font-mono font-medium">
                           {email.confidence}%
                         </td>
-                      </motion.tr>
+                      </tr>
                     ))}
-                  </AnimatePresence>
+                  </>
                 )}
               </tbody>
             </table>

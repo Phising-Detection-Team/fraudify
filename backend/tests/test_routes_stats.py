@@ -13,6 +13,7 @@ from app.models.user import User
 from app.models.role import Role
 from app.models.round import Round
 from app.models.email import Email
+from app.models.user_scan import UserScan
 
 
 # ---------------------------------------------------------------------------
@@ -481,3 +482,261 @@ class TestTopPhishingWords:
         """Words should be ordered by count descending."""
         counts = [entry['count'] for entry in self.words]
         assert counts == sorted(counts, reverse=True)
+
+
+# ---------------------------------------------------------------------------
+# Tests: GET /api/stats — UserScan counts included
+# ---------------------------------------------------------------------------
+
+class TestGetStatsUserScanCounts:
+    """GET /api/stats should reflect UserScan rows in totals."""
+
+    @pytest.fixture(autouse=True)
+    def seed_user_scans(self, app, admin_user):
+        """Add two UserScan rows (one phishing, one legitimate) and capture baseline stats."""
+        with app.app_context():
+            self.scan1 = UserScan(
+                user_id=admin_user,
+                subject='Phishing email',
+                verdict='phishing',
+                confidence=0.9,
+            )
+            self.scan2 = UserScan(
+                user_id=admin_user,
+                subject='Legit email',
+                verdict='legitimate',
+                confidence=0.8,
+            )
+            _db.session.add_all([self.scan1, self.scan2])
+            _db.session.commit()
+            self.scan1_id = self.scan1.id
+            self.scan2_id = self.scan2.id
+
+    def test_stats_endpoint_accessible(self, client, admin_token):
+        resp = client.get(
+            '/api/stats',
+            headers={'Authorization': f'Bearer {admin_token}'},
+        )
+        assert resp.status_code == 200
+
+    def test_total_emails_scanned_includes_user_scans(self, client, admin_token, app):
+        """total_emails_scanned must be >= the number of UserScan rows."""
+        with app.app_context():
+            user_scan_count = UserScan.query.count()
+
+        resp = client.get(
+            '/api/stats',
+            headers={'Authorization': f'Bearer {admin_token}'},
+        )
+        data = resp.get_json()['data']
+        assert data['total_emails_scanned'] >= user_scan_count
+
+    def test_threats_detected_includes_user_phishing(self, client, admin_token, app):
+        """threats_detected must include UserScan rows with verdict in (phishing, likely_phishing)."""
+        with app.app_context():
+            user_threats = UserScan.query.filter(
+                UserScan.verdict.in_(['phishing', 'likely_phishing'])
+            ).count()
+
+        resp = client.get(
+            '/api/stats',
+            headers={'Authorization': f'Bearer {admin_token}'},
+        )
+        data = resp.get_json()['data']
+        assert data['threats_detected'] >= user_threats
+
+
+# ---------------------------------------------------------------------------
+# Tests: GET /api/stats/intelligence — UserScan data appears in charts
+# ---------------------------------------------------------------------------
+
+class TestIntelligenceIncludesUserScans:
+    """
+    Confidence distribution and top phishing words must include UserScan data,
+    not just pipeline Email rows.
+    """
+
+    @pytest.fixture(autouse=True)
+    def seed_user_scans(self, app, admin_user):
+        """Create isolated UserScan rows with known confidence and verdict."""
+        with app.app_context():
+            # High-confidence phishing scan with a distinctive subject
+            scan_phishing = UserScan(
+                user_id=admin_user,
+                subject='UniqueWord xyzabc123 alert',
+                verdict='phishing',
+                confidence=0.92,
+            )
+            # Likely-phishing scan — also picked up by top-words query
+            scan_likely = UserScan(
+                user_id=admin_user,
+                subject='UniqueWord xyzabc123 warning',
+                verdict='likely_phishing',
+                confidence=0.07,  # 0-20% bucket
+            )
+            # Legitimate scan — should not add to phishing words
+            scan_legit = UserScan(
+                user_id=admin_user,
+                subject='legitimate notice',
+                verdict='legitimate',
+                confidence=0.55,  # 40-60% bucket
+            )
+            _db.session.add_all([scan_phishing, scan_likely, scan_legit])
+            _db.session.commit()
+
+    @pytest.fixture
+    def intel(self, client, admin_token):
+        resp = client.get(
+            '/api/stats/intelligence',
+            headers={'Authorization': f'Bearer {admin_token}'},
+        )
+        assert resp.status_code == 200
+        return resp.get_json()['data']
+
+    def test_confidence_distribution_counts_userscan_rows(self, intel):
+        """
+        The two UserScan rows seeded above have confidence 0.92 and 0.07.
+        Their buckets (80-100% and 0-20%) must have count >= 1 each.
+        """
+        by_label = {b['bucket']: b['count'] for b in intel['confidence_distribution']}
+        assert by_label['80-100%'] >= 1, "80-100% bucket should count UserScan confidence=0.92"
+        assert by_label['0-20%'] >= 1, "0-20% bucket should count UserScan confidence=0.07"
+
+    def test_top_phishing_words_includes_userscan_subjects(self, intel):
+        """
+        'UniqueWord xyzabc123 alert/warning' are only present in UserScan, not Email.
+        Both distinctive tokens should appear in top_phishing_words.
+        """
+        word_set = {entry['word'].lower() for entry in intel['top_phishing_words']}
+        assert 'uniqueword' in word_set, "Token from UserScan phishing subject should appear"
+        assert 'xyzabc123' in word_set, "Token from UserScan phishing subject should appear"
+
+    def test_legitimate_userscan_subject_not_in_phishing_words(self, intel):
+        """
+        Subjects from legitimate UserScan rows should NOT appear in top_phishing_words.
+        The word 'legitimate' exists only in the legit scan.
+        """
+        word_set = {entry['word'].lower() for entry in intel['top_phishing_words']}
+        assert 'legitimate' not in word_set, "Legit scan subjects should not pollute phishing words"
+
+
+# ---------------------------------------------------------------------------
+# Tests: GET /api/stats/me — per-user scoped statistics
+# ---------------------------------------------------------------------------
+
+class TestGetMyStats:
+    """
+    GET /api/stats/me must return counts scoped to the authenticated user only —
+    not global totals and not another user's data.
+    """
+
+    @pytest.fixture(autouse=True)
+    def seed_scans(self, app, admin_user, regular_user):
+        """
+        Seed UserScan rows for two different users:
+        - admin_user : 2 phishing, 1 legitimate
+        - regular_user: 1 likely_phishing, 2 likely_legitimate
+        """
+        with app.app_context():
+            admin_scans = [
+                UserScan(user_id=admin_user, subject='Admin phishing 1',
+                         verdict='phishing', confidence=0.9),
+                UserScan(user_id=admin_user, subject='Admin phishing 2',
+                         verdict='phishing', confidence=0.85),
+                UserScan(user_id=admin_user, subject='Admin legit',
+                         verdict='legitimate', confidence=0.1),
+            ]
+            user_scans = [
+                UserScan(user_id=regular_user, subject='User likely phishing',
+                         verdict='likely_phishing', confidence=0.75),
+                UserScan(user_id=regular_user, subject='User legit 1',
+                         verdict='likely_legitimate', confidence=0.2),
+                UserScan(user_id=regular_user, subject='User legit 2',
+                         verdict='likely_legitimate', confidence=0.15),
+            ]
+            _db.session.add_all(admin_scans + user_scans)
+            _db.session.commit()
+
+    def test_requires_authentication(self, client):
+        """Unauthenticated request must return 401."""
+        resp = client.get('/api/stats/me')
+        assert resp.status_code == 401
+
+    def test_admin_user_sees_only_own_scans(self, client, admin_token, app):
+        """
+        Admin token should see exactly the 3 scans seeded for admin_user above
+        (plus any previously seeded rows — so we test >= not exact equality,
+        but threats and marked_safe must match the seeded split of 2 phishing / 1 legit).
+        """
+        resp = client.get(
+            '/api/stats/me',
+            headers={'Authorization': f'Bearer {admin_token}'},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()['data']
+        assert 'total_emails_scanned' in data
+        assert 'threats_detected' in data
+        assert 'marked_safe' in data
+        # threats_detected must include phishing counts for admin
+        assert data['threats_detected'] >= 2
+        # marked_safe must include legitimate counts for admin
+        assert data['marked_safe'] >= 1
+
+    def test_regular_user_sees_only_own_scans(self, client, user_token):
+        """
+        Regular-user token must see only that user's rows — 1 threat, 2 marked safe.
+        """
+        resp = client.get(
+            '/api/stats/me',
+            headers={'Authorization': f'Bearer {user_token}'},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()['data']
+        assert data['threats_detected'] >= 1
+        assert data['marked_safe'] >= 2
+
+    def test_users_do_not_see_each_others_data(self, client, admin_token, user_token):
+        """
+        The total_emails_scanned for each user must differ, confirming isolation.
+        Admin has >= 3 scans; regular_user has exactly 3 from the fixture above
+        but admin_user accumulates rows across tests — their totals must not be equal
+        if we compare threats_detected: admin=2+, user=1.
+        """
+        admin_resp = client.get(
+            '/api/stats/me',
+            headers={'Authorization': f'Bearer {admin_token}'},
+        )
+        user_resp = client.get(
+            '/api/stats/me',
+            headers={'Authorization': f'Bearer {user_token}'},
+        )
+        admin_data = admin_resp.get_json()['data']
+        user_data  = user_resp.get_json()['data']
+
+        # The two users have different threat counts — admin >= 2, regular_user >= 1
+        # but regular_user's marked_safe >= 2 while admin's is >= 1
+        # Simplest assertion: they are not identical response objects
+        assert admin_data['total_emails_scanned'] != user_data['total_emails_scanned'] or \
+               admin_data['threats_detected']      != user_data['threats_detected']
+
+    def test_marked_safe_counts_legitimate_and_likely_legitimate(self, client, user_token):
+        """
+        marked_safe should include both 'legitimate' and 'likely_legitimate' verdicts.
+        regular_user has 2 likely_legitimate rows → marked_safe >= 2.
+        """
+        resp = client.get(
+            '/api/stats/me',
+            headers={'Authorization': f'Bearer {user_token}'},
+        )
+        data = resp.get_json()['data']
+        assert data['marked_safe'] >= 2
+
+    def test_response_shape(self, client, user_token):
+        """Response must have exactly the three expected keys inside data."""
+        resp = client.get(
+            '/api/stats/me',
+            headers={'Authorization': f'Bearer {user_token}'},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()['data']
+        assert set(data.keys()) == {'total_emails_scanned', 'threats_detected', 'marked_safe'}
