@@ -262,7 +262,7 @@ class TestAdminInvite:
             content_type='application/json',
             headers=_auth_header(token)
         )
-        assert resp.status_code == 404
+        assert resp.status_code == 400
 
     def test_invite_missing_role_name(self, client, db, sample_admin):
         sample_admin.email_verified = True
