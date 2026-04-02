@@ -1,6 +1,7 @@
 import torch
 from dotenv import load_dotenv
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import AutoPeftModelForCausalLM
+from transformers import AutoTokenizer
 from entities.base_entity import BaseEntity
 from utils.prompts import get_system_prompt_detector
 
@@ -14,7 +15,7 @@ class DetectorAgentEntity(BaseEntity):
     def __init__(self):
         super().__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(self.MODEL_ID)
-        self.model = AutoModelForCausalLM.from_pretrained(
+        self.model = AutoPeftModelForCausalLM.from_pretrained(
             self.MODEL_ID, torch_dtype="auto", device_map="auto"
         )
         self.model.eval()
