@@ -591,10 +591,11 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
                     ["Scale (α/r)", `${(ALPHA / RANK).toFixed(1)}×`],
                     ["Dropout",     "0.1"],
                     ["Target mods", "7 × 28 = 196"],
+                    ["Grad ckpt",   '"unsloth" (smart)'],
                   ] as [string, string][]).map(([k, v]) => (
                     <div key={k} className="flex justify-between">
                       <span className="text-muted-foreground">{k}</span>
-                      <span className="font-mono font-semibold text-foreground">{v}</span>
+                      <span className={`font-mono font-semibold ${k === "Grad ckpt" ? "text-accent-purple" : "text-foreground"}`}>{v}</span>
                     </div>
                   ))}
                 </div>

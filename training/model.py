@@ -1,145 +1,92 @@
 """
-Model setup — quantization config, model loading, tokenizer, and LoRA application.
+Model setup — Unsloth FastLanguageModel loading and LoRA application.
 
 Exports:
-    build_quant_config()  -> BitsAndBytesConfig | None
-    load_tokenizer()      -> AutoTokenizer
-    load_model()          -> AutoModelForCausalLM
-    apply_lora()          -> PeftModel
+    load_model_and_tokenizer() -> tuple[FastLanguageModel, AutoTokenizer]
+    apply_lora()               -> PeftModel
 """
 
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
+from unsloth import FastLanguageModel
 
 import config
 
 
-# ─── Quantization ─────────────────────────────────────────────────────────────
+# ─── Model + Tokenizer (Unsloth combined load) ────────────────────────────────
 
-def build_quant_config() -> BitsAndBytesConfig | None:
+def load_model_and_tokenizer():
     """
-    Build a BitsAndBytesConfig based on config flags.
+    Load Qwen2.5-1.5B-Instruct with Unsloth's FastLanguageModel.
 
-    Returns None if both QUANT_4_BIT and QUANT_8_BIT are False
-    (i.e. full precision / bfloat16 training).
-    """
-    if config.QUANT_4_BIT:
-        print("Quantization: 4-bit NF4 (QLoRA)")
-        return BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_quant_type="nf4",
-        )
-    if config.QUANT_8_BIT:
-        print("Quantization: 8-bit")
-        return BitsAndBytesConfig(
-            load_in_8bit=True,
-            bnb_8bit_compute_dtype=torch.bfloat16,
-        )
-    print("Quantization: none (full precision)")
-    return None
+    Unsloth fuses attention kernels, rewrites backward passes with Triton,
+    and applies smarter gradient checkpointing — no accuracy change vs stock
+    HuggingFace, but 2-5× faster throughput and ~40% less GPU memory.
 
-
-# ─── Tokenizer ────────────────────────────────────────────────────────────────
-
-def load_tokenizer() -> AutoTokenizer:
-    """
-    Load the Qwen2.5-Instruct tokenizer.
-
-    Sets pad_token to eos_token and padding_side to "right" — both required
-    for causal LM SFT training to avoid gradient issues on padded tokens.
+    BitsAndBytes QLoRA (4-bit NF4) is requested via load_in_4bit=True.
+    dtype=None lets Unsloth auto-detect bfloat16 for Qwen2.5.
 
     Returns:
-        AutoTokenizer with chat_template ready for apply_chat_template().
-    """
-    print(f"\nLoading tokenizer: {config.BASE_MODEL}")
-    tokenizer = AutoTokenizer.from_pretrained(
-        config.BASE_MODEL,
-        trust_remote_code=True,
-    )
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.padding_side = "right"
-    print(f"  Chat template present: {tokenizer.chat_template is not None}")
-    print(f"  Vocab size: {tokenizer.vocab_size:,}")
-    return tokenizer
-
-
-# ─── Model loading ────────────────────────────────────────────────────────────
-
-def load_model(
-    quant_config: BitsAndBytesConfig | None,
-) -> AutoModelForCausalLM:
-    """
-    Load Qwen2.5-1.5B-Instruct as a causal language model.
-
-    Args:
-        quant_config: BitsAndBytesConfig or None for full bfloat16 precision.
-
-    Returns:
-        AutoModelForCausalLM ready for LoRA wrapping.
+        (model, tokenizer) — tokenizer already has pad_token and padding_side set.
     """
     print("\n" + "=" * 60)
-    print("LOADING MODEL")
+    print("LOADING MODEL (Unsloth FastLanguageModel)")
     print("=" * 60)
-    print(f"Base model: {config.BASE_MODEL}")
+    print(f"Base model:     {config.BASE_MODEL}")
+    print(f"Max seq length: {config.MAX_SEQ_LENGTH}")
+    print(f"4-bit QLoRA:    {config.QUANT_4_BIT}")
 
-    kwargs: dict = dict(
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name=config.BASE_MODEL,
+        max_seq_length=config.MAX_SEQ_LENGTH,
+        load_in_4bit=config.QUANT_4_BIT,
+        dtype=None,         # auto (bfloat16 for Qwen2.5)
         trust_remote_code=True,
-        device_map="auto",
     )
 
-    if quant_config is not None:
-        kwargs["quantization_config"] = quant_config
-    else:
-        kwargs["torch_dtype"] = torch.bfloat16
-
-    model = AutoModelForCausalLM.from_pretrained(
-        config.BASE_MODEL,
-        **kwargs,
-    )
+    # Causal LM SFT requires right-padding; pad token must exist
+    tokenizer.padding_side = "right"
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
     footprint_gb = model.get_memory_footprint() / 1e9
     print(f"Memory footprint: {footprint_gb:.2f} GB")
+    print(f"Chat template present: {tokenizer.chat_template is not None}")
+    print(f"Vocab size: {tokenizer.vocab_size:,}")
 
-    return model
+    return model, tokenizer
 
 
-# ─── LoRA ─────────────────────────────────────────────────────────────────────
+# ─── LoRA (Unsloth optimized adapters) ───────────────────────────────────────
 
-def apply_lora(model: AutoModelForCausalLM):
+def apply_lora(model):
     """
-    Wrap the base model with LoRA adapters for causal language modeling.
+    Inject LoRA adapters via Unsloth's FastLanguageModel.get_peft_model().
 
-    LoRA injects trainable low-rank matrices into the target projection
-    layers. All other weights are frozen.
+    Unsloth's LoRA uses hand-written Triton kernels for the adapter forward/
+    backward passes, giving ~2× speed improvement over stock PEFT on the
+    adapter steps.  use_gradient_checkpointing="unsloth" enables smarter
+    activation recomputation (Unsloth's patented scheme) that reduces VRAM
+    by a further ~30% without extra wall-clock cost.
 
     Args:
-        model: The loaded base model.
+        model: Unsloth-loaded base model from load_model_and_tokenizer().
 
     Returns:
         PeftModel with LoRA adapters applied and frozen base weights.
     """
     print("\n" + "=" * 60)
-    print("APPLYING LoRA")
+    print("APPLYING LoRA (Unsloth optimized)")
     print("=" * 60)
 
-    # Cast non-quantized layers to float32 so they can accept gradients
-    # when using 4-bit / 8-bit quantization.
-    if config.QUANT_4_BIT or config.QUANT_8_BIT:
-        model = prepare_model_for_kbit_training(model)
-
-    lora_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,
+    peft_model = FastLanguageModel.get_peft_model(
+        model,
         r=config.LORA_R,
         lora_alpha=config.LORA_ALPHA,
         lora_dropout=config.LORA_DROPOUT,
         target_modules=config.TARGET_MODULES,
+        use_gradient_checkpointing="unsloth",   # smarter than standard checkpointing
         bias="none",
+        random_state=42,
     )
-
-    peft_model = get_peft_model(model, lora_config)
 
     # Print trainable vs total param breakdown
     trainable, total = 0, 0
@@ -152,6 +99,7 @@ def apply_lora(model: AutoModelForCausalLM):
     print(f"LoRA alpha:          {config.LORA_ALPHA}")
     print(f"LoRA dropout:        {config.LORA_DROPOUT}")
     print(f"Target modules:      {config.TARGET_MODULES}")
+    print(f"Gradient checkpointing: unsloth")
     print(f"\nTrainable params:    {trainable:,}  ({trainable / total:.2%} of total)")
     print(f"Total params:        {total:,}")
 

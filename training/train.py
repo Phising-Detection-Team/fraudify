@@ -78,7 +78,7 @@ def build_trainer(
         # SFT-specific
         max_length=config.MAX_SEQ_LENGTH,
         dataset_text_field="text",
-        packing=False,
+        packing=True,   # Unsloth sequence packing — 30-50% extra throughput
     )
 
     trainer = SFTTrainer(

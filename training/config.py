@@ -47,8 +47,8 @@ TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj"
 # ─── Training ─────────────────────────────────────────────────────────────────
 
 EPOCHS = 3
-BATCH_SIZE = 4                      # smaller batch for 1.5B model
-GRADIENT_ACCUMULATION_STEPS = 4    # effective batch = 4 * 4 = 16
+BATCH_SIZE = 8                      # Unsloth memory savings allow larger batch
+GRADIENT_ACCUMULATION_STEPS = 2    # effective batch = 8 * 2 = 16
 LEARNING_RATE = 2e-4
 LR_SCHEDULER_TYPE = "cosine"
 WARMUP_RATIO = 0.03

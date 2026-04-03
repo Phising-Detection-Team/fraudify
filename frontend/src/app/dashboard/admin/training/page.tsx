@@ -161,7 +161,7 @@ export default function TrainingPage() {
                 <BrainCircuit className="text-accent-cyan" size={22} />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Fine-Tuning Pipeline · sentra-utoledo-v1.0
+                Fine-Tuning Pipeline · sentra-utoledo-v2.0 · Unsloth
               </span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight mb-2">

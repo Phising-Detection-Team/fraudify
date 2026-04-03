@@ -57,8 +57,9 @@ const BATCH_EMAILS = [
 ] as const;
 
 const LOG_LINES = [
-  "Loading SFT dataset — instruction-response pairs...",
-  "Initializing SFTTrainer — Epoch 1/3",
+  "Loading SFT dataset — instruction-response pairs (packing=True)...",
+  "🦥 Unsloth: Fused kernels loaded — 2.3× faster than standard TRL",
+  "Initializing SFTTrainer (Unsloth) — Epoch 1/3",
   "Step   50 | loss: 2.1843 | lr: 1.78e-05",
   "Step  100 | loss: 1.7652 | lr: 3.56e-05",
   "Step  200 | loss: 1.3291 | lr: 7.11e-05",
@@ -67,14 +68,14 @@ const LOG_LINES = [
   "Step  750 | loss: 0.7823 | lr: 1.74e-04",
   "Step 1000 | loss: 0.6541 | lr: 1.71e-04",
   "--- Epoch 1 complete | avg_loss: 0.8932 ---",
-  "Initializing SFTTrainer — Epoch 2/3",
+  "Initializing SFTTrainer (Unsloth) — Epoch 2/3",
   "Step 1250 | loss: 0.5432 | lr: 1.65e-04",
   "Step 1500 | loss: 0.4721 | lr: 1.57e-04",
   "Evaluation @ step 1500 | eval_loss: 0.4412",
   "Step 1750 | loss: 0.4013 | lr: 1.48e-04",
   "Step 2000 | loss: 0.3654 | lr: 1.38e-04",
   "--- Epoch 2 complete | avg_loss: 0.4512 ---",
-  "Initializing SFTTrainer — Epoch 3/3",
+  "Initializing SFTTrainer (Unsloth) — Epoch 3/3",
   "Step 2250 | loss: 0.3121 | lr: 1.28e-04",
   "Step 2500 | loss: 0.2743 | lr: 1.17e-04",
   "Evaluation @ step 2500 | eval_loss: 0.2891",
@@ -87,7 +88,7 @@ const LOG_LINES = [
   "Training complete. Best eval_loss: 0.1876",
   "Saving model checkpoint...",
   "Pushing to HuggingFace Hub...",
-  "✓ sentra-utoledo/sentra-utoledo-v1.0 uploaded successfully",
+  "✓ sentra-utoledo/sentra-utoledo-v2.0 uploaded successfully",
 ];
 
 // ── Gradient Descent Landscape ──────────────────────────────
@@ -416,7 +417,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
     // Animate batch highlights
     let batchIdx = 0;
     const batchLoop = () => {
-      setActiveBatch(Array.from({ length: 4 }, (_, k) => (batchIdx * 4 + k) % 16));
+      setActiveBatch(Array.from({ length: 8 }, (_, k) => (batchIdx * 8 + k) % 16));
       batchIdx++;
       timers.current.push(setTimeout(batchLoop, 800));
     };
@@ -750,14 +751,14 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
                     transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
                   />
                 </div>
-                <span className="shrink-0 font-mono text-[10px]">→ DistilBERT+LoRA → CrossEntropy</span>
+                <span className="shrink-0 font-mono text-[10px]">→ Qwen2.5+LoRA (Unsloth) → LM Loss</span>
               </div>
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 {[
-                  { label: "Batch size",  value: "16",     color: "text-accent-purple" },
-                  { label: "Steps/epoch", value: "2,550",  color: "text-accent-cyan"   },
-                  { label: "Total steps", value: "7,650",  color: "text-accent-green"  },
+                  { label: "Eff. batch",  value: "8×2=16", color: "text-accent-purple" },
+                  { label: "Steps/epoch", value: "2,500",  color: "text-accent-cyan"   },
+                  { label: "Total steps", value: "7,500",  color: "text-accent-green"  },
                 ].map(s => (
                   <div key={s.label} className="p-2 rounded bg-muted/30 border border-border/30">
                     <div className="text-[9px] text-muted-foreground">{s.label}</div>

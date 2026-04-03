@@ -58,8 +58,8 @@ def main() -> None:
     # ── Auth ──────────────────────────────────────────────────────────────────
     config.login_huggingface()
 
-    # ── Tokenizer (loaded before data so chat template is available) ──────────
-    tokenizer = model_module.load_tokenizer()
+    # ── Model + Tokenizer (Unsloth loads both together) ───────────────────────
+    base_model, tokenizer = model_module.load_model_and_tokenizer()
 
     # ── Data ──────────────────────────────────────────────────────────────────
     enron_raw, phishing_raw = data.load_datasets()
@@ -67,9 +67,7 @@ def main() -> None:
     dataset_dict = data.split_dataset(merged)
     formatted_datasets, tokenizer = data.format_for_sft(dataset_dict, tokenizer)
 
-    # ── Model ─────────────────────────────────────────────────────────────────
-    quant_config = model_module.build_quant_config()
-    base_model = model_module.load_model(quant_config)
+    # ── LoRA adapters ─────────────────────────────────────────────────────────
     peft_model = model_module.apply_lora(base_model)
 
     # ── Training ──────────────────────────────────────────────────────────────
