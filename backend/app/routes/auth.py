@@ -55,7 +55,7 @@ def _require_role(*role_names):
 # ---------------------------------------------------------------------------
 
 @auth_bp.route('/auth/signup', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("5 per minute")
 def signup():
     """Self-registration. Assigns 'user' role automatically."""
     try:
@@ -86,7 +86,8 @@ def signup():
 # ---------------------------------------------------------------------------
 
 @auth_bp.route('/auth/login', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("5 per minute")
+@limiter.limit("5 per minute", key_func=lambda: request.get_json(silent=True).get('email', 'unknown') if request.get_json(silent=True) else 'unknown')
 def login():
     """Return JWT access + refresh token pair on valid credentials."""
     try:
@@ -233,7 +234,7 @@ def revoke_invite(code: str):
 # ---------------------------------------------------------------------------
 
 @auth_bp.route('/auth/admin/signup', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("5 per minute")
 def admin_signup():
     """Register a new user using an invite code. Assigns the role from the invite."""
     body = request.get_json(silent=True) or {}

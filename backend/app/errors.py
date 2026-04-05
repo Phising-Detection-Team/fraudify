@@ -130,6 +130,30 @@ def register_error_handlers(app):
             message='This HTTP method is not allowed for this endpoint'
         )), 405
 
+    @app.errorhandler(429)
+    def handle_429(e):
+        """Too Many Requests -- rate limit exceeded."""
+        log_error_to_db(level='warning', message=f'429 Too Many Requests: {e}')
+        response = jsonify(error_response(
+            code='TOO_MANY_REQUESTS',
+            message='You have sent too many requests in a short period. Please try again later.'
+        ))
+        response.status_code = 429
+
+        # Propagate relevant rate-limit headers (e.g. from Flask-Limiter / TooManyRequests)
+        original_response = None
+        if hasattr(e, "get_response"):
+            try:
+                original_response = e.get_response()
+            except Exception:
+                original_response = None
+        if original_response is not None and hasattr(original_response, "headers"):
+            for header, value in original_response.headers.items():
+                header_lower = header.lower()
+                if header_lower == "retry-after" or header_lower.startswith("x-ratelimit-"):
+                    response.headers[header] = value
+
+        return response
     @app.errorhandler(500)
     def handle_500(e):
         """Internal Server Error -- unexpected failure."""
