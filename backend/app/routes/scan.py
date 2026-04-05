@@ -94,6 +94,7 @@ def scan_email():
     try:
         parsed = _run_detector_sync(email_content)
     except Exception:
+        current_app.logger.exception("Detection failed")
         return jsonify({'success': False, 'error': 'Detection service unavailable. Please try again.'}), 503
 
     if not parsed:
