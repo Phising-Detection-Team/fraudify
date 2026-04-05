@@ -2,6 +2,8 @@
 
 import hashlib
 import secrets
+import re
+import random
 from datetime import datetime, timezone, timedelta
 
 import redis as redis_lib
@@ -17,7 +19,7 @@ from flask_mail import Message
 from marshmallow import ValidationError
 
 from app import mail, limiter
-from app.models import db, User, Role, InviteCode
+from app.models import db, User, Role, InviteCode, EmailVerification
 from app.schemas.auth import SignupSchema, LoginSchema, InviteCodeSchema
 
 auth_bp = Blueprint('auth', __name__)
@@ -50,6 +52,40 @@ def _require_role(*role_names):
     return None
 
 
+def _generate_username(email: str) -> str:
+    """
+    Auto-generate a username from the email local-part.
+    Strips non-alphanumeric/underscore chars, truncates to 25 chars,
+    appends a 4-digit random suffix. Retries up to 5 times on collision.
+    """
+    local = email.split('@')[0]
+    base = re.sub(r'[^A-Za-z0-9_]', '', local)[:25] or 'user'
+    for _ in range(5):
+        candidate = f'{base}{random.randint(1000, 9999)}'
+        if not User.query.filter_by(username=candidate).first():
+            return candidate
+    # Fallback: keep trying with wider range
+    return f'{base}{random.randint(10000, 99999)}'
+
+
+def _send_verification(user: User) -> None:
+    """Create an EmailVerification record and dispatch the Resend email."""
+    from app.services.email_verification_service import send_verification_email
+
+    ev = EmailVerification.generate(user.id)
+    db.session.add(ev)
+    db.session.flush()  # get ev.token/code before commit
+
+    send_verification_email(
+        to_email=user.email,
+        token=ev.token,
+        code=ev.code,
+        frontend_url=current_app.config.get('FRONTEND_URL', 'http://localhost:3000'),
+        from_email=current_app.config.get('RESEND_FROM_EMAIL', 'noreply@example.com'),
+        api_key=current_app.config.get('RESEND_API_KEY', ''),
+    )
+
+
 # ---------------------------------------------------------------------------
 # POST /api/auth/signup
 # ---------------------------------------------------------------------------
@@ -57,28 +93,124 @@ def _require_role(*role_names):
 @auth_bp.route('/auth/signup', methods=['POST'])
 @limiter.limit("5 per minute")
 def signup():
-    """Self-registration. Assigns 'user' role automatically."""
+    """Self-registration. Creates user with email_verified=False and sends verification email."""
     try:
         data = _signup_schema.load(request.get_json(silent=True) or {})
     except ValidationError as e:
         return jsonify({'success': False, 'error': 'Validation failed', 'details': e.messages}), 400
 
-    if User.query.filter_by(email=data['email']).first():
+    existing = User.query.filter_by(email=data['email']).first()
+    if existing:
+        if not existing.email_verified:
+            return jsonify({
+                'success': False,
+                'error': 'Email already registered',
+                'message': 'An account with this email exists but is not yet verified. Please check your inbox.',
+            }), 409
         return jsonify({'success': False, 'error': 'Email already registered'}), 409
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({'success': False, 'error': 'Username already taken'}), 409
+
+    explicit_username = data.get('username')
+    username = explicit_username or _generate_username(data['email'])
+    if User.query.filter_by(username=username).first():
+        if explicit_username:
+            return jsonify({'success': False, 'error': 'Username already taken'}), 409
+        username = _generate_username(data['email'])
 
     user_role = Role.query.filter_by(name='user').first()
     if not user_role:
         return jsonify({'success': False, 'error': 'Server misconfiguration: roles not seeded'}), 500
 
-    user = User(email=data['email'], username=data['username'])
+    user = User(email=data['email'], username=username)
     user.set_password(data['password'])
     user.roles.append(user_role)
     db.session.add(user)
+    db.session.flush()
+
+    _send_verification(user)
     db.session.commit()
 
-    return jsonify({'success': True, 'user': user.to_dict()}), 201
+    return jsonify({'success': True, 'user_id': user.id, 'email': user.email}), 201
+
+
+# ---------------------------------------------------------------------------
+# POST /api/auth/send-verification
+# ---------------------------------------------------------------------------
+
+@auth_bp.route('/auth/send-verification', methods=['POST'])
+def send_verification():
+    """(Re)send a verification email to an unverified user."""
+    body = request.get_json(silent=True) or {}
+    email = (body.get('email') or '').strip()
+    if not email:
+        return jsonify({'success': False, 'error': 'email is required'}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # Don't reveal whether the email exists
+        return jsonify({'success': True}), 200
+
+    if user.email_verified:
+        return jsonify({'success': False, 'error': 'Email already verified'}), 400
+
+    _send_verification(user)
+    db.session.commit()
+
+    return jsonify({'success': True}), 200
+
+
+# ---------------------------------------------------------------------------
+# POST /api/auth/verify-email
+# ---------------------------------------------------------------------------
+
+@auth_bp.route('/auth/verify-email', methods=['POST'])
+def verify_email():
+    """
+    Verify an email address.
+    Accepts either:
+      - {email, code}  — 6-digit code from email
+      - {token}        — URL token from the link in the email
+    On success, returns JWT access + refresh tokens.
+    """
+    body = request.get_json(silent=True) or {}
+    token = (body.get('token') or '').strip()
+    code = (body.get('code') or '').strip()
+    email = (body.get('email') or '').strip()
+
+    ev = None
+
+    if token:
+        ev = EmailVerification.query.filter_by(token=token).first()
+    elif code and email:
+        user = User.query.filter_by(email=email).first()
+        if user:
+            ev = (
+                EmailVerification.query
+                .filter_by(user_id=user.id, code=code)
+                .order_by(EmailVerification.created_at.desc())
+                .first()
+            )
+
+    if not ev or not ev.is_valid():
+        return jsonify({'success': False, 'error': 'Invalid or expired code'}), 400
+
+    user = db.session.get(User, ev.user_id)
+    if not user:
+        return jsonify({'success': False, 'error': 'User not found'}), 404
+
+    ev.is_used = True
+    ev.used_at = datetime.utcnow()
+    user.email_verified = True
+    db.session.commit()
+
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
+
+    return jsonify({
+        'success': True,
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'user': user.to_dict(),
+    }), 200
 
 
 # ---------------------------------------------------------------------------
@@ -101,6 +233,13 @@ def login():
 
     if not user.is_active:
         return jsonify({'success': False, 'error': 'Account is deactivated'}), 403
+
+    if not user.email_verified:
+        return jsonify({
+            'success': False,
+            'error': 'Email not verified',
+            'message': 'Please verify your email address before logging in.',
+        }), 403
 
     access_token = create_access_token(identity=str(user.id))
     refresh_token = create_refresh_token(identity=str(user.id))
@@ -256,16 +395,18 @@ def admin_signup():
 
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'success': False, 'error': 'Email already registered'}), 409
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({'success': False, 'error': 'Username already taken'}), 409
 
-    user = User(email=data['email'], username=data['username'])
+    username = data.get('username') or _generate_username(data['email'])
+    if User.query.filter_by(username=username).first():
+        username = _generate_username(data['email'])
+
+    user = User(email=data['email'], username=username)
     user.set_password(data['password'])
     user.roles.append(invite.role)
+    # Admin-invited users are considered verified
+    user.email_verified = True
     db.session.add(user)
 
-    # Mark invite as used
-    invite.used_by = user.id if user.id else None  # will be set after flush
     db.session.flush()
     invite.used_by = user.id
     invite.used_at = datetime.utcnow()

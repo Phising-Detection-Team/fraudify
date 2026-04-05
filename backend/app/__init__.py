@@ -103,6 +103,7 @@ def create_app(config_name=None):
         from .models.invite_code import InviteCode  # noqa: F401
         from .models.training_data_log import TrainingDataLog  # noqa: F401
         from .models.extension_instance import ExtensionInstance  # noqa: F401
+        from .models.email_verification import EmailVerification  # noqa: F401
         from .models.user_scan import UserScan  # noqa: F401
 
     _register_blueprints(app)
