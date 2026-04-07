@@ -12,42 +12,43 @@ const SPLIT_DATA = [
 ];
 
 const TOKEN_SAMPLES = [
-  "[CLS]","[SEP]","[PAD]","[UNK]","101","1234","5678","2054",
+  "<|im_start|>","<|im_end|>","<|endoftext|>","system","user","assistant",
   "phish","click","urgent","bank","free","win","login","verify",
-  "account","password","secure","alert","reward","claim","token","[MASK]",
+  "SCAM","LEGIT","verdict","reasoning","conf","idence","json","email",
+  "account","password","secure","alert","reward","claim","token","score",
 ];
 
 const PIPELINE_CONFIG = [
-  { label: "Max seq length",   value: "512 tokens",                color: "" },
-  { label: "Shuffle seed",     value: "42",                        color: "" },
-  { label: "Tokenizer",        value: "DistilBERT WordPiece",      color: "text-accent-cyan" },
-  { label: "Padding strategy", value: "Dynamic (DataCollator)",    color: "" },
-  { label: "Preprocessing",    value: "lowercase + strip HTML",    color: "" },
-  { label: "Label mapping",    value: "0 = legit, 1 = phishing",  color: "text-accent-green" },
+  { label: "Max seq length",   value: "2048 tokens",                     color: "" },
+  { label: "Shuffle seed",     value: "42",                              color: "" },
+  { label: "Tokenizer",        value: "Qwen2.5 BPE (tiktoken)",          color: "text-accent-cyan" },
+  { label: "Padding strategy", value: "Right-pad (causal LM)",           color: "" },
+  { label: "Data format",      value: "Instruction-response SFT",        color: "" },
+  { label: "Chat template",    value: "<|im_start|>...<|im_end|>",       color: "text-accent-green" },
 ];
 
 interface PhaseProps { autoPlay: boolean; phaseProgress: number; wasCompleted?: boolean; onComplete?: () => void; }
 
 // ── Card data ──────────────────────────────────────────────────────────────────
 const ENRON_DECK = [
-  { text: "Re: Q3 Budget",  sub: "Legit ✓" },
-  { text: "Meeting 3pm",    sub: "Legit ✓" },
-  { text: "FWD: TPS Report",sub: "Legit ✓" },
+  { text: "Re: Q3 Budget",   sub: '{"verdict":"LEGITIMATE"}' },
+  { text: "Meeting 3pm",     sub: '{"verdict":"LEGITIMATE"}' },
+  { text: "FWD: TPS Report", sub: '{"verdict":"LEGITIMATE"}' },
 ];
 const PHISH_DECK = [
-  { text: "URGENT: Verify!",sub: "⚠ Phish" },
-  { text: "Win $500 NOW",   sub: "⚠ Phish" },
-  { text: "Claim Reward →", sub: "⚠ Phish" },
+  { text: "URGENT: Verify!", sub: '{"verdict":"SCAM"}' },
+  { text: "Win $500 NOW",    sub: '{"verdict":"SCAM"}' },
+  { text: "Claim Reward →",  sub: '{"verdict":"SCAM"}' },
 ];
 
 // 6 interleaved shuffle cards (alternating E/P)
 const SHUFFLE_CARDS = [
-  { text: "Re: Q3 Budget",  sub: "Legit ✓",   isLeft: true,  color: "hsl(var(--accent-cyan))"   },
-  { text: "URGENT: Verify!",sub: "⚠ Phish",   isLeft: false, color: "hsl(var(--accent-purple))" },
-  { text: "Meeting 3pm",    sub: "Legit ✓",   isLeft: true,  color: "hsl(var(--accent-cyan))"   },
-  { text: "Win $500 NOW",   sub: "⚠ Phish",   isLeft: false, color: "hsl(var(--accent-purple))" },
-  { text: "FWD: TPS Report",sub: "Legit ✓",   isLeft: true,  color: "hsl(var(--accent-cyan))"   },
-  { text: "Claim Reward →", sub: "⚠ Phish",   isLeft: false, color: "hsl(var(--accent-purple))" },
+  { text: "Re: Q3 Budget",   sub: '{"verdict":"LEGITIMATE"}', isLeft: true,  color: "hsl(var(--accent-cyan))"   },
+  { text: "URGENT: Verify!", sub: '{"verdict":"SCAM"}',       isLeft: false, color: "hsl(var(--accent-purple))" },
+  { text: "Meeting 3pm",     sub: '{"verdict":"LEGITIMATE"}', isLeft: true,  color: "hsl(var(--accent-cyan))"   },
+  { text: "Win $500 NOW",    sub: '{"verdict":"SCAM"}',       isLeft: false, color: "hsl(var(--accent-purple))" },
+  { text: "FWD: TPS Report", sub: '{"verdict":"LEGITIMATE"}', isLeft: true,  color: "hsl(var(--accent-cyan))"   },
+  { text: "Claim Reward →",  sub: '{"verdict":"SCAM"}',       isLeft: false, color: "hsl(var(--accent-purple))" },
 ];
 
 // Fan spread at center (shufflePhase 3)

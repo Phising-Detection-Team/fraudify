@@ -1,5 +1,5 @@
 """
-Entrypoint for the phishing detection fine-tuning pipeline.
+Entrypoint for the phishing detection SFT fine-tuning pipeline.
 
 Usage:
     python training/main.py                  # full pipeline
@@ -24,7 +24,7 @@ import evaluation as evaluate_module
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Phishing detection fine-tuning pipeline")
+    parser = argparse.ArgumentParser(description="Phishing detection SFT fine-tuning pipeline")
     parser.add_argument(
         "--eval-only",
         action="store_true",
@@ -38,8 +38,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--tester-size",
         type=int,
-        default=250,
-        help="Number of test samples for the Tester class (default: 250).",
+        default=100,
+        help="Number of test samples for the Tester class (default: 100).",
     )
     return parser.parse_args()
 
@@ -48,7 +48,7 @@ def main() -> None:
     args = parse_args()
 
     print("\n" + "=" * 60)
-    print("PHISHING DETECTION — FINE-TUNING PIPELINE")
+    print("PHISHING DETECTION — SFT FINE-TUNING PIPELINE")
     print("=" * 60)
     print(f"  Base model:  {config.BASE_MODEL}")
     print(f"  Run name:    {config.RUN_NAME}")
@@ -58,23 +58,23 @@ def main() -> None:
     # ── Auth ──────────────────────────────────────────────────────────────────
     config.login_huggingface()
 
+    # ── Model + Tokenizer (Unsloth loads both together) ───────────────────────
+    base_model, tokenizer = model_module.load_model_and_tokenizer()
+
     # ── Data ──────────────────────────────────────────────────────────────────
     enron_raw, phishing_raw = data.load_datasets()
     merged = data.preprocess_and_merge(enron_raw, phishing_raw)
     dataset_dict = data.split_dataset(merged)
-    tokenized_datasets, tokenizer, data_collator = data.tokenize_datasets(dataset_dict)
+    formatted_datasets, tokenizer = data.format_for_sft(dataset_dict, tokenizer)
 
-    # ── Model ─────────────────────────────────────────────────────────────────
-    quant_config = model_module.build_quant_config()
-    base_model = model_module.load_model(quant_config)
+    # ── LoRA adapters ─────────────────────────────────────────────────────────
     peft_model = model_module.apply_lora(base_model)
 
     # ── Training ──────────────────────────────────────────────────────────────
     trainer = train_module.build_trainer(
         model=peft_model,
-        tokenized_datasets=tokenized_datasets,
+        formatted_datasets=formatted_datasets,
         tokenizer=tokenizer,
-        data_collator=data_collator,
     )
 
     if not args.eval_only:
@@ -86,11 +86,12 @@ def main() -> None:
         print("\n[--eval-only] Skipping training.")
 
     # ── Evaluation ────────────────────────────────────────────────────────────
-    evaluate_module.run_evaluation(trainer, tokenized_datasets["test"])
+    evaluate_module.run_evaluation(trainer, formatted_datasets["test"])
 
     evaluate_module.Tester.test(
-        trainer=trainer,
-        test_dataset=tokenized_datasets["test"],
+        model=peft_model,
+        tokenizer=tokenizer,
+        test_dataset=formatted_datasets["test"],
         size=args.tester_size,
     )
 

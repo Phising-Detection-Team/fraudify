@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   ShieldAlert,
   Activity,
-  CreditCard,
   Settings,
   LogOut,
   Users,
@@ -60,7 +59,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     : [
         { name: "Dashboard", href: basePath, icon: LayoutDashboard },
         { name: "Scan Email", href: `${basePath}/scan`, icon: ScanText },
-        { name: "Credits", href: `${basePath}/credits`, icon: CreditCard },
+        { name: "Training", href: `${basePath}/training`, icon: BrainCircuit },
         { name: "Settings", href: `${basePath}/settings`, icon: Settings },
       ];
 

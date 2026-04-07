@@ -9,11 +9,13 @@ class SignupSchema(Schema):
         unknown = EXCLUDE
 
     email = fields.Email(required=True, error_messages={'required': 'Email is required'})
-    username = fields.Str(required=True, error_messages={'required': 'Username is required'})
+    username = fields.Str(load_default=None)
     password = fields.Str(required=True, load_only=True, error_messages={'required': 'Password is required'})
 
     @validates('username')
     def validate_username(self, value, **kwargs):
+        if value is None:
+            return
         if len(value) < 3 or len(value) > 30:
             raise ValidationError('Username must be between 3 and 30 characters')
         if not re.match(r'^[A-Za-z0-9_]+$', value):

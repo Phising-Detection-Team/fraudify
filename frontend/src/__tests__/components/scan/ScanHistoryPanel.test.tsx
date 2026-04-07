@@ -45,6 +45,9 @@ vi.mock('lucide-react', () => ({
   ChevronDown: () => <svg data-testid="chevron-down-icon" />,
   ChevronUp: () => <svg data-testid="chevron-up-icon" />,
   Loader2: () => <svg data-testid="loader-icon" />,
+  Mail: () => <svg data-testid="mail-icon" />,
+  Brain: () => <svg data-testid="brain-icon" />,
+  X: () => <svg data-testid="x-icon" />,
   ShieldAlert: () => <svg data-testid="shield-alert-icon" />,
   ShieldCheck: () => <svg data-testid="shield-check-icon" />,
   HelpCircle: () => <svg data-testid="help-circle-icon" />,
@@ -326,7 +329,7 @@ describe('ScanHistoryPanel', () => {
         expect(screen.getByTestId('scan-row-1')).toBeTruthy()
       })
 
-      expect(screen.queryByTestId('scan-reasoning-1')).toBeNull()
+      expect(screen.queryByText('Full reasoning text here.')).toBeNull()
     })
 
     it('shows reasoning text when row is clicked', async () => {
@@ -347,13 +350,11 @@ describe('ScanHistoryPanel', () => {
       fireEvent.click(screen.getByTestId('scan-row-1'))
 
       await waitFor(() => {
-        expect(screen.getByTestId('scan-reasoning-1')).toBeTruthy()
+        expect(screen.getByText('Full reasoning text here.')).toBeTruthy()
       })
-
-      expect(screen.getByTestId('scan-reasoning-1').textContent).toContain('Full reasoning text here.')
     })
 
-    it('hides reasoning text when row is clicked again (toggle)', async () => {
+    it('hides reasoning text when the detail modal is closed', async () => {
       vi.mocked(getScanHistory).mockResolvedValue({
         scans: [makeEntry({ id: 1, reasoning: 'Full reasoning text here.' })],
         total: 1,
@@ -368,13 +369,14 @@ describe('ScanHistoryPanel', () => {
         expect(screen.getByTestId('scan-row-1')).toBeTruthy()
       })
 
-      // Expand
       fireEvent.click(screen.getByTestId('scan-row-1'))
-      await waitFor(() => expect(screen.getByTestId('scan-reasoning-1')).toBeTruthy())
+      await waitFor(() => expect(screen.getByText('Full reasoning text here.')).toBeTruthy())
 
-      // Collapse
-      fireEvent.click(screen.getByTestId('scan-row-1'))
-      await waitFor(() => expect(screen.queryByTestId('scan-reasoning-1')).toBeNull())
+      const closeBtn = screen.getByTestId('x-icon').closest('button')
+      expect(closeBtn).toBeTruthy()
+      fireEvent.click(closeBtn!)
+
+      await waitFor(() => expect(screen.queryByText('Full reasoning text here.')).toBeNull())
     })
   })
 

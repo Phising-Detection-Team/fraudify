@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signIn } from "next-auth/react";
 import { config } from "@/lib/config";
+import { checkLoginStatus, sendVerificationEmail } from "@/lib/auth-api";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ShieldCheck, LogIn, AlertCircle, Eye, EyeOff, Clock } from "lucide-react";
+import { ShieldCheck, LogIn, AlertCircle, Eye, EyeOff, Clock, MailCheck, Loader2, Check } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -21,7 +22,10 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // If already authenticated, redirect to dashboard
+  // Unverified email state
+  const [unverifiedEmail, setUnverifiedEmail] = useState(false);
+  const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "sent">("idle");
+
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
       const targetRoute = session.user.role === "admin" ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
@@ -33,7 +37,24 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setUnverifiedEmail(false);
 
+    // Check the backend directly first to detect specific errors (e.g. unverified email)
+    const loginStatus = await checkLoginStatus(email, password);
+
+    if (!loginStatus.ok) {
+      if (loginStatus.status === 403 && loginStatus.error === "Email not verified") {
+        setUnverifiedEmail(true);
+      } else if (loginStatus.status === 401) {
+        setError("Wrong email or password");
+      } else {
+        setError(loginStatus.error || "Login failed. Please try again.");
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Credentials are valid — proceed with NextAuth signIn to establish the session
     const result = await signIn("credentials", {
       redirect: false,
       email,
@@ -41,26 +62,27 @@ function LoginForm() {
     });
 
     if (result?.error || !result?.ok) {
-      setError("Wrong email or password");
+      setError("Login failed. Please try again.");
       setLoading(false);
-    } else {
-      const isDemoAdmin = email === config.DEMO_ACCOUNTS.ADMIN.email;
-      const isDemoUser = email === config.DEMO_ACCOUNTS.USER.email;
-      const isDemo = isDemoAdmin || isDemoUser;
-
-      localStorage.setItem(config.STORAGE_KEYS.IS_DEMO, isDemo ? "true" : "false");
-
-      const res = await fetch("/api/auth/session");
-      const sessionData = await res.json();
-
-      const role = sessionData?.user?.role || "user";
-      const targetRoute = role === "admin" ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
-
-      setLoading(false);
-      setTimeout(() => {
-        router.replace(targetRoute);
-      }, 200);
+      return;
     }
+
+    const isDemoAdmin = email === config.DEMO_ACCOUNTS.ADMIN.email;
+    const isDemoUser = email === config.DEMO_ACCOUNTS.USER.email;
+    localStorage.setItem(config.STORAGE_KEYS.IS_DEMO, (isDemoAdmin || isDemoUser) ? "true" : "false");
+
+    const roleFromStatus = loginStatus.user?.roles?.includes('admin') ? 'admin' : 'user';
+    const targetRoute = roleFromStatus === 'admin' ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
+
+    setLoading(false);
+    router.replace(targetRoute);
+  };
+
+  const handleResendVerification = async () => {
+    setResendStatus("sending");
+    await sendVerificationEmail(email);
+    setResendStatus("sent");
+    setTimeout(() => setResendStatus("idle"), 5000);
   };
 
   return (
@@ -87,10 +109,36 @@ function LoginForm() {
         )}
 
         <form onSubmit={handleSignIn} className="space-y-6">
+          {/* Generic error */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-lg flex items-center gap-2">
               <AlertCircle size={16} />
               {error}
+            </div>
+          )}
+
+          {/* Unverified email banner */}
+          {unverifiedEmail && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <MailCheck size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-300">Email not verified</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Please verify your email address before logging in.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendStatus !== "idle"}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition-colors text-xs font-medium text-amber-300 disabled:opacity-60"
+              >
+                {resendStatus === "sending" && <Loader2 size={12} className="animate-spin" />}
+                {resendStatus === "sent" && <Check size={12} />}
+                {resendStatus === "idle" ? "Resend verification email" : resendStatus === "sending" ? "Sending…" : "Email sent! Check your inbox."}
+              </button>
             </div>
           )}
 

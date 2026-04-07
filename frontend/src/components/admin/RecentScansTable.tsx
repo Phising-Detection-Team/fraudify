@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Loader2,
   User,
+  RefreshCw,
 } from "lucide-react";
 import { getAdminRecentScans, type AdminScanItem, type AdminScansPage } from "@/lib/admin-api";
 import { parseUTC } from "@/lib/utils";
@@ -246,6 +247,14 @@ export default function RecentScansTable({ initialData }: Props) {
               </p>
             )}
           </div>
+          <button
+            onClick={() => fetchPage(1)}
+            disabled={loading}
+            className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
+            title="Refresh scans"
+          >
+            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+          </button>
         </div>
 
         {/* Table */}

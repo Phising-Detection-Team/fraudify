@@ -20,6 +20,19 @@ def _signup(client, email='user@test.com', username='testuser', password='Pass12
     })
 
 
+def _signup_and_verify(client, db, email='user@test.com', username='testuser', password='Pass1234'):
+    """Sign up and immediately mark email as verified, bypassing the email service."""
+    with patch('app.routes.auth._send_verification'):
+        resp = _signup(client, email=email, username=username, password=password)
+    if resp.status_code == 201:
+        from app.models import User
+        user = User.query.filter_by(email=email).first()
+        if user:
+            user.email_verified = True
+            db.session.commit()
+    return resp
+
+
 def _login(client, email='user@test.com', password='Pass1234'):
     return _post(client, '/api/auth/login', {'email': email, 'password': password})
 
@@ -34,12 +47,13 @@ def _auth_header(token):
 
 class TestSignup:
     def test_signup_success(self, client, db, sample_role_user):
-        resp = _signup(client)
+        with patch('app.routes.auth._send_verification'):
+            resp = _signup(client)
         assert resp.status_code == 201
         data = resp.get_json()
         assert data['success'] is True
-        assert data['user']['email'] == 'user@test.com'
-        assert 'user' in data['user']['roles']
+        assert data['email'] == 'user@test.com'
+        assert 'user_id' in data
 
     def test_signup_duplicate_email(self, client, db, sample_role_user):
         _signup(client)
@@ -93,7 +107,7 @@ class TestSignup:
 
 class TestLogin:
     def test_login_success(self, client, db, sample_role_user):
-        _signup(client)
+        _signup_and_verify(client, db)
         resp = _login(client)
         assert resp.status_code == 200
         data = resp.get_json()
@@ -120,7 +134,7 @@ class TestLogin:
         assert resp.status_code == 400
 
     def test_login_inactive_user(self, client, db, sample_role_user):
-        _signup(client)
+        _signup_and_verify(client, db)
         user = User.query.filter_by(email='user@test.com').first()
         user.is_active = False
         db.session.commit()
@@ -138,7 +152,7 @@ class TestLogout:
         assert resp.status_code == 401
 
     def test_logout_success(self, client, db, sample_role_user):
-        _signup(client)
+        _signup_and_verify(client, db)
         login_resp = _login(client)
         token = login_resp.get_json()['access_token']
 
@@ -148,7 +162,7 @@ class TestLogout:
 
     def test_logout_blacklists_token(self, client, db, sample_role_user):
         """After logout, the same token should be rejected on protected endpoints."""
-        _signup(client)
+        _signup_and_verify(client, db)
         login_resp = _login(client)
         token = login_resp.get_json()['access_token']
 
@@ -164,7 +178,7 @@ class TestLogout:
 
 class TestRefreshToken:
     def test_refresh_returns_new_access_token(self, client, db, sample_role_user):
-        _signup(client)
+        _signup_and_verify(client, db)
         login_resp = _login(client)
         refresh_token = login_resp.get_json()['refresh_token']
 
@@ -177,7 +191,7 @@ class TestRefreshToken:
         assert 'access_token' in data
 
     def test_refresh_requires_refresh_token(self, client, db, sample_role_user):
-        _signup(client)
+        _signup_and_verify(client, db)
         login_resp = _login(client)
         access_token = login_resp.get_json()['access_token']
 
@@ -196,7 +210,7 @@ class TestAdminInvite:
         assert resp.status_code == 401
 
     def test_invite_requires_admin_role(self, client, db, sample_role_user):
-        _signup(client)
+        _signup_and_verify(client, db)
         login_resp = _login(client)
         token = login_resp.get_json()['access_token']
 
@@ -215,7 +229,8 @@ class TestAdminInvite:
         assert resp.status_code == 403
 
     def test_invite_success_as_admin(self, client, db, sample_admin, sample_role_user):
-        # Seed 'admin' role and use admin fixture
+        sample_admin.email_verified = True
+        db.session.commit()
         login_resp = _post(client, '/api/auth/login', {
             'email': 'admin@example.com', 'password': 'Admin123'
         })
@@ -234,6 +249,8 @@ class TestAdminInvite:
         assert data['invite']['role'] == 'user'
 
     def test_invite_invalid_role(self, client, db, sample_admin):
+        sample_admin.email_verified = True
+        db.session.commit()
         login_resp = _post(client, '/api/auth/login', {
             'email': 'admin@example.com', 'password': 'Admin123'
         })
@@ -248,6 +265,8 @@ class TestAdminInvite:
         assert resp.status_code == 400
 
     def test_invite_missing_role_name(self, client, db, sample_admin):
+        sample_admin.email_verified = True
+        db.session.commit()
         login_resp = _post(client, '/api/auth/login', {
             'email': 'admin@example.com', 'password': 'Admin123'
         })

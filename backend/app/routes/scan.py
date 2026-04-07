@@ -85,6 +85,22 @@ def scan_email():
     # Cache lookup — return immediately if we've seen this exact content before
     cached = get_scan_cache(subject, body_text)
     if cached:
+        # Still persist to UserScan so the hit appears in history and threat intelligence
+        try:
+            scan_record = UserScan(
+                user_id=user.id,
+                subject=subject or None,
+                body_snippet=(body_text[:200] if body_text else None),
+                full_body=body_text,
+                verdict=cached.get('verdict', 'suspicious'),
+                confidence=cached.get('confidence'),
+                scam_score=cached.get('scam_score'),
+                reasoning=cached.get('reasoning'),
+            )
+            db.session.add(scan_record)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         return jsonify({
             'success': True,
             'data': {**cached, 'cached': True, 'status': 'complete'},
@@ -216,6 +232,7 @@ def get_scan_status(job_id: str):
 
 @scan_bp.route('/scan/history', methods=['GET'])
 @jwt_required()
+@limiter.exempt
 def scan_history():
     """
     Retrieve the current user's scan history (paginated).
@@ -239,9 +256,15 @@ def scan_history():
         .paginate(page=page, per_page=per_page, error_out=False)
     )
 
+    scans = []
+    for s in pagination.items:
+        d = s.to_dict()
+        d['full_body'] = s.full_body
+        scans.append(d)
+
     return jsonify({
         'success': True,
-        'scans': [s.to_dict() for s in pagination.items],
+        'scans': scans,
         'total': pagination.total,
         'page': page,
         'per_page': per_page,
@@ -255,6 +278,7 @@ def scan_history():
 
 @scan_bp.route('/scan/admin/recent', methods=['GET'])
 @jwt_required()
+@limiter.exempt
 def admin_recent_scans():
     """
     Return a paginated list of all user-submitted scans for admins.

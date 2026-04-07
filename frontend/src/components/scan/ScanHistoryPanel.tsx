@@ -10,7 +10,8 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { History, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { History, Loader2, Mail, Brain, X } from "lucide-react";
 import { getScanHistory, type ScanHistoryItem, type ScanVerdict } from "@/lib/user-api";
 import { parseUTC } from "@/lib/utils";
 
@@ -150,6 +151,112 @@ function StatChip({
 }
 
 // ---------------------------------------------------------------------------
+// Scan detail modal
+// ---------------------------------------------------------------------------
+
+function ScanModal({ scan, onClose }: { scan: ScanHistoryItem; onClose: () => void }) {
+  return (
+    <>
+      <motion.div
+        key="backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
+        onClick={onClose}
+      />
+      <motion.div
+        key="dialog"
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+      >
+        <div
+          className="glass-panel rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden pointer-events-auto flex flex-col shadow-2xl border border-border/50"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-start justify-between p-6 border-b border-border/30 shrink-0">
+            <div className="flex-1 min-w-0 pr-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Mail size={15} className="text-accent-cyan shrink-0" />
+                <h2 className="text-base font-semibold truncate">
+                  {scan.subject ?? "(no subject)"}
+                </h2>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap mt-1.5">
+                <VerdictBadge verdict={scan.verdict} id={scan.id} />
+                {scan.confidence != null && (
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {Math.round(scan.confidence * 100)}% confidence
+                  </span>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {relativeTime(scan.scanned_at)}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground shrink-0"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="overflow-y-auto flex-1 p-6 space-y-5">
+            {/* Email body */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Mail size={13} className="text-accent-purple" />
+                <span className="text-xs font-semibold text-accent-purple uppercase tracking-wider">
+                  Email Body
+                </span>
+              </div>
+              <div className="bg-background/60 rounded-lg p-4 border border-border/40">
+                {scan.full_body ? (
+                  <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                    {scan.full_body}
+                  </p>
+                ) : scan.body_snippet ? (
+                  <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                    {scan.body_snippet}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No body content</p>
+                )}
+              </div>
+            </div>
+
+            {/* Detector reasoning */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Brain size={13} className="text-accent-cyan" />
+                <span className="text-xs font-semibold text-accent-cyan uppercase tracking-wider">
+                  Detector Reasoning
+                </span>
+              </div>
+              <div className="bg-background/60 rounded-lg p-4 border border-border/40">
+                {scan.reasoning ? (
+                  <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                    {scan.reasoning}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No reasoning available</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -159,7 +266,7 @@ export default function ScanHistoryPanel({ token }: ScanHistoryPanelProps) {
   const [pages, setPages] = useState(1);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selectedScan, setSelectedScan] = useState<ScanHistoryItem | null>(null);
 
   const loadPage = useCallback(
     async (p: number) => {
@@ -192,8 +299,12 @@ export default function ScanHistoryPanel({ token }: ScanHistoryPanelProps) {
 
   const chartData = buildChartData(scans);
 
-  const toggleExpand = (id: number) => {
-    setExpandedId((prev) => (prev === id ? null : id));
+  const openModal = (scan: ScanHistoryItem) => {
+    setSelectedScan(scan);
+  };
+
+  const closeModal = () => {
+    setSelectedScan(null);
   };
 
   if (loading && scans.length === 0) {
@@ -205,6 +316,12 @@ export default function ScanHistoryPanel({ token }: ScanHistoryPanelProps) {
   }
 
   return (
+    <>
+    <AnimatePresence>
+      {selectedScan && (
+        <ScanModal scan={selectedScan} onClose={closeModal} />
+      )}
+    </AnimatePresence>
     <div className="glass-panel rounded-xl p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-2">
@@ -264,7 +381,7 @@ export default function ScanHistoryPanel({ token }: ScanHistoryPanelProps) {
               {/* Main row */}
               <div
                 data-testid={`scan-row-${scan.id}`}
-                onClick={() => toggleExpand(scan.id)}
+                onClick={() => openModal(scan)}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/20 cursor-pointer transition-colors"
               >
                 {/* Subject */}
@@ -298,24 +415,7 @@ export default function ScanHistoryPanel({ token }: ScanHistoryPanelProps) {
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {relativeTime(scan.scanned_at)}
                 </span>
-
-                {/* Expand icon */}
-                {expandedId === scan.id ? (
-                  <ChevronUp size={14} className="text-muted-foreground shrink-0" />
-                ) : (
-                  <ChevronDown size={14} className="text-muted-foreground shrink-0" />
-                )}
               </div>
-
-              {/* Expanded reasoning */}
-              {expandedId === scan.id && scan.reasoning && (
-                <div
-                  data-testid={`scan-reasoning-${scan.id}`}
-                  className="px-4 pb-3 text-sm text-muted-foreground leading-relaxed bg-muted/10"
-                >
-                  {scan.reasoning}
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -340,5 +440,6 @@ export default function ScanHistoryPanel({ token }: ScanHistoryPanelProps) {
         </button>
       )}
     </div>
+    </>
   );
 }

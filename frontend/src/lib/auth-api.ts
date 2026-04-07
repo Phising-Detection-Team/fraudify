@@ -32,25 +32,19 @@ export interface AuthResponse {
 }
 
 /**
- * Call backend login endpoint
- * @param email User email
- * @param password User password
- * @returns User data if successful, null if failed or backend unavailable
+ * Call backend login endpoint.
+ * Returns user+accessToken on success, null on any failure.
+ * Used by NextAuth's authorize() — must return null (not an error object) on failure.
  */
 export async function loginWithBackend(email: string, password: string) {
   try {
     const response = await fetch(`${config.API.BASE_URL}${config.API.AUTH.LOGIN}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
-    if (!response.ok) {
-      console.error(`Login failed: ${response.status} ${response.statusText}`);
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data: AuthResponse = await response.json();
     return {
@@ -65,39 +59,133 @@ export async function loginWithBackend(email: string, password: string) {
 }
 
 /**
- * Call backend signup endpoint
- * @param email User email
- * @param password User password
- * @returns User data if successful, null if failed or backend unavailable
+ * Exchange a verification token for a user + access token.
+ * Used by NextAuth authorize() to establish a session after email verification.
  */
-export async function signupWithBackend(email: string, password: string) {
+export async function loginWithToken(token: string) {
   try {
-    const response = await fetch(`${config.API.BASE_URL}${config.API.AUTH.SIGNUP}`, {
+    const response = await fetch(`${config.API.BASE_URL}${config.API.AUTH.VERIFY_EMAIL}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      console.error(`Signup failed: ${error.error || response.statusText}`);
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data: AuthResponse = await response.json();
-    return data.user;
+    return { user: data.user, accessToken: data.access_token };
   } catch (error) {
-    console.error('Backend signup error:', error);
+    console.error('Backend token login error:', error);
     return null;
   }
 }
 
 /**
+ * Check login status and return the full backend response.
+ * Used by the login page to detect specific errors like "Email not verified".
+ */
+export async function checkLoginStatus(
+  email: string,
+  password: string,
+): Promise<{ ok: boolean; status: number; error?: string; message?: string; user?: { roles: string[] } }> {
+  try {
+    const response = await fetch(`${config.API.BASE_URL}${config.API.AUTH.LOGIN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await response.json().catch(() => ({}));
+    return { ok: response.ok, status: response.status, error: data.error, message: data.message, user: data.user };
+  } catch {
+    return { ok: false, status: 0, error: 'Network error' };
+  }
+}
+
+/**
+ * Call backend signup endpoint. Does NOT return JWT — verification is required next.
+ */
+export async function signupWithBackend(email: string, password: string, name?: string) {
+  try {
+    const response = await fetch(`${config.API.BASE_URL}${config.API.AUTH.SIGNUP}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name: name || null }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Signup failed', message: data.message, status: response.status };
+    }
+    return { success: true, userId: data.user_id, email: data.email };
+  } catch (error) {
+    console.error('Backend signup error:', error);
+    return { success: false, error: 'Network error' };
+  }
+}
+
+/**
+ * Send (or resend) a verification email to the given address.
+ */
+export async function sendVerificationEmail(email: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`${config.API.BASE_URL}${config.API.AUTH.SEND_VERIFICATION}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json();
+    if (!response.ok) return { success: false, error: data.error || 'Failed to send verification email' };
+    return { success: true };
+  } catch {
+    return { success: false, error: 'Network error' };
+  }
+}
+
+/**
+ * Verify email with a 6-digit code entered by the user.
+ * Returns AuthResponse on success (contains JWT tokens).
+ */
+export async function verifyEmailWithCode(
+  email: string,
+  code: string,
+): Promise<{ success: boolean; data?: AuthResponse; error?: string }> {
+  try {
+    const response = await fetch(`${config.API.BASE_URL}${config.API.AUTH.VERIFY_EMAIL}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
+    });
+    const data = await response.json();
+    if (!response.ok) return { success: false, error: data.error || 'Verification failed' };
+    return { success: true, data };
+  } catch {
+    return { success: false, error: 'Network error' };
+  }
+}
+
+/**
+ * Verify email using the token from the link in the verification email.
+ * Returns AuthResponse on success (contains JWT tokens).
+ */
+export async function verifyEmailWithToken(
+  token: string,
+): Promise<{ success: boolean; data?: AuthResponse; error?: string }> {
+  try {
+    const response = await fetch(`${config.API.BASE_URL}${config.API.AUTH.VERIFY_EMAIL}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await response.json();
+    if (!response.ok) return { success: false, error: data.error || 'Verification failed' };
+    return { success: true, data };
+  } catch {
+    return { success: false, error: 'Network error' };
+  }
+}
+
+/**
  * Get all users (admin only)
- * @param accessToken Bearer token for admin authorization
- * @returns Array of users if successful, null if failed
  */
 export async function getAllUsers(accessToken: string) {
   try {
@@ -105,7 +193,7 @@ export async function getAllUsers(accessToken: string) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     });
 
@@ -161,16 +249,12 @@ export async function resetPassword(token: string, newPassword: string): Promise
 
 /**
  * Check if a user is admin
- * @param userId UUID of user to check
- * @returns Object with is_admin status, null if failed
  */
 export async function checkUserAdminStatus(userId: string) {
   try {
     const response = await fetch(`${config.API.BASE_URL}/api/users/${userId}/admin`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
     if (!response.ok) {

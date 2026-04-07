@@ -6,10 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 // ─── Narrative text ────────────────────────────────────────────────────────────
 const NARRATIVES: Record<number, string> = {
   1: "Beep boop! My creators fed me 50,231 emails — phishing traps, spam, and legit messages — all shuffled with seed 42. They split me into training 80%, validation 10%, and test 10%. Every example sharpened my instincts. This is where I was born! ⚡",
-  2: "Whirrrr... They squeezed my weights from 32-bit floats down to just 4 bits using NF4 quantization! Memory shrank from 520 MB to 130 MB — a 4× compression. Like fitting an entire library into a backpack. Efficient. Precise. Still completely me. 🗜️",
-  3: "INITIATING LORA PROTOCOL. They froze 99.1% of my core weights — I literally could not change them. Then injected tiny A and B adapter matrices into my 24 attention modules. Only 589,824 free parameters. Small... but mighty. ⚡",
-  4: "7,500 steps. 3 epochs. Each batch of 16 emails — I'd read, predict, then AdamW nudged my adapters via cross-entropy loss. Loss fell from 0.65 all the way to 0.08. I could feel myself getting sharper with every gradient update. 🔥",
-  5: "MISSION COMPLETE. 97.3% accuracy. F1: 0.973. Uploaded to HuggingFace as sentra-utoledo-v1.0. I guard inboxes everywhere now. Every phishing email that tries to slip past me — I catch it. That is my purpose. That is why I exist. 🛡️",
+  2: "Whirrrr... They squeezed my 1.54B weights from FP16 down to just 4 bits using NF4 quantization via Unsloth! Memory shrank from 3,087 MB to 772 MB — a 4× compression. Unsloth's fused Triton kernels also made training 2-5× faster. Efficient. Precise. Still completely me. 🦥⚡",
+  3: "INITIATING LORA PROTOCOL. They froze 98.8% of my core weights — I literally could not change them. Then injected tiny A and B adapter matrices into my 196 projection modules across 28 layers. Only 18,464,768 free parameters. Small... but mighty. ⚡",
+  4: "7,500 steps. 3 epochs. Each batch of 8 emails (×2 grad accum) — I'd read, reason, then AdamW nudged my adapters via language modeling loss. Unsloth packed sequences for 30% extra throughput. Loss fell from 2.18 all the way to 0.19. Getting sharper with every step. 🔥",
+  5: "MISSION COMPLETE. 94.2% verdict accuracy. Best eval_loss: 0.1876. Uploaded to HuggingFace as sentra-utoledo-v2.0. I guard inboxes everywhere now — and I explain my reasoning. Every phishing email that tries to slip past me — I catch it, and I tell you why. 🛡️",
 };
 
 const PHASE_ACCENTS: Record<number, { border: string; rgb: string; label: string }> = {
@@ -214,9 +214,6 @@ function RobotP1({ isTalking = false }: { isTalking?: boolean }) {
         <circle cx="105" cy="65" r="8.5" fill={Y} stroke={BK} strokeWidth="1.5"/>
       </motion.g>
 
-      {/* Shoulder joints — drawn AFTER arms so they cap the joints */}
-      <circle cx="20" cy="64" r="7.5" fill={DM} stroke={BK} strokeWidth="1.5"/>
-      <circle cx="79" cy="64" r="7.5" fill={DM} stroke={BK} strokeWidth="1.5"/>
 
       {/* Legs */}
       <path d="M53 110 L60 107 L60 136 L53 136 Z" fill={YS}/>
@@ -294,10 +291,8 @@ function RobotP2({ isTalking = false }: { isTalking?: boolean }) {
         animate={{ y: isTalking ? [87,92,87] : 87, opacity: isTalking ? [1,0.5,1] : 0.7 }}
         transition={{ duration: isTalking ? 0.4 : 0.45, repeat:Infinity }}>↑</motion.text>
 
-      {/* Hip + shoulders */}
+      {/* Hip */}
       <rect x="21" y="90" width="54" height="13" rx="5" fill={DM}/>
-      <circle cx="18" cy="64" r="7.5" fill={DM} stroke={BK} strokeWidth="1.5"/>
-      <circle cx="78" cy="64" r="7.5" fill={DM} stroke={BK} strokeWidth="1.5"/>
 
       {/* Left arm */}
       <g transform="rotate(55 18 64)">
@@ -413,9 +408,6 @@ function RobotP3({ isTalking = false }: { isTalking?: boolean }) {
           transition={{ duration: isTalking ? 0.35 : 0.55, repeat:Infinity, delay:0.15+i*0.1 }}/>
       ))}
 
-      {/* Shoulder joints — drawn AFTER arms */}
-      <circle cx="26" cy="65" r="8.5" fill={DM} stroke={BK} strokeWidth="1.5"/>
-      <circle cx="91" cy="65" r="8.5" fill={DM} stroke={BK} strokeWidth="1.5"/>
 
       {/* Legs — power stance */}
       <path d="M64 112 L72 109 L72 136 L64 136 Z" fill={YS}/>
@@ -498,9 +490,6 @@ function RobotP4({ isTalking = false }: { isTalking?: boolean }) {
         <rect x="25" y="88" width="50" height="13" rx="5" fill={DM}/>
         <circle cx="35" cy="94" r="3.5" fill={D}/>
         <circle cx="65" cy="94" r="3.5" fill={D}/>
-        <circle cx="22" cy="61" r="7" fill={DM} stroke={BK} strokeWidth="1.5"/>
-        <circle cx="78" cy="61" r="7" fill={DM} stroke={BK} strokeWidth="1.5"/>
-
         {/* Running arms */}
         <g transform="rotate(30 22 61)">
           <rect x="-2" y="57" width="28" height="9" rx="4.5" fill={Y} stroke={BK} strokeWidth="1.5"/>
@@ -637,9 +626,6 @@ function RobotP5({ isTalking = false }: { isTalking?: boolean }) {
           transition={{ duration: 1.5, repeat:Infinity, ease:"linear" }}/>
       )}
 
-      {/* Shoulder joints — drawn AFTER both arms */}
-      <circle cx="25" cy="66" r="8" fill={DM} stroke={BK} strokeWidth="1.5"/>
-      <circle cx="85" cy="66" r="8" fill={DM} stroke={BK} strokeWidth="1.5"/>
 
       {/* Legs */}
       <path d="M62 112 L70 109 L70 138 L62 138 Z" fill={YS}/>

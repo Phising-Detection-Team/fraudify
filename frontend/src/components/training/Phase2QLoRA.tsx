@@ -18,8 +18,8 @@ const NF4_LEVELS = [
 const INT4_LEVELS = Array.from({ length: 16 }, (_, i) => -1 + (2 / 15) * i);
 
 const FORMAT_ROWS = [
-  { fmt: "FP32",  bits: 32, bytes: 4,   range: "±3.4×10³⁸",    use: "Base model weights",     active: false },
-  { fmt: "BF16",  bits: 16, bytes: 2,   range: "±3.4×10³⁸",    use: "Compute dtype (Sentra)", active: true  },
+  { fmt: "FP32",  bits: 32, bytes: 4,   range: "±3.4×10³⁸",    use: "Legacy full-precision",  active: false },
+  { fmt: "BF16",  bits: 16, bytes: 2,   range: "±3.4×10³⁸",    use: "Qwen2.5 base weights",   active: true  },
   { fmt: "INT8",  bits: 8,  bytes: 1,   range: "[-128, 127]",   use: "LLM.int8() quant",       active: false },
   { fmt: "NF4",   bits: 4,  bytes: 0.5, range: "16 normal pts", use: "Weight storage (Sentra ✓)", active: true  },
 ];
@@ -151,7 +151,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
   const scanRef                     = useRef<ReturnType<typeof setInterval>>();
 
   const scanProgress = scanDone ? 1 : scanCol >= 0 ? scanCol / GRID_COLS : 0;
-  const memMB = Math.round(520 - scanProgress * 390);
+  const memMB = Math.round(3087 - scanProgress * 2315);
 
   const NF4_BITS  = [0, 1, 1, 0];
   const FP32_BITS = [0,0,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0];
@@ -216,9 +216,9 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
 
   const CONFIG_PILLS = [
     { label: "load_in_4bit = True",              color: "accent-cyan"   },
-    { label: 'bnb_4bit_quant_type = "nf4"',      color: "accent-purple" },
-    { label: "bnb_4bit_use_double_quant = True",  color: "accent-green"  },
-    { label: "bnb_4bit_compute_dtype = bfloat16", color: "accent-red"    },
+    { label: "max_seq_length = 2048",            color: "accent-purple" },
+    { label: 'dtype = None  # auto bfloat16',   color: "accent-green"  },
+    { label: 'use_gradient_checkpointing = "unsloth"', color: "accent-red" },
   ];
 
   return (
@@ -234,7 +234,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
             QLoRA Setup
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Quantizing 66M DistilBERT weights from FP32 → 4-bit NF4 — cutting GPU memory 4×
+            Quantizing Qwen2.5-1.5B weights to 4-bit NF4 via Unsloth — cutting GPU memory 4× with 2-5× faster training
           </p>
         </div>
         <div className="flex gap-2">
@@ -550,7 +550,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
                       >
                         ⚡ 4× COMPRESSION ACHIEVED
                       </motion.div>
-                      <div className="text-[10px] text-accent-green/70 font-mono mt-0.5">520 MB → 130 MB</div>
+                      <div className="text-[10px] text-accent-green/70 font-mono mt-0.5">3,087 MB → 772 MB</div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -591,8 +591,8 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
                     )}
                   </div>
                   <div className="flex justify-between text-[10px] mt-1 text-muted-foreground">
-                    <span className="text-accent-green font-semibold">NF4 ~130 MB</span>
-                    <span>FP32 ~520 MB</span>
+                    <span className="text-accent-green font-semibold">NF4 ~772 MB</span>
+                    <span>FP16 ~3,087 MB</span>
                   </div>
                 </div>
 
@@ -632,7 +632,11 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
       <AnimatePresence>
         {stage >= 5 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl p-5">
-            <h3 className="font-semibold text-sm mb-3">BitsAndBytesConfig — Sentra&apos;s exact setup</h3>
+            <h3 className="font-semibold text-sm mb-1">FastLanguageModel — Unsloth&apos;s unified load API</h3>
+            <p className="text-[11px] text-muted-foreground mb-3">
+              Unsloth replaces the manual BitsAndBytes + PEFT setup with a single call that applies
+              custom Triton/CUDA kernels for 2-5× faster training at identical accuracy.
+            </p>
             <div className="flex flex-wrap gap-2 mb-4">
               {CONFIG_PILLS.map((pill, i) => (
                 <motion.span key={pill.label}
@@ -643,12 +647,18 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
               ))}
             </div>
             <div className="p-3 rounded-lg bg-card border border-border/40 font-mono text-xs text-muted-foreground leading-relaxed">
-              <span className="text-accent-purple">BitsAndBytesConfig</span>(<br />
-              &nbsp;&nbsp;load_in_4bit=<span className="text-accent-green">True</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-muted-foreground/50"># NF4 weight storage</span><br />
-              &nbsp;&nbsp;bnb_4bit_quant_type=<span className="text-accent-cyan">&quot;nf4&quot;</span>,&nbsp;&nbsp;&nbsp;<span className="text-muted-foreground/50"># quantile-based, not linear</span><br />
-              &nbsp;&nbsp;bnb_4bit_use_double_quant=<span className="text-accent-green">True</span>,&nbsp;<span className="text-muted-foreground/50"># quantize scale factors too</span><br />
-              &nbsp;&nbsp;bnb_4bit_compute_dtype=<span className="text-accent-cyan">bfloat16</span>,<span className="text-muted-foreground/50"># dequantize to BF16 for math</span><br />
-              &nbsp;&nbsp;llm_int8_skip_modules=[<span className="text-accent-red">&quot;classifier&quot;</span>]&nbsp;<span className="text-muted-foreground/50"># keep head in FP32</span><br />
+              <span className="text-accent-cyan">from</span> <span className="text-accent-purple">unsloth</span> <span className="text-accent-cyan">import</span> FastLanguageModel<br />
+              <br />
+              model, tokenizer = <span className="text-accent-purple">FastLanguageModel</span>.from_pretrained(<br />
+              &nbsp;&nbsp;model_name=<span className="text-accent-cyan">&quot;Qwen/Qwen2.5-1.5B-Instruct&quot;</span>,<br />
+              &nbsp;&nbsp;max_seq_length=<span className="text-accent-green">2048</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-muted-foreground/50"># SFT context window</span><br />
+              &nbsp;&nbsp;load_in_4bit=<span className="text-accent-green">True</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-muted-foreground/50"># NF4 QLoRA</span><br />
+              &nbsp;&nbsp;dtype=<span className="text-accent-cyan">None</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-muted-foreground/50"># auto → bfloat16</span><br />
+              )<br />
+              <br />
+              peft_model = <span className="text-accent-purple">FastLanguageModel</span>.get_peft_model(<br />
+              &nbsp;&nbsp;model, r=<span className="text-accent-green">16</span>, lora_alpha=<span className="text-accent-green">32</span>,<br />
+              &nbsp;&nbsp;use_gradient_checkpointing=<span className="text-accent-red">&quot;unsloth&quot;</span>,<span className="text-muted-foreground/50"> # smarter recompute</span><br />
               )
             </div>
           </motion.div>

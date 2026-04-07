@@ -86,6 +86,7 @@ export interface ScanHistoryItem {
   user_id: number;
   subject: string | null;
   body_snippet: string | null;
+  full_body: string | null;
   verdict: ScanVerdict;
   confidence: number | null;
   scam_score: number | null;

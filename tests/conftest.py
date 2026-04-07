@@ -164,7 +164,7 @@ def sample_role_super_admin(db):
 
 @pytest.fixture
 def sample_user(db, sample_role_user):
-    """Create a regular user with hashed password."""
+    """Create a regular user with hashed password. email_verified=False by default."""
     user = User(email='user@example.com', username='testuser')
     user.set_password('Password1')
     user.roles.append(sample_role_user)
@@ -175,7 +175,7 @@ def sample_user(db, sample_role_user):
 
 @pytest.fixture
 def sample_admin(db, sample_role_admin):
-    """Create an admin user."""
+    """Create an admin user. email_verified=False by default."""
     user = User(email='admin@example.com', username='testadmin')
     user.set_password('Admin123')
     user.roles.append(sample_role_admin)
@@ -208,8 +208,10 @@ def sample_extension_instance(db, sample_user):
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-def auth_headers_user(client, sample_user):
+def auth_headers_user(db, client, sample_user):
     """JWT Authorization header for a regular user (password = 'Password1')."""
+    sample_user.email_verified = True
+    db.session.commit()
     resp = client.post('/api/auth/login', json={
         'email': sample_user.email,
         'password': 'Password1',
@@ -219,8 +221,10 @@ def auth_headers_user(client, sample_user):
 
 
 @pytest.fixture
-def auth_headers_admin(client, sample_admin):
+def auth_headers_admin(db, client, sample_admin):
     """JWT Authorization header for an admin (password = 'Admin123')."""
+    sample_admin.email_verified = True
+    db.session.commit()
     resp = client.post('/api/auth/login', json={
         'email': sample_admin.email,
         'password': 'Admin123',

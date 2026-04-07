@@ -7,13 +7,14 @@ import { SentraMascot } from "./SentraMascot";
 
 interface PhaseProps { autoPlay: boolean; phaseProgress: number; wasCompleted?: boolean; onComplete?: () => void; }
 
-const LAYERS = 6;
-const TARGET_MODULES = ["q_lin", "k_lin", "v_lin", "out_lin"];
-const TRAINABLE_TOTAL = 589824;
-const ALL_PARAMS      = 66362880;
+const LAYERS = 28;          // actual model depth (shown in header + ellipsis)
+const DISPLAY_LAYERS = 6;   // layers rendered in the animation (keeps timing manageable)
+const TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"];
+const TRAINABLE_TOTAL = 18464768;
+const ALL_PARAMS      = 1543714816;
 const RANK            = 16;
 const ALPHA           = 32;
-const HIDDEN          = 768;
+const HIDDEN          = 1536;
 
 function useCounter(target: number, durationMs: number, active: boolean) {
   const [val, setVal] = useState(0);
@@ -75,7 +76,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
 
   const trainable = useCounter(TRAINABLE_TOTAL, 3000, countActive);
   const pct = ((trainable / ALL_PARAMS) * 100).toFixed(2);
-  const sliderParams = 24 * 2 * HIDDEN * rankSlider;
+  const sliderParams = 196 * 2 * HIDDEN * rankSlider;
   const sliderPct    = ((sliderParams / ALL_PARAMS) * 100).toFixed(2);
 
   const startPlay = () => {
@@ -89,8 +90,8 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
     // Stage 2: "FREEZE PROTOCOL" — freeze wave begins
     timers.current.push(setTimeout(() => setStage(2), 1800));
 
-    // Freeze each layer one by one (800ms apart)
-    for (let i = 0; i < LAYERS; i++) {
+    // Freeze each displayed layer one by one (800ms apart)
+    for (let i = 0; i < DISPLAY_LAYERS; i++) {
       const t = 2200 + i * 800;
       timers.current.push(setTimeout(() => {
         setFrozen(prev => [...prev, i]);
@@ -107,7 +108,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
 
     // Stage 4: LoRA injection begins (700ms stagger per layer)
     timers.current.push(setTimeout(() => setStage(4), 9000));
-    for (let i = 0; i < LAYERS; i++) {
+    for (let i = 0; i < DISPLAY_LAYERS; i++) {
       timers.current.push(
         setTimeout(() => setInjected(prev => [...prev, i]), 9400 + i * 700)
       );
@@ -176,7 +177,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
           >
             <h3 className="font-semibold text-sm mb-1">Low-Rank Decomposition — Why LoRA Works</h3>
             <p className="text-xs text-muted-foreground mb-5 max-w-2xl">
-              Instead of updating the full W matrix (768×768 = <strong>589,824 params per module</strong>),
+              Instead of updating the full W matrix (1536×1536 = <strong>2,359,296 params per module (q_proj)</strong>),
               LoRA learns two small matrices A and B whose product approximates the weight update ΔW.
             </p>
 
@@ -195,7 +196,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
                   <div className="absolute top-1 right-2 text-[8px] font-mono text-red-400/50">768</div>
                   <div className="absolute bottom-1 left-1 text-[8px] font-mono text-red-400/50">768</div>
                 </motion.div>
-                <div className="text-[10px] font-mono text-red-400">589,824 params</div>
+                <div className="text-[10px] font-mono text-red-400">2,359,296 params</div>
                 <div className="text-[10px] text-red-400 font-semibold">✗ update all</div>
               </div>
 
@@ -254,10 +255,10 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
 
             <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "Full W (per module)",        value: "589,824",                         color: "text-red-400",      bg: "bg-red-500/5",        border: "border-red-500/20"        },
-                { label: "LoRA A+B (per module)",      value: "24,576",                          color: "text-accent-green", bg: "bg-accent-green/5",   border: "border-accent-green/20"   },
-                { label: "Reduction per module",       value: "95.8%",                           color: "text-accent-cyan",  bg: "bg-accent-cyan/5",    border: "border-accent-cyan/20"    },
-                { label: "Total trainable (24 mods)",  value: TRAINABLE_TOTAL.toLocaleString(),  color: "text-accent-purple", bg: "bg-accent-purple/5", border: "border-accent-purple/20"  },
+                { label: "Full W — q_proj",            value: "2,359,296",                       color: "text-red-400",      bg: "bg-red-500/5",        border: "border-red-500/20"        },
+                { label: "LoRA A+B — q_proj",          value: "49,152",                          color: "text-accent-green", bg: "bg-accent-green/5",   border: "border-accent-green/20"   },
+                { label: "Reduction (q_proj)",         value: "97.9%",                           color: "text-accent-cyan",  bg: "bg-accent-cyan/5",    border: "border-accent-cyan/20"    },
+                { label: "Total trainable (196 mods)", value: TRAINABLE_TOTAL.toLocaleString(),  color: "text-accent-purple", bg: "bg-accent-purple/5", border: "border-accent-purple/20"  },
               ].map((s, i) => (
                 <motion.div
                   key={s.label}
@@ -318,7 +319,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
             className="glass-panel rounded-xl px-6 py-4 border border-sky-300/60 bg-sky-300/10 text-center"
           >
             <div className="text-base font-bold text-sky-200 tracking-widest uppercase">
-              ✦ ALL 66M BASE WEIGHTS FROZEN ✦
+              ✦ ALL 1.54B BASE WEIGHTS FROZEN ✦
             </div>
             <div className="text-xs text-sky-300/70 mt-1">
               Gradient computation disabled — model cannot modify these weights during training
@@ -370,7 +371,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
               className="lg:col-span-2 glass-panel rounded-xl p-5"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-sm">DistilBERT — 6 Transformer Layers</h3>
+                <h3 className="font-semibold text-sm">Qwen2.5-1.5B — 28 Transformer Layers</h3>
                 <div className="flex gap-3 text-[10px] text-muted-foreground">
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-muted-foreground/30" />warm</div>
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-sky-400/50" />frozen</div>
@@ -379,7 +380,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
               </div>
 
               <div className="space-y-2">
-                {Array.from({ length: LAYERS }, (_, layerIdx) => {
+                {Array.from({ length: DISPLAY_LAYERS }, (_, layerIdx) => {
                   const isFrozen   = frozenLayers.includes(layerIdx);
                   const isInjected = injectedLayers.includes(layerIdx);
                   const isBursting = burstLayer === layerIdx;
@@ -514,6 +515,37 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
                     </motion.div>
                   );
                 })}
+
+                {/* Ellipsis — remaining 22 layers */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: stage >= 1 ? 1 : 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg border border-dashed border-border/30 bg-background/20"
+                >
+                  <div className="flex gap-1">
+                    {[0,1,2].map(i => (
+                      <motion.div
+                        key={i}
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          stage >= 4 ? "bg-accent-purple" : stage >= 2 ? "bg-sky-400/70" : "bg-muted-foreground/40"
+                        }`}
+                        animate={{ opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    <span className="font-semibold text-foreground/70">+{LAYERS - DISPLAY_LAYERS} more layers</span>
+                    {" "}({LAYERS} total) —{" "}
+                    {stage >= 4
+                      ? <span className="text-accent-purple">all frozen + LoRA-injected</span>
+                      : stage >= 2
+                      ? <span className="text-sky-300">all frozen</span>
+                      : "all transformer layers follow the same process"
+                    }
+                  </span>
+                </motion.div>
               </div>
             </motion.div>
           )}
@@ -549,7 +581,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
                   />
                 </div>
                 <div className="text-xs text-accent-purple font-semibold">
-                  {pct}% trainable · 99.1% frozen
+                  {pct}% trainable · {(100 - parseFloat(pct)).toFixed(1)}% frozen
                 </div>
 
                 <div className="mt-4 p-2.5 rounded-lg bg-muted/40 text-xs space-y-1.5">
@@ -558,11 +590,12 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
                     ["Alpha (α)",    `${ALPHA}`],
                     ["Scale (α/r)", `${(ALPHA / RANK).toFixed(1)}×`],
                     ["Dropout",     "0.1"],
-                    ["Target mods", "4 × 6 = 24"],
+                    ["Target mods", "7 × 28 = 196"],
+                    ["Grad ckpt",   '"unsloth" (smart)'],
                   ] as [string, string][]).map(([k, v]) => (
                     <div key={k} className="flex justify-between">
                       <span className="text-muted-foreground">{k}</span>
-                      <span className="font-mono font-semibold text-foreground">{v}</span>
+                      <span className={`font-mono font-semibold ${k === "Grad ckpt" ? "text-accent-purple" : "text-foreground"}`}>{v}</span>
                     </div>
                   ))}
                 </div>
@@ -715,7 +748,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
               ✦ LoRA Injection Complete — 24 Adapter Pairs Active ✦
             </div>
             <div className="text-xs text-muted-foreground">
-              589,824 trainable parameters · 65,773,056 frozen · Ready for training
+              18,464,768 trainable parameters · 1,525,250,048 frozen · Ready for training
             </div>
             <div className="mt-3 flex justify-center gap-4 text-[11px]">
               <span className="px-2.5 py-1 rounded-full bg-accent-purple/15 border border-accent-purple/30 text-accent-purple font-mono">r=16 · α=32</span>

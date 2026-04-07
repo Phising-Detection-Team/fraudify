@@ -19,9 +19,9 @@ function makeLossData() {
     const warmup   = Math.min(s / 225, 1);
     const cosDecay = 0.5 * (1 + Math.cos(Math.PI * s / totalSteps));
     const lr       = warmup * 2e-4 * cosDecay;
-    const baseDecay = 0.65 * Math.exp(-s / 2200);
-    const noise     = (Math.random() - 0.5) * 0.012;
-    const loss      = Math.max(0.05, baseDecay + 0.08 + noise);
+    const baseDecay = 1.82 * Math.exp(-s / 1800);
+    const noise     = (Math.random() - 0.5) * 0.018;
+    const loss      = Math.max(0.17, baseDecay + 0.18 + noise);
     // FIX: cap epoch at 3
     pts.push({ step: s, loss: +loss.toFixed(4), lr: +lr.toFixed(6), epoch: Math.min(Math.floor(s / stepsPerEpoch) + 1, 3) });
   }
@@ -31,9 +31,9 @@ function makeLossData() {
 const FULL_DATA = makeLossData();
 
 const EPOCH_MILESTONES = [
-  { step: 2500, epoch: 1, f1: "0.881", loss: "0.284" },
-  { step: 5000, epoch: 2, f1: "0.941", loss: "0.141" },
-  { step: 7500, epoch: 3, f1: "0.973", loss: "0.082" },
+  { step: 2500, epoch: 1, f1: "0.441", loss: "0.893" },
+  { step: 5000, epoch: 2, f1: "0.289", loss: "0.451" },
+  { step: 7500, epoch: 3, f1: "0.188", loss: "0.220" },
 ];
 
 // 16 mini email samples for batch visualization (8 phishing, 8 legitimate)
@@ -57,37 +57,38 @@ const BATCH_EMAILS = [
 ] as const;
 
 const LOG_LINES = [
-  "Loading dataset from cache...",
-  "Initializing training loop — Epoch 1/3",
-  "Step   50 | loss: 0.6187 | lr: 1.78e-05",
-  "Step  100 | loss: 0.5341 | lr: 3.56e-05",
-  "Step  200 | loss: 0.4102 | lr: 7.11e-05",
-  "Step  500 | loss: 0.2893 | lr: 1.78e-04",
-  "Evaluation @ step 500 | eval_f1: 0.881",
-  "Step  750 | loss: 0.2213 | lr: 1.74e-04",
-  "Step 1000 | loss: 0.1876 | lr: 1.71e-04",
-  "--- Epoch 1 complete | avg_loss: 0.2841 ---",
-  "Initializing training loop — Epoch 2/3",
-  "Step 1250 | loss: 0.1654 | lr: 1.65e-04",
-  "Step 1500 | loss: 0.1492 | lr: 1.57e-04",
-  "Evaluation @ step 1500 | eval_f1: 0.941",
-  "Step 1750 | loss: 0.1317 | lr: 1.48e-04",
-  "Step 2000 | loss: 0.1189 | lr: 1.38e-04",
-  "--- Epoch 2 complete | avg_loss: 0.1412 ---",
-  "Initializing training loop — Epoch 3/3",
-  "Step 2250 | loss: 0.1043 | lr: 1.28e-04",
-  "Step 2500 | loss: 0.0951 | lr: 1.17e-04",
-  "Evaluation @ step 2500 | eval_f1: 0.967",
-  "Step 2750 | loss: 0.0882 | lr: 1.05e-04",
-  "Step 3000 | loss: 0.0821 | lr: 9.28e-05",
-  "Step 3500 | loss: 0.0764 | lr: 6.67e-05",
-  "Step 4000 | loss: 0.0733 | lr: 4.44e-05",
-  "Evaluation @ step 4000 | eval_f1: 0.971 ← Best model saved",
-  "--- Epoch 3 complete | avg_loss: 0.0820 ---",
-  "Training complete. Best F1: 0.9730",
+  "Loading SFT dataset — instruction-response pairs (packing=True)...",
+  "🦥 Unsloth: Fused kernels loaded — 2.3× faster than standard TRL",
+  "Initializing SFTTrainer (Unsloth) — Epoch 1/3",
+  "Step   50 | loss: 2.1843 | lr: 1.78e-05",
+  "Step  100 | loss: 1.7652 | lr: 3.56e-05",
+  "Step  200 | loss: 1.3291 | lr: 7.11e-05",
+  "Step  500 | loss: 0.9134 | lr: 1.78e-04",
+  "Evaluation @ step 500 | eval_loss: 0.8741",
+  "Step  750 | loss: 0.7823 | lr: 1.74e-04",
+  "Step 1000 | loss: 0.6541 | lr: 1.71e-04",
+  "--- Epoch 1 complete | avg_loss: 0.8932 ---",
+  "Initializing SFTTrainer (Unsloth) — Epoch 2/3",
+  "Step 1250 | loss: 0.5432 | lr: 1.65e-04",
+  "Step 1500 | loss: 0.4721 | lr: 1.57e-04",
+  "Evaluation @ step 1500 | eval_loss: 0.4412",
+  "Step 1750 | loss: 0.4013 | lr: 1.48e-04",
+  "Step 2000 | loss: 0.3654 | lr: 1.38e-04",
+  "--- Epoch 2 complete | avg_loss: 0.4512 ---",
+  "Initializing SFTTrainer (Unsloth) — Epoch 3/3",
+  "Step 2250 | loss: 0.3121 | lr: 1.28e-04",
+  "Step 2500 | loss: 0.2743 | lr: 1.17e-04",
+  "Evaluation @ step 2500 | eval_loss: 0.2891",
+  "Step 2750 | loss: 0.2534 | lr: 1.05e-04",
+  "Step 3000 | loss: 0.2312 | lr: 9.28e-05",
+  "Step 3500 | loss: 0.2098 | lr: 6.67e-05",
+  "Step 4000 | loss: 0.1934 | lr: 4.44e-05",
+  "Evaluation @ step 4000 | eval_loss: 0.1876 ← Best model saved",
+  "--- Epoch 3 complete | avg_loss: 0.2201 ---",
+  "Training complete. Best eval_loss: 0.1876",
   "Saving model checkpoint...",
   "Pushing to HuggingFace Hub...",
-  "✓ sentra-utoledo/sentra-utoledo-v1.0 uploaded successfully",
+  "✓ sentra-utoledo/sentra-utoledo-v2.0 uploaded successfully",
 ];
 
 // ── Gradient Descent Landscape ──────────────────────────────
@@ -416,7 +417,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
     // Animate batch highlights
     let batchIdx = 0;
     const batchLoop = () => {
-      setActiveBatch(Array.from({ length: 4 }, (_, k) => (batchIdx * 4 + k) % 16));
+      setActiveBatch(Array.from({ length: 8 }, (_, k) => (batchIdx * 8 + k) % 16));
       batchIdx++;
       timers.current.push(setTimeout(batchLoop, 800));
     };
@@ -485,7 +486,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
             Training Loop
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            3 epochs · ~7,500 steps · cosine LR decay · best model by F1
+            3 epochs · ~7,500 steps · cosine LR decay · best model by eval_loss
           </p>
         </div>
         <div className="flex gap-2">
@@ -598,7 +599,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
                           animate={{ opacity: 1, scale: 1 }}
                           className="text-[9px] px-1.5 py-0.5 rounded bg-accent-green/15 border border-accent-green/30 text-accent-green font-semibold font-mono"
                         >
-                          E{m.epoch} F1:{m.f1}
+                          E{m.epoch} loss:{m.f1}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -750,14 +751,14 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
                     transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
                   />
                 </div>
-                <span className="shrink-0 font-mono text-[10px]">→ DistilBERT+LoRA → CrossEntropy</span>
+                <span className="shrink-0 font-mono text-[10px]">→ Qwen2.5+LoRA (Unsloth) → LM Loss</span>
               </div>
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 {[
-                  { label: "Batch size",  value: "16",     color: "text-accent-purple" },
-                  { label: "Steps/epoch", value: "2,550",  color: "text-accent-cyan"   },
-                  { label: "Total steps", value: "7,650",  color: "text-accent-green"  },
+                  { label: "Eff. batch",  value: "8×2=16", color: "text-accent-purple" },
+                  { label: "Steps/epoch", value: "2,500",  color: "text-accent-cyan"   },
+                  { label: "Total steps", value: "7,500",  color: "text-accent-green"  },
                 ].map(s => (
                   <div key={s.label} className="p-2 rounded bg-muted/30 border border-border/30">
                     <div className="text-[9px] text-muted-foreground">{s.label}</div>

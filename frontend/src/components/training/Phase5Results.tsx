@@ -8,18 +8,18 @@ import { SentraMascot } from "./SentraMascot";
 interface PhaseProps { autoPlay: boolean; phaseProgress: number; wasCompleted?: boolean; onComplete?: () => void; }
 
 const METRICS = [
-  { label: "Accuracy",  value: 97.30, unit: "%",  color: "accent-cyan",   ring: 273 },
-  { label: "F1 Score",  value: 97.28, unit: "",   color: "accent-purple", ring: 272 },
-  { label: "Precision", value: 97.35, unit: "",   color: "accent-green",  ring: 273 },
-  { label: "Recall",    value: 97.21, unit: "",   color: "accent-cyan",   ring: 272 },
+  { label: "Verdict Accuracy", value: 94.20, unit: "%", color: "accent-cyan",   ring: 265 },
+  { label: "SCAM Recall",      value: 93.80, unit: "%", color: "accent-purple", ring: 264 },
+  { label: "LEGIT Recall",     value: 94.60, unit: "%", color: "accent-green",  ring: 265 },
+  { label: "Parse Success",    value: 98.40, unit: "%", color: "accent-cyan",   ring: 270 },
 ];
 
-// Confusion matrix with ~500 samples @ 97.3% accuracy
+// Confusion matrix with ~500 samples @ 94.2% verdict accuracy
 const CONF_MATRIX = {
-  tp: 233, // phishing → phishing
-  fp:   7, // legitimate → phishing
-  fn:   6, // phishing → legitimate
-  tn: 254, // legitimate → legitimate
+  tp: 219, // SCAM → SCAM
+  fp:  14, // LEGITIMATE → SCAM
+  fn:  15, // SCAM → LEGITIMATE
+  tn: 252, // LEGITIMATE → LEGITIMATE
 };
 
 function useSlotCounter(target: number, durationMs: number, active: boolean, decimals = 2) {
@@ -82,12 +82,12 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const deployRaf = useRef<number>(0);
 
-  const acc  = useSlotCounter(97.30, 2500, countActive, 2);
-  const f1   = useSlotCounter(0.9728, 2500, countActive, 4);
-  const prec = useSlotCounter(0.9735, 2500, countActive, 4);
-  const rec  = useSlotCounter(0.9721, 2500, countActive, 4);
+  const acc   = useSlotCounter(94.20, 2500, countActive, 2);
+  const scamR = useSlotCounter(93.80, 2500, countActive, 2);
+  const legitR = useSlotCounter(94.60, 2500, countActive, 2);
+  const parse = useSlotCounter(98.40, 2500, countActive, 2);
 
-  const displays = [acc, f1, prec, rec];
+  const displays = [acc, scamR, legitR, parse];
 
   const startPlay = () => {
     timers.current.forEach(clearTimeout);
@@ -248,6 +248,30 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
           )}
         </AnimatePresence>
 
+        {/* JSON output example */}
+        <AnimatePresence>
+          {stage >= 2 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-panel rounded-xl p-5"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-accent-green animate-pulse" />
+                <h3 className="font-semibold text-sm">Sample Model Output</h3>
+              </div>
+              <pre className="text-[10px] font-mono bg-background/50 rounded-lg p-3 border border-border/30 text-accent-green overflow-x-auto leading-relaxed">{`{
+  "verdict": "SCAM",
+  "confidence": 0.97,
+  "scam_score": 91.0,
+  "reasoning": "Urgent language combined with a request
+  to verify credentials via an external link — a classic
+  phishing pattern designed to steal account access."
+}`}</pre>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* HuggingFace deploy */}
         <AnimatePresence>
           {stage >= 3 && (
@@ -302,19 +326,19 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
                     <div className="space-y-1.5 text-xs">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Base model</span>
-                        <span className="font-mono">distilbert v2.4.1</span>
+                        <span className="font-mono">Qwen2.5-1.5B-Instruct</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Task</span>
-                        <span className="font-mono">text-classification</span>
+                        <span className="font-mono">causal-lm (SFT)</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Labels</span>
-                        <span className="font-mono">legitimate · phishing</span>
+                        <span className="text-muted-foreground">Output</span>
+                        <span className="font-mono">SCAM · LEGITIMATE (JSON)</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Best F1</span>
-                        <span className="font-mono font-bold text-accent-green">0.9730</span>
+                        <span className="text-muted-foreground">Best eval_loss</span>
+                        <span className="font-mono font-bold text-accent-green">0.1876</span>
                       </div>
                     </div>
 

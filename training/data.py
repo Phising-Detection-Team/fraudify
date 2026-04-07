@@ -1,15 +1,16 @@
 """
-Data pipeline — load, preprocess, merge, split, and tokenize datasets.
+Data pipeline — load, preprocess, merge, split, and format datasets for SFT.
 
 Exports:
-    load_datasets()         -> tuple[Dataset, Dataset]
-    preprocess_and_merge()  -> Dataset
-    split_dataset()         -> DatasetDict
-    tokenize_datasets()     -> tuple[DatasetDict, AutoTokenizer, DataCollatorWithPadding]
+    load_datasets()             -> tuple[Dataset, Dataset | None]
+    preprocess_and_merge()      -> Dataset
+    split_dataset()             -> DatasetDict
+    format_for_sft()            -> tuple[DatasetDict, AutoTokenizer]
 """
 
+import json
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
-from transformers import AutoTokenizer, DataCollatorWithPadding
+from transformers import AutoTokenizer
 
 import config
 
@@ -259,46 +260,114 @@ def split_dataset(merged: Dataset) -> DatasetDict:
     return dataset_dict
 
 
-# ─── Tokenize ─────────────────────────────────────────────────────────────────
+# ─── SFT formatting ───────────────────────────────────────────────────────────
 
-def tokenize_datasets(
-    dataset_dict: DatasetDict,
-) -> tuple[DatasetDict, AutoTokenizer, DataCollatorWithPadding]:
+def _label_to_reasoning(label: int) -> str:
+    """Generate template-based synthetic reasoning from binary label."""
+    if label == LABEL_PHISHING:
+        return (
+            "This email exhibits characteristics consistent with phishing: "
+            "urgent language, suspicious requests, or deceptive framing designed "
+            "to manipulate the recipient into revealing credentials or clicking malicious links."
+        )
+    return (
+        "This email appears to be legitimate: normal business communication "
+        "without suspicious urgency, unusual credential requests, or deceptive elements."
+    )
+
+
+def _format_instruction_response(example: dict) -> dict:
     """
-    Tokenize all splits using the BASE_MODEL tokenizer.
+    Transform {text, label} → {prompt, response, label} SFT format.
+
+    The 'prompt' field holds the raw email text.
+    The 'response' field holds the JSON string the model must learn to generate.
+    The 'label' field is preserved for evaluation (not used by SFTTrainer).
+    """
+    label = int(example["label"])
+    verdict = "SCAM" if label == LABEL_PHISHING else "LEGITIMATE"
+    confidence = 0.95 if label == LABEL_PHISHING else 0.92
+    scam_score = 88.0 if label == LABEL_PHISHING else 8.0
+    reasoning = _label_to_reasoning(label)
+
+    response_json = json.dumps({
+        "verdict": verdict,
+        "confidence": confidence,
+        "scam_score": scam_score,
+        "reasoning": reasoning,
+    })
+
+    return {
+        "prompt": example["text"],
+        "response": response_json,
+        "label": label,
+    }
+
+
+def format_for_sft(
+    dataset_dict: DatasetDict,
+    tokenizer: AutoTokenizer,
+) -> tuple[DatasetDict, AutoTokenizer]:
+    """
+    Transform dataset to SFT format using the Qwen2.5 chat template.
+
+    Pipeline:
+        1. Convert {text, label} → {prompt, response: JSON, label} via
+           _format_instruction_response.
+        2. Apply the Qwen chat template to produce a 'text' column containing
+           the full <|im_start|>...<|im_end|> conversation string that
+           SFTTrainer trains on.
+
+    Args:
+        dataset_dict: DatasetDict with "train", "validation", "test" splits
+                      containing {text, label} columns.
+        tokenizer:    Qwen AutoTokenizer with chat_template set.
 
     Returns:
-        (tokenized_DatasetDict, tokenizer, data_collator)
+        (formatted_DatasetDict, tokenizer)
+        formatted_DatasetDict columns: "text" (chat string), "label" (for eval)
     """
     print("\n" + "=" * 60)
-    print("TOKENIZING")
+    print("FORMATTING FOR SFT")
     print("=" * 60)
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        config.BASE_MODEL,
-        trust_remote_code=True,
-    )
-
-    def _tokenize(batch: dict) -> dict:
-        return tokenizer(
-            batch["text"],
-            truncation=True,
-            max_length=config.MAX_SEQ_LENGTH,
-            padding=False,   # DataCollatorWithPadding handles dynamic padding
+    if tokenizer.chat_template is None:
+        raise ValueError(
+            "Tokenizer has no chat_template. "
+            "Ensure you loaded from Qwen/Qwen2.5-1.5B-Instruct."
         )
 
-    tokenized = dataset_dict.map(
-        _tokenize,
-        batched=True,
+    def _apply_chat_template(example: dict) -> dict:
+        messages = [
+            {"role": "system",    "content": SYSTEM_PROMPT},
+            {"role": "user",      "content": example["prompt"]},
+            {"role": "assistant", "content": example["response"]},
+        ]
+        text = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+        return {"text": text, "label": example["label"]}
+
+    # Step 1: {text, label} → {prompt, response, label}
+    formatted = dataset_dict.map(
+        _format_instruction_response,
         remove_columns=["text"],
-        desc="Tokenizing",
+        desc="Building instruction-response pairs",
     )
-    tokenized.set_format("torch")
 
-    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+    # Step 2: apply chat template → {text, label}
+    formatted = formatted.map(
+        _apply_chat_template,
+        remove_columns=["prompt", "response"],
+        desc="Applying Qwen chat template",
+    )
 
-    print(f"\nTokenizer: {config.BASE_MODEL}")
-    print(f"Max sequence length: {config.MAX_SEQ_LENGTH}")
-    print(f"Tokenized splits: {list(tokenized.keys())}")
+    for split_name, ds in formatted.items():
+        print(f"  {split_name:12s}: {len(ds):>7,} rows  |  columns: {ds.column_names}")
+        # Show a truncated sample
+        sample_text = ds[0]["text"][:200].replace("\n", "\\n")
+        print(f"  Sample (truncated): {sample_text}...")
 
-    return tokenized, tokenizer, data_collator
+    return formatted, tokenizer

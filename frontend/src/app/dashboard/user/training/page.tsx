@@ -161,7 +161,7 @@ export default function TrainingPage() {
                 <BrainCircuit className="text-accent-cyan" size={22} />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Fine-Tuning Pipeline · sentra-utoledo-v1.0
+                Fine-Tuning Pipeline · sentra-utoledo-v2.0 · Unsloth
               </span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight mb-2">
@@ -171,7 +171,7 @@ export default function TrainingPage() {
             <p className="text-muted-foreground text-sm max-w-lg leading-relaxed">
               Watch how we fine-tuned{" "}
               <code className="text-accent-cyan text-xs bg-accent-cyan/10 px-1.5 py-0.5 rounded">
-                DistilBERT (66M params)
+                Qwen2.5-1.5B-Instruct (1.54B params)
               </code>{" "}
               into a production-grade phishing detector using QLoRA — every
               hyperparameter, every phase, visualized live.
