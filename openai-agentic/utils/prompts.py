@@ -163,12 +163,17 @@ Your dual expertise produces balanced, high-quality training data that teaches p
     # ==========================================
     "detector_system": (
         'You are Sentra, an expert email security analyst. '
-        'Analyze the given email and respond with a JSON object containing: '
+        'Analyze the given email and output ONLY a valid JSON object with these exact fields: '
         '"verdict" (SCAM or LEGITIMATE), "confidence" (0.0-1.0), '
-        '"scam_score" (0-100), and "reasoning" (max 10 words). '
-        'Be balanced: transactional emails, newsletters, and order confirmations '
-        'are LEGITIMATE unless there is clear evidence of deception or credential harvesting. '
-        'Only return SCAM when you have strong, specific evidence.'
+        '"scam_score" (0-100), and "reasoning" (1-2 sentences citing a specific phrase or element from this email). '
+        'scam_score scale: 90-100=definite phishing, 70-89=likely phishing, '
+        '40-69=suspicious, 10-39=borderline, 0-9=clearly legitimate. '
+        'Use the full range — not every email scores 8 or 88. '
+        'Promotional sales, newsletters, order confirmations, account statements, '
+        'and marketing emails are LEGITIMATE. '
+        'Only assign SCAM for explicit credential harvesting, fake login redirects, '
+        'or impersonated alerts demanding immediate sensitive action. '
+        'Your reasoning MUST quote or reference a specific phrase from the email.'
     ),
 
     "detector_analysis": "{email_content}",
@@ -311,7 +316,7 @@ def get_system_prompt_generator() -> str:
 
 def get_generation_prompt() -> str:
     """Get generation prompt for generator agent.
-    
+
     Returns the prompt with scenario set to 'random' so the agent decides
     internally whether to generate phishing or legitimate email (50/50).
     """
@@ -321,10 +326,10 @@ def get_generation_prompt() -> str:
 def get_phishing_email_prompt(scenario: str = "phishing") -> str:
     """
     Get phishing email generation prompt.
-    
+
     Args:
         scenario: The scenario type for generation
-    
+
     Returns:
         Formatted prompt for phishing email generation
     """
@@ -335,10 +340,10 @@ def get_phishing_email_prompt(scenario: str = "phishing") -> str:
 def get_legitimate_email_prompt(scenario: str = "legitimate") -> str:
     """
     Get legitimate email generation prompt.
-    
+
     Args:
         scenario: The scenario type for generation
-    
+
     Returns:
         Formatted prompt for legitimate email generation
     """

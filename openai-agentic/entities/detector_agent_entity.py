@@ -71,7 +71,7 @@ def _load_gguf(model_id: str):
 
     llm = Llama(
         model_path=gguf_path,
-        n_ctx=2048,
+        n_ctx=1024,
         n_gpu_layers=0,
         verbose=False,
     )
@@ -100,10 +100,9 @@ class _OllamaClient:
                 "temperature": temperature,
                 "stream": False,
                 "format": "json",   # Ollama-native JSON mode (forces valid JSON output)
-                # Cap KV cache to 2048 tokens — matches llama-cpp-python n_ctx setting.
-                # Without this, Ollama allocates Qwen2.5's default (32K+) context,
-                # causing slow CPU inference regardless of actual prompt length.
-                "options": {"num_ctx": 2048},
+                # Cap KV cache to 1024 tokens — enough for a 2000-char email + system prompt
+                # + 80-token output. Halving from 2048 cuts CPU KV-cache work ~2x.
+                "options": {"num_ctx": 1024},
             },
             timeout=300,
         )
