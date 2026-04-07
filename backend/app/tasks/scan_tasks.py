@@ -110,13 +110,21 @@ def scan_email_task(self, user_id: int, subject: str, body: str, inference_mode:
     scam_score = parsed.get('scam_score', 0.0)
     reasoning = parsed.get('reasoning', '')
 
+    # Raised thresholds to reduce false positives
+    def _score_to_verdict(scam_score: float) -> str:
+        if scam_score >= 85:    return 'phishing'         # was 80
+        if scam_score >= 70:    return 'likely_phishing'  # was 60
+        if scam_score >= 50:    return 'suspicious'       # was 40
+        if scam_score >= 25:    return 'likely_legitimate' # was 20
+        return 'legitimate'
+
     # Normalise confidence to 0-1 range (detector may return 0-100)
     if isinstance(confidence, (int, float)) and confidence > 1:
         confidence = confidence / 100.0
 
     result = {
         'status': 'complete',
-        'verdict': _normalize_verdict(verdict_raw),
+        'verdict': _score_to_verdict(scam_score) if 'scam_score' in parsed else _normalize_verdict(verdict_raw),
         'confidence': confidence,
         'scam_score': scam_score,
         'reasoning': reasoning,

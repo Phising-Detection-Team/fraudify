@@ -40,7 +40,7 @@ class DetectorAgentService(BaseService):
                     {"role": "system", "content": system_prompt},
                     {"role": "user",   "content": user_content},
                 ],
-                max_tokens=75,
+                max_tokens=80,
                 temperature=0.7,
             )
             logger.info("[Sentra] GGUF inference done in %.1fs", time.perf_counter() - t0)
@@ -72,7 +72,7 @@ class DetectorAgentService(BaseService):
         with torch.no_grad():
             output_ids = model.generate(
                 **inputs,
-                max_new_tokens=75,
+                max_new_tokens=80,
                 do_sample=True,
                 temperature=0.7,
                 pad_token_id=tokenizer.eos_token_id,
