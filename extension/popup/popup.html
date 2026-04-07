@@ -32,41 +32,6 @@
       <span class="value monospace" id="instanceToken">—</span>
     </div>
     <div class="divider"></div>
-    <div class="info-row inference-row">
-      <span class="label">Inference Mode</span>
-      <div class="mode-selector" id="modeSelector">
-        <span class="mode-wrap">
-          <button class="mode-btn" data-mode="standard">Standard</button>
-          <span class="info-icon" tabindex="0">&#9432;
-            <span class="info-tooltip">
-              <strong>Standard</strong><br>
-              Scan results may take 1–4 minutes.<br><br>
-              <span class="catch">&#9888; Not recommended for regular use — switch to Optimized for faster results.</span>
-            </span>
-          </span>
-        </span>
-        <span class="mode-wrap">
-          <button class="mode-btn mode-btn--active" data-mode="gguf">Optimized</button>
-          <span class="info-icon" tabindex="0">&#9432;
-            <span class="info-tooltip">
-              <strong>Optimized</strong> — Recommended<br>
-              Fast scanning on any hardware. Results in 3–8 seconds.<br><br>
-              <span class="catch">&#9888; First scan may take longer while the model loads.</span>
-            </span>
-          </span>
-        </span>
-        <span class="mode-wrap">
-          <button class="mode-btn" data-mode="accelerated" id="modeAccelerated">Turbo</button>
-          <span class="info-icon" tabindex="0">&#9432;
-            <span class="info-tooltip">
-              <strong>Turbo</strong><br>
-              Fastest scanning. Results in under 1 second.<br><br>
-              <span class="catch">&#9888; Requires a dedicated GPU. Unavailable on this machine if the button is greyed out.</span>
-            </span>
-          </span>
-        </span>
-      </div>
-    </div>
     <p class="hint">Sentra automatically scans emails when you open them in Gmail or Outlook.</p>
     <div id="scan-history-section" class="section">
       <div class="section-title">Recent Scans</div>

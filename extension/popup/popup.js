@@ -82,7 +82,6 @@ async function init() {
     'sentra_auth_token',
     'sentra_user_email',
     'sentra_instance_token',
-    'sentra_inference_mode',
   ]);
 
   const dot = $('statusDot');
@@ -107,58 +106,6 @@ async function init() {
   $('btnOpenDashboard2').addEventListener('click', openDashboard);
 
   await renderScanHistory();
-
-  // Check GPU availability and pass result to toggle init
-  let cudaAvailable = true;
-  try {
-    const apiUrl = stored.sentra_api_url || 'http://localhost:5000';
-    const res = await fetch(`${apiUrl}/api/system/info`, {
-      headers: { Authorization: `Bearer ${stored.sentra_auth_token}` },
-    });
-    if (res.ok) {
-      const info = await res.json();
-      cudaAvailable = info.cuda_available === true;
-    }
-  } catch (_) {
-    // If the check fails, assume GPU is available (don't block the user)
-  }
-  _initInferenceToggle(stored.sentra_inference_mode || 'gguf', cudaAvailable);
-}
-
-// ---------------------------------------------------------------------------
-// Inference mode selector (3-way: Standard / Optimized / Turbo)
-// ---------------------------------------------------------------------------
-
-function _initInferenceToggle(currentMode, cudaAvailable = true) {
-  const selector = $('modeSelector');
-  if (!selector) return;
-
-  const turboBtn = $('modeAccelerated');
-
-  // Disable Turbo button if no GPU
-  if (!cudaAvailable && turboBtn) {
-    turboBtn.disabled = true;
-    // If stored mode was accelerated, fall back to gguf
-    if (currentMode === 'accelerated') {
-      currentMode = 'gguf';
-      chrome.storage.local.set({ sentra_inference_mode: 'gguf' });
-    }
-  }
-
-  // Set initial active button
-  selector.querySelectorAll('.mode-btn').forEach((btn) => {
-    btn.classList.toggle('mode-btn--active', btn.dataset.mode === currentMode);
-  });
-
-  // Handle clicks — delegate from selector container
-  selector.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.mode-btn');
-    if (!btn || btn.disabled) return;
-    const mode = btn.dataset.mode;
-    selector.querySelectorAll('.mode-btn').forEach((b) => b.classList.remove('mode-btn--active'));
-    btn.classList.add('mode-btn--active');
-    await chrome.storage.local.set({ sentra_inference_mode: mode });
-  });
 }
 
 async function logout() {
@@ -174,5 +121,5 @@ document.addEventListener('DOMContentLoaded', init);
 
 // CommonJS export for Jest
 if (typeof module !== 'undefined') {
-  module.exports = { renderScanHistory, _timeAgo, _verdictBadge, _initInferenceToggle };
+  module.exports = { renderScanHistory, _timeAgo, _verdictBadge };
 }

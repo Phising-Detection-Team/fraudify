@@ -33,7 +33,6 @@ async function _getStorage() {
     'sentra_api_url',
     'sentra_auth_token',
     'sentra_instance_token',
-    'sentra_inference_mode',
   ]);
 }
 
@@ -144,7 +143,7 @@ async function _handleScanRequest(message, sendResponse) {
       stored.sentra_auth_token,
       message.subject || '',
       message.body || '',
-      stored.sentra_inference_mode || 'gguf'
+      'gguf'
     );
 
     if (result && result.data && result.data.status === 'complete') {
