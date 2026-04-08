@@ -1,22 +1,28 @@
-from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import datetime
+from marshmallow import Schema, fields, validate, EXCLUDE
 
-class FeedbackCreate(BaseModel):
-    subject: str = Field(..., min_length=1, max_length=255, description="Subject of the feedback")
-    description: str = Field(..., min_length=1, description="Detailed description of the feedback")
+class FeedbackCreateSchema(Schema):
+    class Meta:
+        unknown = EXCLUDE
 
-class FeedbackUpdateStatus(BaseModel):
-    status: str = Field(..., description="Status of the feedback (e.g., pending, reviewed, resolved)")
+    subject = fields.Str(
+        required=False, 
+        allow_none=True,
+        validate=validate.Length(max=255)
+    )
 
-class FeedbackResponse(BaseModel):
-    id: int
-    user_id: int
-    subject: str
-    description: str
-    status: str
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    description = fields.Str(
+        required=True, 
+        validate=validate.Length(min=1),
+        error_messages={'required': 'Description is required'}
+    )
 
-    class Config:
-        from_attributes = True
+class FeedbackUpdateStatusSchema(Schema):
+    class Meta:
+        unknown = EXCLUDE
+
+    status = fields.Str(
+        required=True,
+        validate=validate.OneOf(['pending', 'reviewed', 'resolved']),
+        error_messages={'required': 'Status is required'}
+    )
+

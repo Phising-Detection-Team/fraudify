@@ -105,6 +105,7 @@ def create_app(config_name=None):
         from .models.extension_instance import ExtensionInstance  # noqa: F401
         from .models.email_verification import EmailVerification  # noqa: F401
         from .models.user_scan import UserScan  # noqa: F401
+        from .models.feedback import Feedback  # noqa: F401
 
     _register_blueprints(app)
 
@@ -145,6 +146,7 @@ def _register_blueprints(app):
     from .routes.extension import extension_bp
     from .routes.users import users_bp
     from .routes.scan import scan_bp
+    from .routes.feedback import feedback_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(rounds_bp, url_prefix='/api')
@@ -156,3 +158,4 @@ def _register_blueprints(app):
     app.register_blueprint(extension_bp, url_prefix='/api')
     app.register_blueprint(users_bp, url_prefix='/api')
     app.register_blueprint(scan_bp, url_prefix='/api')
+    app.register_blueprint(feedback_bp, url_prefix='/api')
