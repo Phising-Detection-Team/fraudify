@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { getFeedback, updateFeedbackStatus, type FeedbackItem } from "@/lib/admin-api";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Loader2, RefreshCw, CheckCircle2, Circle, Clock } from "lucide-react";
 import { parseUTC } from "@/lib/utils";
@@ -50,9 +50,7 @@ export default function AdminFeedbackPage() {
   };
 
   return (
-    <div className="space-y-6 pt-6 px-4 pb-12">
-      <Toaster position="top-center" richColors />
-      
+    <div className="space-y-6 pt-6 px-4 pb-12">      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">User Feedback</h1>

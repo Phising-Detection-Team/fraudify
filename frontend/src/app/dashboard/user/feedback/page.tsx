@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { submitFeedback } from "@/lib/user-api";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Loader2, Mail, MessageSquare } from "lucide-react";
 
@@ -35,9 +35,7 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col items-center justify-start pt-12 pb-10 px-4 sm:px-6">
-      <Toaster position="top-center" richColors />
-      
+    <div className="flex-1 w-full flex flex-col items-center justify-start pt-12 pb-10 px-4 sm:px-6">      
       <div className="w-full max-w-4xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 15 }}  
