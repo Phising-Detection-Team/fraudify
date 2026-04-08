@@ -35,22 +35,28 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="flex-1 w-full min-h-[calc(100vh-140px)] flex flex-col items-center justify-center py-10 px-4 sm:px-6">
+    <div className="flex-1 w-full flex flex-col items-center justify-start pt-12 pb-10 px-4 sm:px-6">
       <Toaster position="top-center" richColors />
       
-      <div className="w-full max-w-xl mx-auto">
+      <div className="w-full max-w-4xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 15 }}  
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.4 }}
-          className="text-center mb-8 flex flex-col items-center"
+          className="text-center mb-12 flex flex-col items-center"
         >
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-accent-cyan/10 rounded-2xl mb-5 text-accent-cyan ring-1 ring-accent-cyan/20">
-            <MessageSquare className="w-7 h-7" />
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-accent-cyan/20 blur-xl rounded-full transform scale-125"></div>
+            <div className="relative flex items-center justify-center w-16 h-16 bg-gradient-to-b from-accent-cyan/20 to-transparent border border-accent-cyan/30 rounded-2xl text-accent-cyan backdrop-blur-sm shadow-[0_0_15px_rgba(var(--accent-cyan-rgb),0.2)]">
+              <MessageSquare className="w-7 h-7 stroke-[2]" />
+            </div>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight">We'd Love Your Input</h1>
-          <p className="text-muted-foreground mt-3 text-lg leading-relaxed max-w-sm mx-auto">
-            Let us know about any issues or how we can improve.
+          
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3 text-foreground">
+            We'd Love Your Input
+          </h1>
+          <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto">
+            Let us know about any issues or how we can improve the platform.
           </p>
         </motion.div>
 
@@ -83,7 +89,7 @@ export default function FeedbackPage() {
                 <textarea
                   id="description"
                   placeholder="Please provide details about your suggestion or any issues you encountered..."
-                  className="w-full min-h-[160px] bg-background border border-border/80 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 focus:border-accent-cyan/50 transition-all shadow-sm resize-y placeholder:text-muted-foreground/60"
+                  className="w-full min-h-[300px] bg-background border border-border/80 rounded-xl px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 focus:border-accent-cyan/50 transition-all shadow-sm resize-y placeholder:text-muted-foreground/60 leading-relaxed"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   required
