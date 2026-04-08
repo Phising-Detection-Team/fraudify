@@ -5,7 +5,7 @@
 
 const {
   extractEmailFromDOM,
-  buildOverlayHTML,
+  buildOverlayElement,
   injectOverlay,
   removeOverlay,
   getOverlayId,
@@ -71,34 +71,34 @@ describe('extractEmailFromDOM (Outlook)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// buildOverlayHTML
+// buildOverlayElement
 // ---------------------------------------------------------------------------
 
-describe('buildOverlayHTML (Outlook)', () => {
-  it('returns a non-empty HTML string', () => {
-    const html = buildOverlayHTML({ verdict: 'phishing', confidence: 0.88 });
-    expect(typeof html).toBe('string');
-    expect(html.length).toBeGreaterThan(0);
+describe('buildOverlayElement (Outlook)', () => {
+  it('returns an HTMLElement', () => {
+    const el = buildOverlayElement({ verdict: 'phishing', confidence: 0.88 });
+    expect(el instanceof HTMLElement).toBe(true);
+    expect(el.tagName).toBe('DIV');
   });
 
   it('indicates threat for phishing verdict', () => {
-    const html = buildOverlayHTML({ verdict: 'phishing', confidence: 0.88 });
-    expect(html.toLowerCase()).toMatch(/phishing|threat|danger/);
+    const el = buildOverlayElement({ verdict: 'phishing', confidence: 0.88 });
+    expect(el.textContent.toLowerCase()).toMatch(/phishing|threat|danger/);
   });
 
   it('indicates safe for legitimate verdict', () => {
-    const html = buildOverlayHTML({ verdict: 'legitimate', confidence: 0.99 });
-    expect(html.toLowerCase()).toMatch(/safe|legitimate|clean/);
+    const el = buildOverlayElement({ verdict: 'legitimate', confidence: 0.99 });
+    expect(el.textContent.toLowerCase()).toMatch(/safe|legitimate|clean/);
   });
 
   it('includes confidence percentage', () => {
-    const html = buildOverlayHTML({ verdict: 'phishing', confidence: 0.88 });
-    expect(html).toContain('88');
+    const el = buildOverlayElement({ verdict: 'phishing', confidence: 0.88 });
+    expect(el.textContent).toContain('88');
   });
 
   it('uses overlay id for deduplication', () => {
-    const html = buildOverlayHTML({ verdict: 'phishing', confidence: 0.9 });
-    expect(html).toContain(getOverlayId());
+    const el = buildOverlayElement({ verdict: 'phishing', confidence: 0.9 });
+    expect(el.id).toBe(getOverlayId());
   });
 });
 

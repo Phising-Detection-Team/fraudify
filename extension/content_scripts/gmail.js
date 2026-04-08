@@ -49,7 +49,7 @@ function getOverlayId() {
  * @param {{ verdict: string, confidence: number, reasoning?: string }} data
  * @returns {string}
  */
-function buildOverlayHTML({ verdict, confidence, reasoning }) {
+function buildOverlayElement({ verdict, confidence, reasoning }) {
   const isPhishing   = verdict === 'phishing' || verdict === 'likely_phishing';
   const isSuspicious = verdict === 'suspicious';
 
@@ -63,29 +63,35 @@ function buildOverlayHTML({ verdict, confidence, reasoning }) {
       ? '⚠ Sentra: Suspicious Email'
       : '✓ Sentra: Email Looks Safe';
 
-  const reasonHtml = reasoning
-    ? `<div style="font-size:12px;margin-top:6px;opacity:0.9;">${_escapeHtml(reasoning)}</div>`
-    : '';
+  const div = document.createElement('div');
+  div.id = OVERLAY_ID;
+  div.style.cssText = `
+    background:${bgColor};
+    color:${textColor};
+    padding:8px 14px;
+    border-radius:6px;
+    font-family:sans-serif;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:8px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);
+  `;
 
-  return `
-    <div id="${OVERLAY_ID}" style="
-      background:${bgColor};
-      color:${textColor};
-      padding:8px 14px;
-      border-radius:6px;
-      font-family:sans-serif;
-      font-size:13px;
-      font-weight:600;
-      margin-bottom:8px;
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.2);
-    ">
-      <span>${label} — ${pct}% confidence</span>
-      ${reasonHtml}
-    </div>
-  `.trim();
+  const span = document.createElement('span');
+  span.textContent = `${label} — ${pct}% confidence`;
+  div.appendChild(span);
+
+  if (reasoning) {
+    const reasonDiv = document.createElement('div');
+    reasonDiv.style.cssText = 'font-size:12px;margin-top:6px;opacity:0.9;';
+    reasonDiv.textContent = reasoning;
+    div.appendChild(reasonDiv);
+  }
+
+  return div;
 }
 
 /** Inject overlay above the email body; removes any previous overlay first. */
@@ -96,9 +102,8 @@ function injectOverlay(verdictData) {
   const container = document.querySelector('.a3s') || document.querySelector('.gs');
   if (!container) return;
 
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = buildOverlayHTML(verdictData);
-  container.prepend(wrapper.firstChild);
+  const overlayElement = buildOverlayElement(verdictData);
+  container.prepend(overlayElement);
 }
 
 /** Remove the Sentra overlay from the DOM if present. */
@@ -252,5 +257,5 @@ function _injectError(message) {
 
 // CommonJS export for Jest
 if (typeof module !== 'undefined') {
-  module.exports = { extractEmailFromDOM, buildOverlayHTML, injectOverlay, injectScanning, removeOverlay, getOverlayId, watchForEmailOpen };
+  module.exports = { extractEmailFromDOM, buildOverlayElement, injectOverlay, injectScanning, removeOverlay, getOverlayId, watchForEmailOpen };
 }

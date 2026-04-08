@@ -6,7 +6,7 @@
 
 const {
   extractEmailFromDOM,
-  buildOverlayHTML,
+  buildOverlayElement,
   injectOverlay,
   removeOverlay,
   getOverlayId,
@@ -72,43 +72,43 @@ describe('extractEmailFromDOM', () => {
 });
 
 // ---------------------------------------------------------------------------
-// buildOverlayHTML
+// buildOverlayElement
 // ---------------------------------------------------------------------------
 
-describe('buildOverlayHTML', () => {
-  it('returns a non-empty HTML string', () => {
-    const html = buildOverlayHTML({ verdict: 'phishing', confidence: 0.95 });
-    expect(typeof html).toBe('string');
-    expect(html.length).toBeGreaterThan(0);
+describe('buildOverlayElement', () => {
+  it('returns an HTMLElement', () => {
+    const el = buildOverlayElement({ verdict: 'phishing', confidence: 0.95 });
+    expect(el instanceof HTMLElement).toBe(true);
+    expect(el.tagName).toBe('DIV');
   });
 
   it('includes verdict text for phishing', () => {
-    const html = buildOverlayHTML({ verdict: 'phishing', confidence: 0.95 });
-    expect(html.toLowerCase()).toContain('phishing');
+    const el = buildOverlayElement({ verdict: 'phishing', confidence: 0.95 });
+    expect(el.textContent.toLowerCase()).toContain('phishing');
   });
 
   it('includes verdict text for legitimate', () => {
-    const html = buildOverlayHTML({ verdict: 'legitimate', confidence: 0.98 });
-    expect(html.toLowerCase()).toContain('safe');
+    const el = buildOverlayElement({ verdict: 'legitimate', confidence: 0.98 });
+    expect(el.textContent.toLowerCase()).toContain('safe');
   });
 
   it('includes confidence percentage', () => {
-    const html = buildOverlayHTML({ verdict: 'phishing', confidence: 0.92 });
-    expect(html).toContain('92');
+    const el = buildOverlayElement({ verdict: 'phishing', confidence: 0.92 });
+    expect(el.textContent).toContain('92');
   });
 
   it('includes reasoning when provided', () => {
-    const html = buildOverlayHTML({
+    const el = buildOverlayElement({
       verdict: 'phishing',
       confidence: 0.9,
       reasoning: 'Suspicious link detected',
     });
-    expect(html).toContain('Suspicious link detected');
+    expect(el.textContent).toContain('Suspicious link detected');
   });
 
   it('uses sentra-overlay id so it can be found and removed', () => {
-    const html = buildOverlayHTML({ verdict: 'phishing', confidence: 0.9 });
-    expect(html).toContain(getOverlayId());
+    const el = buildOverlayElement({ verdict: 'phishing', confidence: 0.9 });
+    expect(el.id).toBe(getOverlayId());
   });
 });
 
