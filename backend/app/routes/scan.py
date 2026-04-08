@@ -26,6 +26,7 @@ from app.cache import get_scan_cache, set_scan_cache
 from app.models import db, User
 from app.models.user_scan import UserScan
 from app.utils import require_role
+from app.utils.prompts import build_safe_email_prompt
 from app.tasks.scan_tasks import (
     _run_detector_sync,
     _normalize_verdict,
@@ -107,7 +108,9 @@ def scan_email():
     # This guarantees the extension always receives `status: 'complete'` in a
     # single response, removing the need for status polling and any dependency
     # on the Celery worker being alive.
-    email_content = f"Subject: {subject}\n\n{body_text}" if subject else body_text
+    
+    email_content = build_safe_email_prompt(subject, body_text)
+
     try:
         parsed = _run_detector_sync(email_content)
     except Exception:
