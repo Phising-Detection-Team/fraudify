@@ -128,9 +128,10 @@ def _register_jwt_callbacks(app):
             redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379/0')
             r = redis_lib.from_url(redis_url)
             return r.exists(f'jwt_blacklist:{jti}') == 1
-        except Exception:
-            # If Redis is unavailable, don't block the request
-            return False
+        except Exception as e:
+            app.logger.critical('JWT blacklist check failed: %s', e)
+            # Fail closed: block access if we cannot verify the blacklist status.
+            return True
 
 
 def _register_blueprints(app):
