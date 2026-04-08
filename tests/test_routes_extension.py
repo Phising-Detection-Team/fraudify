@@ -114,23 +114,33 @@ class TestRegister:
 # ---------------------------------------------------------------------------
 
 class TestHeartbeat:
-    def test_heartbeat_no_jwt_required(self, client, db, sample_user):
-        """Heartbeat succeeds without an Authorization header."""
+    def test_heartbeat_jwt_required(self, client, db, sample_user, auth_headers_user):
+        """Heartbeat requires an Authorization header."""
         inst = _create_instance(db, sample_user.id)
+        # Should fail without JWT
+        resp_no_auth = client.post(
+            '/api/extension/heartbeat',
+            json={'instance_token': inst.instance_token},
+        )
+        assert resp_no_auth.status_code == 401
+
+        # Should succeed with JWT
         resp = client.post(
             '/api/extension/heartbeat',
+            headers=auth_headers_user,
             json={'instance_token': inst.instance_token},
         )
         assert resp.status_code == 200
         assert resp.get_json()['success'] is True
 
-    def test_heartbeat_updates_last_seen(self, client, db, sample_user):
+    def test_heartbeat_updates_last_seen(self, client, db, sample_user, auth_headers_user):
         # Use naive UTC so comparison works against SQLite-stored naive datetimes
         old_time = datetime.utcnow() - timedelta(hours=1)
         inst = _create_instance(db, sample_user.id, last_seen=old_time)
 
         resp = client.post(
             '/api/extension/heartbeat',
+            headers=auth_headers_user,
             json={'instance_token': inst.instance_token},
         )
         assert resp.status_code == 200
@@ -142,30 +152,32 @@ class TestHeartbeat:
             stored = stored.replace(tzinfo=None)
         assert stored > old_time
 
-    def test_heartbeat_marks_instance_active(self, client, db, sample_user):
+    def test_heartbeat_marks_instance_active(self, client, db, sample_user, auth_headers_user):
         inst = _create_instance(db, sample_user.id)
         resp = client.post(
             '/api/extension/heartbeat',
+            headers=auth_headers_user,
             json={'instance_token': inst.instance_token},
         )
         assert resp.get_json()['is_active'] is True
 
-    def test_heartbeat_unknown_token(self, client, db):
+    def test_heartbeat_unknown_token(self, client, db, auth_headers_user):
         resp = client.post(
             '/api/extension/heartbeat',
+            headers=auth_headers_user,
             json={'instance_token': 'nonexistenttoken00000000000000'},
         )
         assert resp.status_code == 404
 
-    def test_heartbeat_missing_token(self, client, db):
-        resp = client.post('/api/extension/heartbeat', json={})
+    def test_heartbeat_missing_token(self, client, db, auth_headers_user):
+        resp = client.post('/api/extension/heartbeat', headers=auth_headers_user, json={})
         assert resp.status_code == 400
 
-    def test_heartbeat_empty_token(self, client, db):
-        resp = client.post('/api/extension/heartbeat', json={'instance_token': ''})
+    def test_heartbeat_empty_token(self, client, db, auth_headers_user):
+        resp = client.post('/api/extension/heartbeat', headers=auth_headers_user, json={'instance_token': ''})
         assert resp.status_code == 400
 
-    def test_heartbeat_rate_limited_after_threshold(self, client, app, db, sample_user):
+    def test_heartbeat_rate_limited_after_threshold(self, client, app, db, sample_user, auth_headers_user):
         """POST /api/extension/heartbeat returns 429 once the per-minute limit is exceeded.
 
         Flask-Limiter is disabled globally in the test config (RATELIMIT_ENABLED=False),
@@ -205,6 +217,7 @@ class TestHeartbeat:
             for _ in range(5):
                 resp = client.post(
                     '/api/extension/heartbeat',
+                    headers=auth_headers_user,
                     json={'instance_token': token},
                 )
                 assert resp.status_code == 200, f'Expected 200 but got {resp.status_code}'
@@ -212,6 +225,7 @@ class TestHeartbeat:
             # The 6th request in the same minute must be rejected
             resp = client.post(
                 '/api/extension/heartbeat',
+                headers=auth_headers_user,
                 json={'instance_token': token},
             )
             assert resp.status_code == 429
