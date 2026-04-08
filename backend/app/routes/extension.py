@@ -76,25 +76,28 @@ def register_instance():
 # ---------------------------------------------------------------------------
 
 @extension_bp.route('/extension/heartbeat', methods=['POST'])
+@jwt_required()
 @limiter.limit('5 per minute')
 def heartbeat():
     """
     Update last_seen for an extension instance using its token.
-
-    This endpoint is intentionally unauthenticated — the extension only needs
-    to store its instance_token (not a full JWT) to send heartbeats.
 
     JSON body (required):
         instance_token (str): the token returned at registration
 
     Returns 200 on success, 404 if token not found.
     """
+    identity = get_jwt_identity()
     data = request.get_json(silent=True) or {}
     token = data.get('instance_token', '').strip()
     if not token:
         raise ValidationError('instance_token is required')
 
-    instance = ExtensionInstance.query.filter_by(instance_token=token).first()
+    instance = ExtensionInstance.query.filter_by(
+        instance_token=token,
+        user_id=int(identity)
+    ).first()
+
     if not instance:
         raise NotFoundError('Extension instance not found')
 
@@ -105,7 +108,7 @@ def heartbeat():
         'instance_id': instance.id,
         'browser': instance.browser,
         'last_seen': instance.last_seen.isoformat(),
-    })
+    }, room=str(identity))
 
     return jsonify({'success': True, 'is_active': instance.is_active}), 200
 
