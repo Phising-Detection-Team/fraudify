@@ -69,40 +69,24 @@ def _load_ollama(_model_id: str):
             "Start it with:  ollama serve  (or launch the Ollama desktop app)."
         )
 
-    # 2 — check whether the model is already pulled via /api/show
-    try:
-        show_name = OLLAMA_MODEL if ":" in OLLAMA_MODEL else f"{OLLAMA_MODEL}:latest"
-        show_resp = requests.post(
-            f"{OLLAMA_BASE_URL}/api/show",
-            json={"name": show_name},
-            timeout=5,
-        )
-        model_pulled = show_resp.status_code == 200
-        logger.info(
-            "[Sentra] Ollama /api/show '%s' → HTTP %d (model_pulled=%s)",
-            show_name, show_resp.status_code, model_pulled,
-        )
-    except Exception as e:
-        logger.warning("[Sentra] Ollama /api/show check failed: %s", e)
-        model_pulled = False
-
-    # 3 — auto-pull if missing
-    if not model_pulled:
-        logger.info(
-            "[Sentra] Pulling '%s' via Ollama REST API (~0.9 GB, first-time only)...", OLLAMA_MODEL
-        )
-        pull_resp = requests.post(
-            f"{OLLAMA_BASE_URL}/api/pull",
-            json={"name": OLLAMA_MODEL},
-            stream=True,
-            timeout=1800,  # 30 min — large model on slow connection
-        )
-        pull_resp.raise_for_status()
-        for _ in pull_resp.iter_lines():
-            pass  # consume streamed progress events until pull completes
-        logger.info("[Sentra] Ollama pull complete.")
-    else:
-        logger.info("[Sentra] Ollama model already present: %s", OLLAMA_MODEL)
+    # 2 — always pull so a retrained model pushed to HuggingFace is picked up
+    # automatically on the next backend restart. Ollama compares the manifest
+    # digest and only downloads changed layers, so this is a fast no-op (~1-2 s)
+    # when nothing has changed. This runs once per backend startup only — the
+    # result is cached in _MODEL_CACHE so individual scans are never affected.
+    logger.info(
+        "[Sentra] Pulling '%s' via Ollama (no-op if already up-to-date)...", OLLAMA_MODEL
+    )
+    pull_resp = requests.post(
+        f"{OLLAMA_BASE_URL}/api/pull",
+        json={"name": OLLAMA_MODEL},
+        stream=True,
+        timeout=1800,  # 30 min — large model on slow connection
+    )
+    pull_resp.raise_for_status()
+    for _ in pull_resp.iter_lines():
+        pass  # consume streamed progress events until pull completes
+    logger.info("[Sentra] Ollama model ready: %s", OLLAMA_MODEL)
 
     return _OllamaClient(OLLAMA_MODEL, OLLAMA_BASE_URL), None
 

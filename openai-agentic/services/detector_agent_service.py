@@ -32,7 +32,7 @@ class DetectorAgentService(BaseService):
                 {"role": "system", "content": self.entity.system_prompt},
                 {"role": "user",   "content": get_detection_prompt(email_content)},
             ],
-            max_tokens=80,
+            max_tokens=-1,   # unlimited — generate until stop token, bounded by num_ctx
             temperature=0.7,
         )
         logger.info("[Sentra] GGUF inference done in %.1fs", time.perf_counter() - t0)
