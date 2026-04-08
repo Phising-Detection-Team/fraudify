@@ -2,7 +2,6 @@
 
 import { config } from "@/lib/config";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { MOCK_STATS_USER } from "@/lib/mock-data";
 import {
   Mail, ShieldAlert, ShieldCheck,
   Puzzle, CheckCircle2, Circle, Wifi, WifiOff,
@@ -231,7 +230,6 @@ function PlatformStatsPanel({ platformStats }: { platformStats: PlatformStats })
 export default function UserDashboard() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
 
   const [stats, setStats] = useState<UserStats>({
     totalEmailsScanned: 0,
@@ -243,13 +241,7 @@ export default function UserDashboard() {
   const [platformStats, setPlatformStats] = useState<PlatformStats>(null);
 
   useEffect(() => {
-    const demoFlag = localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
-    setIsDemo(demoFlag);
-
-    if (demoFlag) {
-      setStats(MOCK_STATS_USER);
-      setLoading(false);
-    } else if (session?.user?.fromBackend && session.accessToken) {
+    if (session?.user?.fromBackend && session.accessToken) {
       const token = session.accessToken;
       Promise.all([
         getUserStats(token).then(setStats).catch(() => {}),
@@ -288,7 +280,6 @@ export default function UserDashboard() {
           title="Emails Scanned"
           value={stats.totalEmailsScanned.toLocaleString()}
           icon={Mail}
-          trend={isDemo ? { value: 12, isPositive: true } : undefined}
           delay={0.1}
         />
         <StatCard
@@ -296,7 +287,6 @@ export default function UserDashboard() {
           value={stats.phishingDetected.toLocaleString()}
           icon={ShieldAlert}
           valueClassName="text-accent-red"
-          trend={isDemo ? { value: 5, isPositive: false } : undefined}
           delay={0.2}
         />
         <StatCard
@@ -304,15 +294,14 @@ export default function UserDashboard() {
           value={stats.markedSafe.toLocaleString()}
           icon={ShieldCheck}
           valueClassName="text-accent-green"
-          trend={isDemo ? { value: 8, isPositive: true } : undefined}
           delay={0.3}
         />
         <StatCard
           title="Extension Status"
-          value={isDemo ? "Active" : hasActiveExtension ? "Active" : "Not installed"}
+          value={hasActiveExtension ? "Active" : "Not installed"}
           icon={Puzzle}
           valueClassName={
-            isDemo || hasActiveExtension ? "text-accent-green" : "text-muted-foreground"
+            hasActiveExtension ? "text-accent-green" : "text-muted-foreground"
           }
           delay={0.4}
         />
@@ -326,7 +315,7 @@ export default function UserDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15, delay: 0.15 }}
         >
-          <OnboardingPanel instances={isDemo ? [] : instances} />
+          <OnboardingPanel instances={instances} />
         </motion.div>
 
         <motion.div

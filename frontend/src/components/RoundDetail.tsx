@@ -1,7 +1,6 @@
 "use client";
 
 import { config } from "@/lib/config";
-import { MOCK_ROUNDS } from "@/lib/mock-data";
 import { getRound, overrideEmailVerdict } from "@/lib/admin-api";
 import { io } from "socket.io-client";
 import {
@@ -51,7 +50,7 @@ interface DisplayEmail {
 export function RoundDetailView() {
   const { data: session } = useSession();
   const params = useParams();
-  const [isDemo, setIsDemo] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [round, setRound] = useState<Round | null>(null);
   const [emails, setEmails] = useState<BackendEmail[]>([]);
@@ -123,16 +122,6 @@ export function RoundDetailView() {
   }, [roundId]);
 
   useEffect(() => {
-    const demoFlag = localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
-    setIsDemo(demoFlag);
-
-    if (demoFlag) {
-      const found = MOCK_ROUNDS.find((r) => r.id === id) ?? null;
-      setRound(found as Round | null);
-      setLoading(false);
-      return;
-    }
-
     if (!session?.accessToken || !session.user?.fromBackend) {
       setLoading(false);
       return;
@@ -168,30 +157,23 @@ export function RoundDetailView() {
   }
 
   if (!round) {
-    if (!isDemo) {
-      return (
-        <div className="space-y-6">
-          <Link
-            href={baseHref}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-cyan transition-colors"
-          >
-            <ArrowLeft size={16} /> Back to Dashboard
-          </Link>
-          <div className="p-8 text-center text-muted-foreground pt-20">
-            Round not found or no data available yet.
-          </div>
-        </div>
-      );
-    }
     return (
-      <div className="p-8 text-center text-muted-foreground pt-20">Round not found</div>
+      <div className="space-y-6">
+        <Link
+          href={baseHref}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-cyan transition-colors"
+        >
+          <ArrowLeft size={16} /> Back to Dashboard
+        </Link>
+        <div className="p-8 text-center text-muted-foreground pt-20">
+          Round not found or no data available yet.
+        </div>
+      </div>
     );
   }
 
-  const displayEmails: DisplayEmail[] = isDemo
-    ? (round.emails as unknown as DisplayEmail[])
-    : emails.map((e) => ({
-        id: String(e.id),
+  const displayEmails: DisplayEmail[] = emails.map((e) => ({
+      id: String(e.id),
         subject: e.generated_email_subject ?? "(no subject)",
         body: e.generated_email_body ?? e.generated_content ?? null,
         generatorResponse: e.generated_content ?? "",
@@ -504,7 +486,7 @@ export function RoundDetailView() {
                   </div>
 
                   {/* Override Verdict — admin only, live data only */}
-                  {isAdmin && !isDemo && (
+                    {isAdmin && (
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <AlertTriangle size={14} className="text-accent-yellow" />

@@ -42,7 +42,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const handleSignOut = async () => {
     localStorage.removeItem("sentra-role");
-    localStorage.removeItem(config.STORAGE_KEYS.IS_DEMO);
+    
     await signOut({ redirect: false });
     router.push(config.ROUTES.LOGIN);
   };

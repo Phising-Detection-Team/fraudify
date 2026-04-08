@@ -4,40 +4,6 @@ import { authConfig } from "./auth.config";
 import { config } from "./lib/config";
 import { loginWithBackend, loginWithToken } from "./lib/auth-api";
 
-/**
- * Authenticate with demo/mock accounts
- * Used for presentations and testing without backend
- */
-function authenticateWithDemo(email: string, password: string) {
-  // Check Demo Admin
-  if (email === config.DEMO_ACCOUNTS.ADMIN.email && password === config.DEMO_ACCOUNTS.ADMIN.password) {
-    return {
-      id: "demo-admin",
-      name: "Demo Admin",
-      email: email,
-      role: "admin",
-      isAdmin: true,
-      isActive: true,
-      fromDemo: true,
-    };
-  }
-
-  // Check Demo User
-  if (email === config.DEMO_ACCOUNTS.USER.email && password === config.DEMO_ACCOUNTS.USER.password) {
-    return {
-      id: "demo-user",
-      name: "Demo User",
-      email: email,
-      role: "user",
-      isAdmin: false,
-      isActive: true,
-      fromDemo: true,
-    };
-  }
-
-  return null;
-}
-
 export const { handlers: { GET, POST }, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
@@ -89,12 +55,6 @@ export const { handlers: { GET, POST }, auth, signIn, signOut } = NextAuth({
             accessToken,
             refreshToken,
           };
-        }
-
-        // Fallback to demo/mock accounts only when explicitly enabled
-        if (process.env.DEMO_MODE === 'true') {
-          const demoUser = authenticateWithDemo(email, password);
-          if (demoUser) return demoUser;
         }
 
         return null;

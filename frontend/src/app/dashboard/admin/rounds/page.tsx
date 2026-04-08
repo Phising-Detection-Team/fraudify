@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ChevronRight, Plus, AlertTriangle, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createRound, runRound, getRound, getAdminRounds } from "@/lib/admin-api";
-import { MOCK_ROUNDS } from "@/lib/mock-data";
 import { config } from "@/lib/config";
 import type { Round } from "@/types";
 
@@ -34,12 +33,6 @@ export default function AdminRoundsPage() {
   }, []);
 
   useEffect(() => {
-    const isDemo = localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
-    if (isDemo) {
-      setRounds(MOCK_ROUNDS as Round[]);
-      setLoading(false);
-      return;
-    }
     if (!session?.accessToken || !session.user?.fromBackend) {
       setLoading(false);
       return;

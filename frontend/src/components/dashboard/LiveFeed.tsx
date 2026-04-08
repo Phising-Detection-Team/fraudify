@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, ShieldAlert, Clock } from "lucide-react";
 import { io } from "socket.io-client";
-import { MOCK_LIVE_FEED } from "@/lib/mock-data";
 import { EmailResult } from "@/types";
 
 interface HeartbeatEvent {
@@ -20,32 +19,11 @@ interface HeartbeatFeedItem {
   type: "heartbeat";
 }
 
-export function LiveFeed({ isDemo }: { isDemo?: boolean }) {
+export function LiveFeed() {
   const [feed, setFeed] = useState<EmailResult[]>([]);
   const [events, setEvents] = useState<HeartbeatFeedItem[]>([]);
 
   useEffect(() => {
-    if (isDemo) {
-      setFeed(MOCK_LIVE_FEED);
-      const interval = setInterval(() => {
-        const newEvent: EmailResult = {
-          id: `ev-${Date.now()}`,
-          subject: `Automated Scan ${Math.floor(Math.random() * 1000)}`,
-          generatorResponse: "N/A",
-          detectorResponse:
-            Math.random() > 0.7
-              ? "Suspicious sender domain detected."
-              : "All heuristics neutral.",
-          verdict: Math.random() > 0.7 ? "phishing" : "safe",
-          confidence: Math.floor(Math.random() * 20) + 80,
-          timestamp: new Date().toISOString(),
-        };
-        setFeed((prev) => [newEvent, ...prev].slice(0, 8));
-      }, 4000);
-      return () => clearInterval(interval);
-    }
-
-    // Real socket.io subscription for live heartbeat events
     const socket = io(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000");
 
     socket.on("extension_heartbeat", (data: HeartbeatEvent) => {
@@ -65,14 +43,10 @@ export function LiveFeed({ isDemo }: { isDemo?: boolean }) {
     return () => {
       socket.disconnect();
     };
-  }, [isDemo]);
+  }, []);
 
-  // In non-demo mode, combine heartbeat events with the static feed
-  const displayFeed: EmailResult[] = isDemo
-    ? feed
-    : feed.length > 0
-    ? feed
-    : [];
+  // Combine heartbeat events with the static feed
+  const displayFeed: EmailResult[] = feed.length > 0 ? feed : [];
 
   return (
     <div className="glass-panel p-6 rounded-xl h-full flex flex-col">
@@ -89,8 +63,8 @@ export function LiveFeed({ isDemo }: { isDemo?: boolean }) {
         </span>
       </div>
 
-      {/* Heartbeat events (non-demo mode only) */}
-      {!isDemo && events.length > 0 && (
+      {/* Heartbeat events */}
+      {events.length > 0 && (
         <div className="mb-4 space-y-2">
           {events.slice(0, 5).map((ev) => (
             <div
