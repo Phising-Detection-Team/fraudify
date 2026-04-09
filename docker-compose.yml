@@ -34,9 +34,26 @@ services:
     networks:
       - phishing_network
 
+  ollama:
+    image: ollama/ollama
+    container_name: sentra_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - phishing_network
+
 volumes:
   postgres_data:
   redis_data:
+  ollama_data:
 
 networks:
   phishing_network:

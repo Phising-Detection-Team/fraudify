@@ -142,7 +142,8 @@ async function _handleScanRequest(message, sendResponse) {
       _apiUrl(stored),
       stored.sentra_auth_token,
       message.subject || '',
-      message.body || ''
+      message.body || '',
+      'gguf'
     );
 
     if (result && result.data && result.data.status === 'complete') {

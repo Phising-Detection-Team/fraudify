@@ -59,22 +59,21 @@ def _project_root() -> str:
     return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 
-def _ensure_agentic_on_path() -> None:
+def _ensure_extension_on_path() -> None:
+    """Add browser_extension_agent/ to sys.path so flat imports resolve correctly."""
     root = _project_root()
-    oa_dir = os.path.join(root, 'openai-agentic')
-    if root not in sys.path:
-        sys.path.insert(0, root)
-    if oa_dir not in sys.path:
-        sys.path.insert(0, oa_dir)
+    ext_dir = os.path.join(root, 'browser_extension_agent')
+    if ext_dir not in sys.path:
+        sys.path.insert(0, ext_dir)
 
 
 def _run_detector_sync(email_content: str) -> dict | None:
-    """Run DetectorAgentService synchronously and return parsed result dict."""
-    _ensure_agentic_on_path()
-    from services.detector_agent_service import DetectorAgentService  # noqa: PLC0415
+    """Run ExtensionDetectorService synchronously and return parsed result dict."""
+    _ensure_extension_on_path()
+    from services.extension_detector_service import ExtensionDetectorService  # noqa: PLC0415
 
     async def _detect() -> dict | None:
-        svc = DetectorAgentService()
+        svc = ExtensionDetectorService()
         result = await svc.analyze_email(email_content)
         return _parse_json_output(result.final_output)
 
@@ -105,7 +104,6 @@ def scan_email_task(self, user_id: int, subject: str, body: str) -> dict:
     if not parsed:
         raise ValueError('Detector returned invalid or empty JSON')
 
-    verdict_raw = parsed.get('verdict', 'suspicious')
     confidence = parsed.get('confidence', 0.0)
     scam_score = parsed.get('scam_score', 0.0)
     reasoning = parsed.get('reasoning', '')
@@ -116,7 +114,7 @@ def scan_email_task(self, user_id: int, subject: str, body: str) -> dict:
 
     result = {
         'status': 'complete',
-        'verdict': _normalize_verdict(verdict_raw),
+        'verdict': _normalize_verdict(parsed.get('verdict', 'suspicious')),
         'confidence': confidence,
         'scam_score': scam_score,
         'reasoning': reasoning,

@@ -10,7 +10,12 @@ set -euo pipefail
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VENV="$SCRIPT_DIR/.venv/bin"
+# Windows (Git Bash / MSYS) uses Scripts/, Unix uses bin/
+if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -d "$SCRIPT_DIR/.venv/Scripts" ]]; then
+  VENV="$SCRIPT_DIR/.venv/Scripts"
+else
+  VENV="$SCRIPT_DIR/.venv/bin"
+fi
 BACKEND_DIR="$SCRIPT_DIR/backend"
 FRONTEND_DIR="$SCRIPT_DIR/frontend"
 LOG_DIR="$SCRIPT_DIR/.logs"
@@ -93,8 +98,8 @@ success "All preflight checks passed."
 # ── Log directory ─────────────────────────────────────────────────────────────
 mkdir -p "$LOG_DIR"
 
-# ── 1. Docker services (Postgres + Redis) ────────────────────────────────────
-step "Starting Docker services (Postgres + Redis)"
+# ── 1. Docker services (Postgres + Redis + Ollama) ───────────────────────────
+step "Starting Docker services (Postgres + Redis + Ollama)"
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
 
 info "Waiting for Postgres to be healthy..."
@@ -123,6 +128,35 @@ for i in $(seq 1 20); do
   fi
   sleep 1
 done
+
+info "Waiting for Ollama to be healthy..."
+OLLAMA_READY=false
+for i in $(seq 1 30); do
+  if curl -sf http://localhost:11434/api/tags &>/dev/null; then
+    OLLAMA_READY=true
+    success "Ollama is ready."
+    break
+  fi
+  if [ "$i" -eq 30 ]; then
+    warn "Ollama did not become healthy — GGUF mode will fall back to Standard on first scan."
+  fi
+  sleep 1
+done
+
+if [ "$OLLAMA_READY" = true ]; then
+  _OLLAMA_MODEL="${OLLAMA_MODEL:-hf.co/duyle240820/sentra-utoledo-v2.0}"
+  if curl -sf -X POST http://localhost:11434/api/show \
+       -H "Content-Type: application/json" \
+       -d "{\"name\":\"$_OLLAMA_MODEL\"}" &>/dev/null; then
+    success "Ollama model already present: $_OLLAMA_MODEL"
+  else
+    info "Pulling Ollama model '$_OLLAMA_MODEL' in background (~900 MB, one-time)..."
+    docker compose -f "$SCRIPT_DIR/docker-compose.yml" exec -T ollama \
+      ollama pull "$_OLLAMA_MODEL" >> "$LOG_DIR/ollama.log" 2>&1 &
+    info "Pull running in background — check $LOG_DIR/ollama.log"
+    info "First GGUF scan will wait until the pull finishes."
+  fi
+fi
 
 # ── 2. Database migrations ────────────────────────────────────────────────────
 step "Running database migrations"
@@ -186,7 +220,7 @@ if [ -n "$_stale_celery" ]; then
 fi
 (
   cd "$BACKEND_DIR"
-  ../.venv/bin/celery -A celery_worker worker --loglevel=info --concurrency=2 2>&1 | sed 's/^/  [celery] /'
+  "$VENV/celery" -A celery_worker worker --loglevel=info --concurrency=2 2>&1 | sed 's/^/  [celery] /'
 ) >> "$LOG_DIR/celery.log" 2>&1 &
 CELERY_PID=$!
 PIDS+=($CELERY_PID)
@@ -243,6 +277,7 @@ echo -e "  ${BOLD}Frontend${RESET}   →  http://localhost:3000"
 echo -e "  ${BOLD}Backend${RESET}    →  http://localhost:5000"
 echo -e "  ${BOLD}Postgres${RESET}   →  localhost:5432"
 echo -e "  ${BOLD}Redis${RESET}      →  localhost:6379"
+echo -e "  ${BOLD}Ollama${RESET}     →  http://localhost:11434"
 echo ""
 echo -e "  ${BOLD}Logs${RESET}       →  $LOG_DIR/"
 

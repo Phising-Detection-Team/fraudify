@@ -20,6 +20,40 @@ import config
 LABEL_LEGITIMATE = 0
 LABEL_PHISHING = 1
 
+# ─── Varied reasoning templates ───────────────────────────────────────────────
+# 12 templates per class so training examples have diverse explanations rather
+# than identical boilerplate — reduces the model's tendency to repeat one phrase.
+
+_PHISHING_REASONS = [
+    "Urgent language and suspicious requests suggest this is a phishing attempt designed to steal credentials.",
+    "Contains hallmarks of phishing: spoofed sender, urgency cues, and requests for sensitive information.",
+    "Deceptive framing and pressure tactics are classic phishing indicators; avoid clicking any links.",
+    "Suspicious domain references and credential requests indicate this email is not legitimate.",
+    "Grammatical irregularities, generic greetings, and suspicious links suggest a phishing campaign.",
+    "Impersonates a trusted entity while requesting sensitive data — a common social engineering tactic.",
+    "Request to verify account or confirm details through an external link is a common phishing pattern.",
+    "Threatening account suspension or prize claims to manipulate recipients is typical phishing bait.",
+    "Mismatched sender domain and urgent call-to-action are strong indicators of a phishing email.",
+    "Unsolicited request for login credentials or personal data; sender identity appears spoofed.",
+    "Fake urgency combined with a suspicious link is a textbook credential-harvesting technique.",
+    "Claims of unauthorised access or account suspension are frequently used to provoke panic-clicks.",
+]
+
+_LEGITIMATE_REASONS = [
+    "Normal business communication with no suspicious urgency, credential requests, or deceptive elements.",
+    "Routine correspondence from a known sender; no phishing indicators detected.",
+    "Standard email format without unusual links, spoofed domains, or manipulative language.",
+    "Professional tone with no requests for sensitive information or suspicious call-to-action.",
+    "Legitimate transactional or informational email; context and sender appear credible.",
+    "No red flags: consistent sender identity, relevant content, and no credential harvesting attempt.",
+    "Email structure and content align with normal communication patterns; no threat indicators.",
+    "Clear, expected communication without coercive tactics, fake urgency, or suspicious attachments.",
+    "Content and tone are consistent with legitimate business correspondence; nothing suspicious found.",
+    "Sender domain matches expected pattern; email contains no deceptive links or requests.",
+    "Message is informational and does not ask for credentials, payments, or personal details.",
+    "Appears to be a regular newsletter or notification with no social engineering tactics.",
+]
+
 # ─── System prompt ────────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = (
@@ -27,6 +61,8 @@ SYSTEM_PROMPT = (
     "Analyze the given email and respond with a JSON object containing: "
     '"verdict" (SCAM or LEGITIMATE), "confidence" (0.0-1.0), '
     '"scam_score" (0-100), and "reasoning" (brief explanation).'
+    'Be balanced: only flag clear phishing indicators. Legitimate business'
+    'emails must not be flagged without strong, concrete evidence.'
 )
 
 

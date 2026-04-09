@@ -15,12 +15,13 @@ const DEFAULT_API_URL = 'http://localhost:5000';
  * @param {string} body       - Email body text (required)
  * @returns {Promise<object>} - { success, verdict, confidence, scam_score, reasoning, id }
  */
-async function scanEmail(apiUrl, authToken, subject, body) {
+async function scanEmail(apiUrl, authToken, subject, body, inferenceMode = 'gguf') {
   const res = await fetch(`${apiUrl}/api/scan`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`,
+      'X-Inference-Mode': inferenceMode,
     },
     body: JSON.stringify({ subject, body }),
   });
@@ -94,8 +95,23 @@ async function pollScanResult(apiUrl, authToken, jobId, maxAttempts = 40, interv
   throw new Error('Scan timed out');
 }
 
+/**
+ * Fetch system capability info (e.g. GPU availability) from the backend.
+ *
+ * @param {string} apiUrl    - Backend base URL
+ * @param {string} authToken - User's JWT access token
+ * @returns {Promise<object>} - { cuda_available, gpu_name }
+ */
+async function getSystemInfo(apiUrl, authToken) {
+  const res = await fetch(`${apiUrl}/api/system/info`, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json();
+}
+
 // CommonJS export for Jest; in the extension itself the functions are globals.
 /* istanbul ignore next */
 if (typeof module !== 'undefined') {
-  module.exports = { scanEmail, registerInstance, sendHeartbeat, pollScanResult, DEFAULT_API_URL };
+  module.exports = { scanEmail, registerInstance, sendHeartbeat, pollScanResult, getSystemInfo, DEFAULT_API_URL };
 }

@@ -198,12 +198,12 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
 /* istanbul ignore next */
 async function _scanAndShow(subject, body) {
   try {
-    const stored = await chrome.storage.local.get(['sentra_api_url', 'sentra_auth_token']);
+    const stored = await chrome.storage.local.get(['sentra_api_url', 'sentra_auth_token', 'sentra_inference_mode']);
     const apiUrl = stored.sentra_api_url || DEFAULT_API_URL;
     const token = stored.sentra_auth_token;
     if (!token) { removeOverlay(); return; }
 
-    const result = await scanEmail(apiUrl, token, subject, body);
+    const result = await scanEmail(apiUrl, token, subject, body, stored.sentra_inference_mode || 'gguf');
     const data = result && result.data;
 
     let verdictData = null;

@@ -114,12 +114,12 @@ def scan_email():
     try:
         parsed = _run_detector_sync(email_content)
     except Exception:
+        current_app.logger.exception("Detection failed")
         return jsonify({'success': False, 'error': 'Detection service unavailable. Please try again.'}), 503
 
     if not parsed:
         return jsonify({'success': False, 'error': 'Detector returned invalid response'}), 500
 
-    verdict_raw = parsed.get('verdict', 'suspicious')
     confidence = float(parsed.get('confidence', 0.0))
     scam_score = float(parsed.get('scam_score', 0.0)) if parsed.get('scam_score') is not None else 0.0
     reasoning = str(parsed.get('reasoning', ''))
@@ -130,7 +130,7 @@ def scan_email():
 
     result = {
         'status': 'complete',
-        'verdict': _normalize_verdict(verdict_raw),
+        'verdict': _normalize_verdict(parsed.get('verdict', 'suspicious')),
         'confidence': confidence,
         'scam_score': scam_score,
         'reasoning': reasoning,

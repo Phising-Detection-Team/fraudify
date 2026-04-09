@@ -62,3 +62,16 @@ scikit-learn>=1.4.0
 matplotlib>=3.9.0
 numpy
 huggingface_hub
+transformers[torch]
+datasets[torch]
+peft[torch]
+
+# Optional: required for "Optimized" inference mode (GGUF via llama.cpp, fast on CPU).
+# Run training/convert_to_gguf.py first to generate the .gguf file on HuggingFace.
+#   pip install llama-cpp-python
+# llama-cpp-python
+
+# Optional: required for "Turbo" inference mode (Unsloth 4-bit quantisation, GPU only).
+# Requires CUDA — install manually on supported hardware:
+#   pip install unsloth
+# unsloth

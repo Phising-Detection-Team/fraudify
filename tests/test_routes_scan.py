@@ -22,7 +22,7 @@ from unittest.mock import patch, MagicMock
 FAKE_DETECTION = {
     'verdict': 'scam',
     'confidence': 0.95,
-    'scam_score': 0.92,
+    'scam_score': 92.0,   # 0-100 scale, matching actual model output
     'reasoning': 'Contains suspicious links and urgency language.',
 }
 

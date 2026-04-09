@@ -1,7 +1,12 @@
 """Flask application factory and initialization."""
 
+import logging
 from celery import Celery
 from flask import Flask
+
+# Forward INFO logs from the openai-agentic module to Flask's logger
+logging.getLogger("entities.detector_agent_entity").setLevel(logging.INFO)
+logging.getLogger("services.detector_agent_service").setLevel(logging.INFO)
 from flask_cors import CORS
 from flask_mail import Mail
 from flask_migrate import Migrate
