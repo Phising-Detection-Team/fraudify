@@ -71,7 +71,6 @@ export default function AdminFeedbackPage() {
             }}
             className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent-cyan outline-none"
           >
-            <option value="pending,reviewed">Needs Action</option>
             <option value="pending">Pending</option>
             <option value="reviewed">Under Review</option>
             <option value="resolved">Resolved</option>
