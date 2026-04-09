@@ -112,6 +112,7 @@ def create_app(config_name=None):
         from .models.user_scan import UserScan  # noqa: F401
         from .models.feedback import Feedback  # noqa: F401
 
+    _register_socket_events(app)
     _register_blueprints(app)
 
     # Register CLI commands
@@ -139,6 +140,33 @@ def _register_jwt_callbacks(app):
             # Fail closed: block access if we cannot verify the blacklist status.
             return True
 
+
+def _register_socket_events(app):
+    """Authenticate WebSocket connections and join user-specific rooms."""
+    from flask import request
+    from flask_socketio import join_room, disconnect
+    from flask_jwt_extended import decode_token
+
+    @socketio.on('connect')
+    def handle_connect(auth):
+        token = auth.get('token') if auth else None
+        if not token:
+            # Check query string if not in auth payload
+            token = request.args.get('token')
+            
+        if not token:
+            disconnect()
+            return False
+
+        try:
+            # Decode the token
+            decoded = decode_token(token)
+            user_id = str(decoded['sub'])
+            # Join a private room with the user's ID
+            join_room(user_id)
+        except Exception:
+            disconnect()
+            return False
 
 def _register_blueprints(app):
     """Register all API blueprints."""

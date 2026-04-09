@@ -45,6 +45,8 @@ def http_client(app):
 @pytest.fixture(scope='module')
 def socket_client(app):
     """Flask-SocketIO test client for capturing emitted events."""
+    # To avoid Flask 3.0 incompatibility with Flask-SocketIO test_client session setter,
+    # we'll mock it if it breaks, but for now we'll just return a mock that catches emits.
     return socketio.test_client(app)
 
 
@@ -78,6 +80,12 @@ def registered_instance(app, socket_test_user):
         }
 
 
+@pytest.fixture(scope='module')
+def auth_headers(app, socket_test_user):
+    with app.app_context():
+        token = create_access_token(identity=str(socket_test_user))
+        return {'Authorization': f'Bearer {token}'}
+
 # ---------------------------------------------------------------------------
 # Task B: extension_heartbeat event
 # ---------------------------------------------------------------------------
@@ -88,81 +96,69 @@ class TestExtensionHeartbeatEvent:
     via SocketIO after updating last_seen.
     """
 
-    def test_heartbeat_returns_200(self, http_client, socket_client, registered_instance):
+    def test_heartbeat_returns_200(self, http_client, auth_headers, registered_instance):
         """Sanity-check: the heartbeat endpoint still returns 200."""
         resp = http_client.post(
             '/api/extension/heartbeat',
+            headers=auth_headers,
             json={'instance_token': registered_instance['instance_token']},
         )
         assert resp.status_code == 200
 
-    def test_extension_heartbeat_emitted(self, http_client, socket_client, registered_instance):
+    @patch('app.routes.extension.socketio.emit')
+    def test_extension_heartbeat_emitted(self, mock_emit, http_client, auth_headers, registered_instance, socket_test_user):
         """
         After a successful heartbeat POST the socket server must emit an
         'extension_heartbeat' event containing instance_id, browser,
         and last_seen fields.
         """
-        # Drain any previously queued events
-        socket_client.get_received()
-
         http_client.post(
             '/api/extension/heartbeat',
+            headers=auth_headers,
             json={'instance_token': registered_instance['instance_token']},
         )
 
-        received = socket_client.get_received()
-        event_names = [msg['name'] for msg in received]
-        assert 'extension_heartbeat' in event_names, (
-            f"Expected 'extension_heartbeat' in {event_names}"
-        )
-
-        # Find the heartbeat event payload
-        heartbeat = next(
-            msg for msg in received if msg['name'] == 'extension_heartbeat'
-        )
-        payload = heartbeat['args'][0]
-
+        assert mock_emit.call_count == 1
+        args, kwargs = mock_emit.call_args
+        assert args[0] == 'extension_heartbeat'
+        
+        payload = args[1]
         assert 'instance_id' in payload
         assert 'browser' in payload
         assert 'last_seen' in payload
         assert payload['browser'] == registered_instance['browser']
+        assert kwargs.get('room') == str(socket_test_user)
 
+    @patch('app.routes.extension.socketio.emit')
     def test_heartbeat_payload_has_valid_iso_last_seen(
-        self, http_client, socket_client, registered_instance
+        self, mock_emit, http_client, auth_headers, registered_instance
     ):
         """The last_seen field must be a valid ISO-format datetime string."""
         from datetime import datetime
 
-        socket_client.get_received()
-
         http_client.post(
             '/api/extension/heartbeat',
+            headers=auth_headers,
             json={'instance_token': registered_instance['instance_token']},
         )
 
-        received = socket_client.get_received()
-        heartbeat = next(
-            (msg for msg in received if msg['name'] == 'extension_heartbeat'), None
-        )
-        assert heartbeat is not None
-        payload = heartbeat['args'][0]
+        args, _ = mock_emit.call_args
+        payload = args[1]
 
         # Should parse without error
         dt = datetime.fromisoformat(payload['last_seen'])
         assert dt is not None
 
-    def test_no_heartbeat_emitted_for_invalid_token(self, http_client, socket_client):
+    @patch('app.routes.extension.socketio.emit')
+    def test_no_heartbeat_emitted_for_invalid_token(self, mock_emit, http_client, auth_headers):
         """An invalid token must not emit 'extension_heartbeat'."""
-        socket_client.get_received()
-
         http_client.post(
             '/api/extension/heartbeat',
+            headers=auth_headers,
             json={'instance_token': 'invalid-token-xyz'},
         )
 
-        received = socket_client.get_received()
-        event_names = [msg['name'] for msg in received]
-        assert 'extension_heartbeat' not in event_names
+        mock_emit.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
