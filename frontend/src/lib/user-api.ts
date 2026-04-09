@@ -29,6 +29,18 @@ export const getUserStats = async (token: string): Promise<UserStats> => {
   };
 };
 
+export const submitFeedback = async (token: string, data: { subject?: string; description: string }): Promise<void> => {
+  const res = await apiFetch(`${API_URL}/api/feedback`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const json = await res.json();
+    throw new Error(json?.message || json?.error || "Failed to submit feedback");
+  }
+};
+
 export const getUserRounds = async (token: string) => {
   const res = await apiFetch(`${API_URL}/api/rounds`, {
     headers: authHeaders(token),

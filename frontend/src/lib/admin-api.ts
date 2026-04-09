@@ -483,3 +483,56 @@ export const createInviteCode = async (
   const json = await res.json();
   return json.invite as InviteCode;
 };
+
+// --- Feedback ---
+export interface FeedbackItem {
+  id: number;
+  user_id: number;
+  subject: string | null;
+  description: string;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface FeedbackPage {
+  items: FeedbackItem[];
+  total: number;
+  pages: number;
+  page: number;
+  per_page: number;
+}
+
+export const getFeedback = async (
+  token: string,
+  page = 1,
+  limit = 20,
+  status?: string
+): Promise<FeedbackPage> => {
+  const url = new URL(`${API_URL}/api/feedback`);
+  url.searchParams.append("page", page.toString());
+  url.searchParams.append("per_page", limit.toString());
+  if (status) {
+    url.searchParams.append("status", status);
+  }
+  const res = await apiFetch(url.toString(), {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error("Failed to fetch feedback");
+  return res.json();
+};
+
+export const updateFeedbackStatus = async (
+  token: string,
+  feedbackId: number,
+  status: string
+): Promise<FeedbackItem> => {
+  const res = await apiFetch(`${API_URL}/api/feedback/${feedbackId}/status`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error("Failed to update feedback status");
+  const json = await res.json();
+  return json.feedback;
+};

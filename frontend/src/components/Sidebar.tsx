@@ -15,6 +15,7 @@ import {
   LogOut,
   Users,
   BrainCircuit,
+  MessageSquare,
   ScanText,
   X,
 } from "lucide-react";
@@ -54,12 +55,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { name: "Live Feed", href: `${basePath}/feed`, icon: Activity },
         { name: "Users", href: `${basePath}/team`, icon: Users },
         { name: "Training", href: `${basePath}/training`, icon: BrainCircuit },
+        { name: "Feedback", href: `${basePath}/feedback`, icon: MessageSquare },
         { name: "Settings", href: `${basePath}/settings`, icon: Settings },
       ]
     : [
         { name: "Dashboard", href: basePath, icon: LayoutDashboard },
         { name: "Scan Email", href: `${basePath}/scan`, icon: ScanText },
         { name: "Training", href: `${basePath}/training`, icon: BrainCircuit },
+        { name: "Feedback", href: `${basePath}/feedback`, icon: MessageSquare },
         { name: "Settings", href: `${basePath}/settings`, icon: Settings },
       ];
 
@@ -89,7 +92,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         
         <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
           {navLinks.map((link) => {
-          const isActive = pathname === link.href || (pathname.startsWith(link.href) && link.href !== basePath);
+          const isActive = pathname === link.href || (pathname.startsWith(link.href + '/') && link.href !== basePath);
           const Icon = link.icon;
           
           return (
