@@ -345,9 +345,14 @@ class Orchestrator:
         accuracy = (total_correct / total_processed * 100) if total_processed > 0 else 0
         
         # Update round in database
+        if total_processed == 0:
+            final_status = 'failed'
+        else:
+            final_status = 'completed'
+
         update_round(
             round_id=self.round_id,
-            status='completed' if total_processed >= total_emails else 'running',
+            status=final_status,
             processed_emails=total_processed,
             detector_accuracy=accuracy,
             total_cost=total_cost

@@ -116,7 +116,6 @@ def scan_email():
     if not parsed:
         return jsonify({'success': False, 'error': 'Detector returned invalid response'}), 500
 
-    verdict_raw = parsed.get('verdict', 'suspicious')
     confidence = float(parsed.get('confidence', 0.0))
     scam_score = float(parsed.get('scam_score', 0.0)) if parsed.get('scam_score') is not None else 0.0
     reasoning = str(parsed.get('reasoning', ''))
@@ -125,34 +124,9 @@ def scan_email():
     if confidence > 1:
         confidence = confidence / 100.0
 
-    # Confidence calibration — the fine-tuned 1.5B model has a SCAM bias from
-    # imbalanced training data. Override the raw verdict using scam_score +
-    # confidence thresholds so borderline predictions don't all surface as phishing.
-    #
-    #   scam_score >= 75 AND confidence >= 0.80  →  phishing        (strong signal)
-    #   scam_score >= 55 AND confidence >= 0.65  →  suspicious      (medium signal)
-    #   otherwise                                →  likely_legitimate
-    #
-    # Tune these values based on observed false-positive rates:
-    #   - Raise SCAM_SCORE_PHISHING / CONFIDENCE_PHISHING to reduce false positives
-    #   - Lower them to catch more scams at the cost of more false positives
-    SCAM_SCORE_PHISHING    = 75.0
-    CONFIDENCE_PHISHING    = 0.80
-    SCAM_SCORE_SUSPICIOUS  = 55.0
-    CONFIDENCE_SUSPICIOUS  = 0.65
-
-    normalized = _normalize_verdict(verdict_raw)
-    if normalized in ('phishing', 'likely_phishing', 'suspicious'):
-        if scam_score >= SCAM_SCORE_PHISHING and confidence >= CONFIDENCE_PHISHING:
-            normalized = 'phishing'
-        elif scam_score >= SCAM_SCORE_SUSPICIOUS and confidence >= CONFIDENCE_SUSPICIOUS:
-            normalized = 'suspicious'
-        else:
-            normalized = 'likely_legitimate'
-
     result = {
         'status': 'complete',
-        'verdict': normalized,
+        'verdict': _normalize_verdict(parsed.get('verdict', 'suspicious')),
         'confidence': confidence,
         'scam_score': scam_score,
         'reasoning': reasoning,

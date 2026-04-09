@@ -177,11 +177,9 @@ def run_round(round_id):
         )
 
     google = os.environ.get('GOOGLE_API_KEY') or os.environ.get('GEMINI_API_KEY')
-    anthropic = os.environ.get('ANTHROPIC_API_KEY')
-    if not google or not anthropic:
+    if not google:
         raise ValidationError(
-            'GOOGLE_API_KEY (or GEMINI_API_KEY) and ANTHROPIC_API_KEY must be set '
-            'for OpenAI Agents orchestration.'
+            'GOOGLE_API_KEY (or GEMINI_API_KEY) must be set for the generator agent.'
         )
 
     data = request.get_json(silent=True) or {}
