@@ -156,15 +156,18 @@ DIFFERENT_BODY = 'Please verify your account details at http://evil.example.com'
 # ---------------------------------------------------------------------------
 
 class TestCacheMiss:
-    """New email content triggers async task (202 response)."""
+    """New email content triggers sync detection (200 response)."""
 
-    def test_cache_miss_returns_202(self, client, auth_headers, fake_redis):
-        """POST /api/scan with never-seen content returns 202 + job_id."""
+    def test_cache_miss_returns_200_and_calls_detector(self, client, auth_headers, fake_redis):
+        """POST /api/scan with never-seen content returns 200 + calls detector."""
         with patch('app.cache.get_redis', return_value=fake_redis), \
-             patch('app.routes.scan.scan_email_task') as mock_task:
-            mock_async = MagicMock()
-            mock_async.id = 'new-job-id-abc'
-            mock_task.delay.return_value = mock_async
+             patch('app.routes.scan._run_detector_sync') as mock_detector:
+            mock_detector.return_value = {
+                'verdict': 'phishing',
+                'confidence': 92.0,
+                'scam_score': 88.0,
+                'reasoning': 'Suspicious links...'
+            }
 
             response = client.post(
                 '/api/scan',
@@ -172,12 +175,12 @@ class TestCacheMiss:
                 headers=auth_headers,
             )
 
-        assert response.status_code == 202
+        assert response.status_code == 200
         data = response.get_json()
         assert data['success'] is True
-        assert 'job_id' in data['data']
-        assert data['data']['status'] == 'queued'
-        assert data['data']['job_id'] == 'new-job-id-abc'
+        assert data['data']['status'] == 'complete'
+        mock_detector.assert_called_once()
+
 
 
 # ---------------------------------------------------------------------------
@@ -209,21 +212,21 @@ class TestCacheHit:
         assert data['data']['verdict'] == 'phishing'
         assert data['data']['confidence'] == 0.92
 
-    def test_cache_hit_does_not_enqueue_task(self, client, auth_headers, fake_redis):
-        """When cache hits, no Celery task should be enqueued."""
+    def test_cache_hit_does_not_call_detector(self, client, auth_headers, fake_redis):
+        """When cache hits, no detector sync task should be called."""
         from app.cache import make_scan_cache_key
         key = make_scan_cache_key(SAMPLE_SUBJECT, SAMPLE_BODY)
         fake_redis.setex(key, 3600, json.dumps(SAMPLE_VERDICT))
 
         with patch('app.cache.get_redis', return_value=fake_redis), \
-             patch('app.routes.scan.scan_email_task') as mock_task:
+             patch('app.routes.scan._run_detector_sync') as mock_detector:
             client.post(
                 '/api/scan',
                 json={'subject': SAMPLE_SUBJECT, 'body': SAMPLE_BODY},
                 headers=auth_headers,
             )
 
-        mock_task.delay.assert_not_called()
+        mock_detector.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -280,10 +283,13 @@ class TestCacheKeyVariants:
 
         # Request with DIFFERENT_SUBJECT but same body should be a cache miss
         with patch('app.cache.get_redis', return_value=fake_redis), \
-             patch('app.routes.scan.scan_email_task') as mock_task:
-            mock_async = MagicMock()
-            mock_async.id = 'different-subject-job'
-            mock_task.delay.return_value = mock_async
+             patch('app.routes.scan._run_detector_sync') as mock_detector:
+            mock_detector.return_value = {
+                'verdict': 'phishing',
+                'confidence': 92.0,
+                'scam_score': 88.0,
+                'reasoning': 'Suspicious links...'
+            }
 
             response = client.post(
                 '/api/scan',
@@ -291,9 +297,9 @@ class TestCacheKeyVariants:
                 headers=auth_headers,
             )
 
-        # Should be a miss → 202
-        assert response.status_code == 202
-        mock_task.delay.assert_called_once()
+        # Should be a miss → 200 and calls detector
+        assert response.status_code == 200
+        mock_detector.assert_called_once()
 
     def test_cache_key_includes_body(self, client, auth_headers, fake_redis):
         """Different body with same subject produces a cache miss."""
@@ -303,10 +309,13 @@ class TestCacheKeyVariants:
         fake_redis.setex(original_key, 3600, json.dumps(SAMPLE_VERDICT))
 
         with patch('app.cache.get_redis', return_value=fake_redis), \
-             patch('app.routes.scan.scan_email_task') as mock_task:
-            mock_async = MagicMock()
-            mock_async.id = 'different-body-job'
-            mock_task.delay.return_value = mock_async
+             patch('app.routes.scan._run_detector_sync') as mock_detector:
+            mock_detector.return_value = {
+                'verdict': 'phishing',
+                'confidence': 92.0,
+                'scam_score': 88.0,
+                'reasoning': 'Suspicious links...'
+            }
 
             response = client.post(
                 '/api/scan',
@@ -314,8 +323,8 @@ class TestCacheKeyVariants:
                 headers=auth_headers,
             )
 
-        assert response.status_code == 202
-        mock_task.delay.assert_called_once()
+        assert response.status_code == 200
+        mock_detector.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

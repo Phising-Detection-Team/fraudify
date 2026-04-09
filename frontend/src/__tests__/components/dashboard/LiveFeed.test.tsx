@@ -115,12 +115,7 @@ describe('LiveFeed', () => {
       expect(mockIo).toHaveBeenCalled()
     })
 
-    it('does NOT crash when in demo mode (uses mock interval instead)', () => {
-      expect(() => render(<LiveFeed isDemo />)).not.toThrow()
-      expect(screen.getByText(/live detection feed/i)).toBeTruthy()
-    })
-
-    it('registers an extension_heartbeat event listener', () => {
+    it('registers extension_heartbeat socket event', () => {
       render(<LiveFeed />)
       const registeredEvents = mockSocketOn.mock.calls.map(
         (call: unknown[]) => call[0]
@@ -138,17 +133,17 @@ describe('LiveFeed', () => {
   // -------------------------------------------------------------------------
   // 3. Renders mock/existing events list (demo mode)
   // -------------------------------------------------------------------------
-  describe('demo mode feed', () => {
-    it('renders without crashing in demo mode', async () => {
-      await act(async () => {
-        render(<LiveFeed isDemo />)
+describe('component feed', () => {
+      it('renders without crashing', async () => {
+        await act(async () => {
+          render(<LiveFeed />)
+        })
+        expect(document.body).toBeTruthy()
       })
-      expect(document.body).toBeTruthy()
-    })
 
-    it('shows the feed container in demo mode', async () => {
-      await act(async () => {
-        render(<LiveFeed isDemo />)
+      it('shows the feed container', async () => {
+        await act(async () => {
+          render(<LiveFeed />)
       })
       expect(document.querySelector('.glass-panel')).toBeTruthy()
     })

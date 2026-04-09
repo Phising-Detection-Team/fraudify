@@ -11,11 +11,6 @@ import { Mail, ShieldAlert, BadgeDollarSign, Activity } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  MOCK_STATS_ADMIN,
-  MOCK_ROUNDS,
-  MOCK_AGENTS,
-} from "@/lib/mock-data";
-import {
   getAdminStats,
   getAdminRounds,
   getAdminAgents,
@@ -36,7 +31,6 @@ import type { Round, Agent, ModelCost, DashboardStats } from "@/types";
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
 
   // Real data state
   const [stats, setStats] = useState<DashboardStats>({
@@ -67,16 +61,7 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    const demoFlag =
-      localStorage.getItem(config.STORAGE_KEYS.IS_DEMO) === "true";
-    setIsDemo(demoFlag);
-
-    if (demoFlag) {
-      setStats(MOCK_STATS_ADMIN);
-      setRounds(MOCK_ROUNDS as Round[]);
-      setAgents(MOCK_AGENTS as Agent[]);
-      setLoading(false);
-    } else if (session?.user?.fromBackend) {
+    if (session?.user?.fromBackend) {
       const token = session.accessToken ?? "";
       const fetchAll = async () => {
         try {
@@ -131,22 +116,6 @@ export default function AdminDashboard() {
     }
   }, [session]);
 
-  // Only used for demo mode; real data is passed from costBreakdown above
-  const mergedCosts = useMemo(
-    () =>
-      rounds.flatMap((r) => r.apiCosts).reduce<ModelCost[]>((acc, curr) => {
-        const idx = acc.findIndex((a) => a.model === curr.model);
-        if (idx >= 0) {
-          return acc.map((a, i) =>
-            i === idx
-              ? { ...a, cost: a.cost + curr.cost, calls: a.calls + curr.calls }
-              : a
-          );
-        }
-        return [...acc, { ...curr }];
-      }, []),
-    [rounds]
-  );
 
   if (loading) return null;
 
@@ -164,7 +133,6 @@ export default function AdminDashboard() {
           title="Total API Cost"
           value={`$${stats.totalApiCost?.toLocaleString()}`}
           icon={BadgeDollarSign}
-          trend={isDemo ? { value: 4.5, isPositive: false } : undefined}
           delay={0.1}
           valueClassName="text-accent-cyan"
         />
@@ -200,10 +168,7 @@ export default function AdminDashboard() {
 
         <div className="lg:col-span-1 flex flex-col gap-6 h-full">
           <div className="flex-1 min-h-[300px]">
-            <CostPieChart
-              demoCosts={isDemo ? mergedCosts : undefined}
-              serverData={isDemo ? undefined : costBreakdown}
-            />
+            <CostPieChart serverData={costBreakdown} />
           </div>
           <div className="flex-1 min-h-[350px]">
             <AgentLogsTable agents={agents} />

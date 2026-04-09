@@ -67,9 +67,9 @@ function LoginForm() {
       return;
     }
 
-    const isDemoAdmin = email === config.DEMO_ACCOUNTS.ADMIN.email;
-    const isDemoUser = email === config.DEMO_ACCOUNTS.USER.email;
-    localStorage.setItem(config.STORAGE_KEYS.IS_DEMO, (isDemoAdmin || isDemoUser) ? "true" : "false");
+    
+    
+
 
     const roleFromStatus = loginStatus.user?.roles?.includes('admin') ? 'admin' : 'user';
     const targetRoute = roleFromStatus === 'admin' ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
@@ -147,7 +147,7 @@ function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email Address / Username</label>
+            <label htmlFor="email" className="text-sm font-medium">Email Address</label>
             <input
               id="email"
               type="text"

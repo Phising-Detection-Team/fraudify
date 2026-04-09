@@ -33,8 +33,8 @@ def seed_cmd():
     db.session.flush()  # Ensure roles have IDs before assigning
 
     # --- Admin account ---
-    admin_email = os.environ.get('SEED_ADMIN_EMAIL', 'admin@admin.com')
-    admin_username = os.environ.get('SEED_ADMIN_USERNAME', 'admin')
+    admin_email = os.environ.get('SEED_ADMIN_EMAIL')
+    admin_username = os.environ.get('SEED_ADMIN_USERNAME')
     admin_password = os.environ.get('SEED_ADMIN_PASSWORD')
     if not admin_password:
         click.echo('  WARNING: SEED_ADMIN_PASSWORD not set — skipping admin creation.', err=True)
@@ -59,8 +59,8 @@ def seed_cmd():
     db.session.commit()
 
     # --- Normal user account ---
-    user_email    = os.environ.get('SEED_USER_EMAIL',    'user@user.com')
-    user_username = os.environ.get('SEED_USER_USERNAME', 'testuser')
+    user_email    = os.environ.get('SEED_USER_EMAIL')
+    user_username = os.environ.get('SEED_USER_USERNAME')
     user_password = os.environ.get('SEED_USER_PASSWORD')
     if user_password:
         normal_user = User.query.filter_by(email=user_email).first()

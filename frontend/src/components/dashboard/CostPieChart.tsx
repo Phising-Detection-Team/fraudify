@@ -9,7 +9,6 @@ import {
 } from "recharts";
 import { useMemo } from "react";
 import { type CostBreakdownItem, type CostBreakdown } from "@/lib/admin-api";
-import { MOCK_ROUNDS } from "@/lib/mock-data";
 import type { ModelCost } from "@/types";
 
 // Ordered palette — assigned by index, not hardcoded to model name
@@ -66,7 +65,7 @@ export function CostPieChart({ demoCosts, serverData }: Props) {
       return serverData;
     }
     // Demo mode: convert mock ModelCost[] into CostBreakdownItem shape
-    const mockCosts = demoCosts ?? MOCK_ROUNDS.flatMap((r) => r.apiCosts);
+    const mockCosts = demoCosts ?? [];
     const merged = mockCosts.reduce<Record<string, CostBreakdownItem>>(
       (acc, mc) => {
         const key = mc.model;
