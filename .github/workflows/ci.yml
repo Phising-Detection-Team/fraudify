@@ -80,9 +80,9 @@ jobs:
         python -m pytest tests/test_migrations.py tests/database_rules_test.py -v --tb=short
 
   # --------------------------------------------------------------------------
-  # Backend group 2: HTTP route / API endpoint tests
+  # Backend group 2a: HTTP route tests — lighter files (use conftest.py fixtures)
   # --------------------------------------------------------------------------
-  test-backend-routes:
+  test-backend-routes-a:
     runs-on: ubuntu-latest
 
     services:
@@ -125,7 +125,7 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-asyncio
 
-    - name: Run route tests
+    - name: Run route tests (group A)
       env:
         DATABASE_URL: postgresql://phishing_user:phishing_password@localhost:5432/phishing_test_db
         FLASK_ENV: testing
@@ -141,12 +141,68 @@ jobs:
           tests/test_routes_logs.py \
           tests/test_routes_rounds.py \
           tests/test_routes_scan.py \
-          tests/test_routes_scan_backend.py \
           tests/test_routes_stats.py \
-          tests/test_routes_stats_backend.py \
           tests/test_routes_users.py \
           tests/test_rate_limiting.py \
           tests/test_limiter_bug.py \
+          -v --tb=short
+
+  # --------------------------------------------------------------------------
+  # Backend group 2b: HTTP route tests — heavyweight files (own session fixtures)
+  # --------------------------------------------------------------------------
+  test-backend-routes-b:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: phishing_user
+          POSTGRES_PASSWORD: phishing_password
+          POSTGRES_DB: phishing_test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio
+
+    - name: Run route tests (group B)
+      env:
+        DATABASE_URL: postgresql://phishing_user:phishing_password@localhost:5432/phishing_test_db
+        FLASK_ENV: testing
+        FLASK_CONFIG: testing
+        JWT_SECRET_KEY: test-jwt-secret-for-ci
+      run: |
+        python -m pytest \
+          tests/test_routes_stats_backend.py \
+          tests/test_routes_scan_backend.py \
           tests/test_socket_events.py \
           -v --tb=short
 
@@ -247,7 +303,7 @@ jobs:
   # --------------------------------------------------------------------------
   notify:
     runs-on: ubuntu-latest
-    needs: [test-backend-migrations, test-backend-routes, test-backend-unit, test-frontend]
+    needs: [test-backend-migrations, test-backend-routes-a, test-backend-routes-b, test-backend-unit, test-frontend]
     if: failure()
 
     steps:
