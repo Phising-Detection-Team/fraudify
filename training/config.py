@@ -28,6 +28,9 @@ DATASETS = [
     # 18.6k phishing/safe emails in parquet format — includes fake brand URLs (PayPal, Amazon, etc.)
     "zefang-liu/phishing-email-dataset"
 ]
+# Optional path to a local CSV/Parquet to use if all HuggingFace datasets fail to load.
+# Set to a file path string to enable, e.g. FALLBACK_DATASET_PATH = "data/local_emails.parquet"
+FALLBACK_DATASET_PATH: str | None = None
 MAX_SEQ_LENGTH = 1024
 MAX_NEW_TOKENS = 256   # max tokens to generate during evaluation
 

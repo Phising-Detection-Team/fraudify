@@ -71,6 +71,7 @@ def main() -> None:
     # ── Data ──────────────────────────────────────────────────────────────────
     raw_datasets = data.load_datasets()
     merged = data.preprocess_and_merge(raw_datasets)
+    merged = data.inject_adversarial_patterns(merged)
     dataset_dict = data.split_dataset(merged)
 
     # Use the base model to generate email-specific reasoning for every example
