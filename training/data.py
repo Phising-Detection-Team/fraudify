@@ -605,7 +605,7 @@ def generate_reasonings(
                 )
                 out_ids = model.generate(
                     **enc,
-                    max_new_tokens=80,
+                    max_new_tokens=200,
                     do_sample=False,
                     temperature=None,
                     pad_token_id=tokenizer.eos_token_id,
@@ -616,8 +616,6 @@ def generate_reasonings(
             for seq in out_ids:
                 new_tokens = seq[input_len:]
                 text = tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
-                # Collapse newlines, take only the first sentence if multiple generated
-                text = text.split("\n")[0].strip()
                 all_reasonings.append(text or "No specific reasoning extracted.")
 
             if (start // batch_size) % 10 == 0:

@@ -35,9 +35,12 @@ class _OllamaClient:
                 "temperature": temperature,
                 "stream": False,
                 "format": "json",   # Ollama-native JSON mode (forces valid JSON output)
-                # Cap KV cache to 1024 tokens — enough for a 2000-char email + system
-                # prompt + ~80-token output.
-                "options": {"num_ctx": 1024},
+                # KV cache budget: 2048 tokens.
+                # System prompt (~250 tok) + email content (~500 tok) + wrap prefix (~30 tok)
+                # consumes ~780 tokens of input, leaving ~1268 tokens for the reasoning
+                # output. The model was trained with max_seq_length=1024 but Qwen2.5's
+                # RoPE generalises beyond that, so generation quality stays high.
+                "options": {"num_ctx": 2048},
             },
             timeout=300,
         )
