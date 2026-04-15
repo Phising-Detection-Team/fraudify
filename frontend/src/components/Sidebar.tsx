@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { config } from "@/lib/config";
 import { useSession, signOut } from "next-auth/react";
 import { Logo } from "@/components/Logo";
+import { toast } from "sonner";
 
 import {
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
   MessageSquare,
   ScanText,
   X,
+  Info,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -64,6 +66,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { name: "Training", href: `${basePath}/training`, icon: BrainCircuit },
         { name: "Feedback", href: `${basePath}/feedback`, icon: MessageSquare },
         { name: "Settings", href: `${basePath}/settings`, icon: Settings },
+        { name: "About Us", href: "/about", icon: Info },
       ];
 
   return (
@@ -99,8 +102,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <Link
               key={link.name}
               href={link.href}
+              target={link.name === "About Us" ? "_blank" : undefined}
+              rel={link.name === "About Us" ? "noopener noreferrer" : undefined}
               onClick={() => {
-                if (onClose) onClose();
+                if (link.name === "About Us") {
+                  toast.info("Opening About Us in a new tab...");
+                }
+                if (link.name !== "About Us" && onClose) onClose();
               }}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${
                 isActive 
