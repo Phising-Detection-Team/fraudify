@@ -216,7 +216,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
 
   const CONFIG_PILLS = [
     { label: "load_in_4bit = True",              color: "accent-cyan"   },
-    { label: "max_seq_length = 1024",            color: "accent-purple" },
+    { label: "max_seq_length = 2048",            color: "accent-purple" },
     { label: 'dtype = None  # auto bfloat16',   color: "accent-green"  },
     { label: 'use_gradient_checkpointing = "unsloth"', color: "accent-red" },
   ];

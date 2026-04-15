@@ -19,7 +19,7 @@ const TOKEN_SAMPLES = [
 ];
 
 const PIPELINE_CONFIG = [
-  { label: "Max seq length",   value: "1024 tokens",                     color: "" },
+  { label: "Max seq length",   value: "2048 tokens",                     color: "" },
   { label: "Shuffle seed",     value: "42",                              color: "" },
   { label: "Tokenizer",        value: "Qwen2.5 BPE (tiktoken)",          color: "text-accent-cyan" },
   { label: "Padding strategy", value: "Right-pad (causal LM)",           color: "" },
