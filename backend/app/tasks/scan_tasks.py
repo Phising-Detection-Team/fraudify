@@ -30,7 +30,7 @@ _VERDICT_MAP = {
 
 
 def _normalize_verdict(raw: str) -> str:
-    return _VERDICT_MAP.get(raw.lower().strip(), 'suspicious')
+    return _VERDICT_MAP.get(raw.lower().strip(), 'likely_legitimate')
 
 
 def _parse_json_output(text: str) -> dict | None:
@@ -114,7 +114,7 @@ def scan_email_task(self, user_id: int, subject: str, body: str) -> dict:
 
     result = {
         'status': 'complete',
-        'verdict': _normalize_verdict(parsed.get('verdict', 'suspicious')),
+        'verdict': _normalize_verdict(parsed.get('verdict', '')),
         'confidence': confidence,
         'scam_score': scam_score,
         'reasoning': reasoning,

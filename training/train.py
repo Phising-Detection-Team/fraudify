@@ -43,7 +43,10 @@ def build_trainer(
     print("BUILDING TRAINER")
     print("=" * 60)
 
-    use_cuda = torch.cuda.is_available()
+    use_cuda  = torch.cuda.is_available()
+    use_bf16  = use_cuda and torch.cuda.is_bf16_supported()
+    use_fp16  = use_cuda and not use_bf16
+    print(f"Device: {'CUDA (bf16)' if use_bf16 else 'CUDA (fp16)' if use_fp16 else 'CPU (fp32)'}")
 
     sft_config = SFTConfig(
         output_dir=config.OUTPUT_DIR,
@@ -57,8 +60,8 @@ def build_trainer(
         lr_scheduler_type=config.LR_SCHEDULER_TYPE,
         warmup_ratio=config.WARMUP_RATIO,
         max_grad_norm=config.MAX_GRAD_NORM,
-        fp16=False,
-        bf16=True,            # Qwen2.5 is trained in bfloat16
+        fp16=use_fp16,
+        bf16=use_bf16,        # bfloat16 on Ampere+ GPUs; falls back to fp16 on older hardware
         logging_steps=config.LOGGING_STEPS,
         eval_strategy="steps",
         eval_steps=config.SAVE_STEPS,

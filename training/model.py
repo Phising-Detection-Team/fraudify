@@ -6,6 +6,7 @@ Exports:
     apply_lora()               -> PeftModel
 """
 
+import unsloth
 from unsloth import FastLanguageModel
 
 import config

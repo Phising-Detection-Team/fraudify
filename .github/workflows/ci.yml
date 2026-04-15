@@ -272,6 +272,7 @@ jobs:
           tests/test_high_findings.py \
           tests/test_medium_findings.py \
           tests/test_openai_orchestrator_smoke.py \
+          tests/test_extension_prompt_injection.py \
           -v --tb=short
 
   # --------------------------------------------------------------------------

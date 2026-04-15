@@ -23,10 +23,15 @@ HUB_MODEL_NAME = f"{HF_USER}/{PROJECT_RUN_NAME}" if HF_USER else PROJECT_RUN_NAM
 # ─── Data ─────────────────────────────────────────────────────────────────────
 
 DATASETS = [
-    "SetFit/enron_spam",           # Enron email spam dataset (parquet, 0=ham, 1=spam)
-    "ealvaradob/phishing-dataset",  # Phishing URL/email dataset
+    # Real Enron corporate emails — contains real company domains (legit) and spam URLs
+    "SetFit/enron_spam",
+    # 18.6k phishing/safe emails in parquet format — includes fake brand URLs (PayPal, Amazon, etc.)
+    "zefang-liu/phishing-email-dataset"
 ]
-MAX_SEQ_LENGTH = 2048
+# Optional path to a local CSV/Parquet to use if all HuggingFace datasets fail to load.
+# Set to a file path string to enable, e.g. FALLBACK_DATASET_PATH = "data/local_emails.parquet"
+FALLBACK_DATASET_PATH: str | None = None
+MAX_SEQ_LENGTH = 1024
 MAX_NEW_TOKENS = 256   # max tokens to generate during evaluation
 
 # ─── Quantization ─────────────────────────────────────────────────────────────
@@ -47,8 +52,8 @@ TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj"
 # ─── Training ─────────────────────────────────────────────────────────────────
 
 EPOCHS = 3
-BATCH_SIZE = 8                      # Unsloth memory savings allow larger batch
-GRADIENT_ACCUMULATION_STEPS = 2    # effective batch = 8 * 2 = 16
+BATCH_SIZE = 2                      # reduced for 12 GB VRAM
+GRADIENT_ACCUMULATION_STEPS = 8    # effective batch = 2 * 8 = 16
 LEARNING_RATE = 2e-4
 LR_SCHEDULER_TYPE = "cosine"
 WARMUP_RATIO = 0.03

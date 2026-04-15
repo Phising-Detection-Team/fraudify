@@ -7,6 +7,8 @@ Usage:
     python training/main.py --no-push        # skip HuggingFace Hub push
 """
 
+import unsloth  # must be first — patches torch/transformers before any other import
+
 import argparse
 import os
 import sys
@@ -41,6 +43,11 @@ def parse_args() -> argparse.Namespace:
         default=100,
         help="Number of test samples for the Tester class (default: 100).",
     )
+    parser.add_argument(
+        "--regen-reasonings",
+        action="store_true",
+        help="Ignore the reasonings cache and regenerate from scratch.",
+    )
     return parser.parse_args()
 
 
@@ -62,9 +69,19 @@ def main() -> None:
     base_model, tokenizer = model_module.load_model_and_tokenizer()
 
     # ── Data ──────────────────────────────────────────────────────────────────
-    enron_raw, phishing_raw = data.load_datasets()
-    merged = data.preprocess_and_merge(enron_raw, phishing_raw)
+    raw_datasets = data.load_datasets()
+    merged = data.preprocess_and_merge(raw_datasets)
+    merged = data.inject_adversarial_patterns(merged)
     dataset_dict = data.split_dataset(merged)
+
+    # Use the base model to generate email-specific reasoning for every example
+    # before SFT formatting. This avoids hardcoded templates and lets the model's
+    # existing language understanding produce the training targets.
+    dataset_dict = data.generate_reasonings(
+        dataset_dict, base_model, tokenizer,
+        force_regen=args.regen_reasonings,
+    )
+
     formatted_datasets, tokenizer = data.format_for_sft(dataset_dict, tokenizer)
 
     # ── LoRA adapters ─────────────────────────────────────────────────────────

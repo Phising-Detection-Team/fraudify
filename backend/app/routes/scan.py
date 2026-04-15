@@ -44,7 +44,7 @@ MAX_SUBJECT_BYTES = 1024      # 1 KB
 
 @scan_bp.route('/scan', methods=['POST'])
 @jwt_required()
-@limiter.limit('20 per hour', key_func=get_jwt_identity)
+@limiter.limit('100 per hour', key_func=get_jwt_identity)
 def scan_email():
     """
     Analyse an email for phishing.
@@ -130,7 +130,7 @@ def scan_email():
 
     result = {
         'status': 'complete',
-        'verdict': _normalize_verdict(parsed.get('verdict', 'suspicious')),
+        'verdict': _normalize_verdict(parsed.get('verdict', '')),
         'confidence': confidence,
         'scam_score': scam_score,
         'reasoning': reasoning,

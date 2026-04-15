@@ -316,7 +316,7 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <div>
                         <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Model</div>
-                        <div className="font-mono font-bold text-sm">sentra-utoledo-v1.0</div>
+                        <div className="font-mono font-bold text-sm">sentra-utoledo-v2.0</div>
                       </div>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-semibold shrink-0">
                         Private
@@ -344,7 +344,7 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
 
                     <div className="mt-3 flex gap-2">
                       <a
-                        href="https://huggingface.co/sentra-utoledo/sentra-utoledo-v1.0"
+                        href="https://huggingface.co/sentra-utoledo/sentra-utoledo-v2.0"
                         target="_blank" rel="noopener noreferrer"
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
                       >
@@ -365,7 +365,7 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
                       Sentra is production-ready 🚀
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      66M params · 0.9% trainable · 97.3% accuracy
+                      1.54B params · 1.20% trainable · 94.2% accuracy
                     </p>
                   </motion.div>
                 </motion.div>
