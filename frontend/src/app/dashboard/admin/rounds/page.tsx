@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChevronRight, Plus, AlertTriangle, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createRound, runRound, getRound, getAdminRounds } from "@/lib/admin-api";
-import { config } from "@/lib/config";
+
 import type { Round } from "@/types";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -27,8 +27,9 @@ export default function AdminRoundsPage() {
   const pollingRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
 
   useEffect(() => {
+    const refs = pollingRefs.current;
     return () => {
-      pollingRefs.current.forEach(clearInterval);
+      refs.forEach(clearInterval);
     };
   }, []);
 

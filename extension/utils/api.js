@@ -13,9 +13,10 @@ const DEFAULT_API_URL = 'http://localhost:5000';
  * @param {string} authToken  - User's JWT access token
  * @param {string} subject    - Email subject (may be empty)
  * @param {string} body       - Email body text (required)
+ * @param {Array<string>} links - Array of extracted href links
  * @returns {Promise<object>} - { success, verdict, confidence, scam_score, reasoning, id }
  */
-async function scanEmail(apiUrl, authToken, subject, body, inferenceMode = 'gguf') {
+async function scanEmail(apiUrl, authToken, subject, body, links = [], inferenceMode = 'gguf') {
   const res = await fetch(`${apiUrl}/api/scan`, {
     method: 'POST',
     headers: {
@@ -23,7 +24,7 @@ async function scanEmail(apiUrl, authToken, subject, body, inferenceMode = 'gguf
       'Authorization': `Bearer ${authToken}`,
       'X-Inference-Mode': inferenceMode,
     },
-    body: JSON.stringify({ subject, body }),
+    body: JSON.stringify({ subject, body, links }),
   });
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();

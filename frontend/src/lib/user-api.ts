@@ -109,18 +109,35 @@ export interface ScanHistoryItem {
 export const scanEmail = async (
   token: string,
   subject: string,
-  body: string
+  body: string,
+  links: string[] = []
 ): Promise<ScanSubmitResult> => {
   const res = await apiFetch(`${API_URL}/api/scan`, {
     method: "POST",
     headers: authHeaders(token),
-    body: JSON.stringify({ subject, body }),
+    body: JSON.stringify({ subject, body, links }),
   });
   const json = await res.json() as { success: boolean; data?: ScanSubmitResult; error?: string };
   if (!res.ok) {
     throw new Error(json.error ?? "Scan failed");
   }
   // 200 = cache hit (full verdict inline), 202 = enqueued (job_id for polling)
+  return json.data as ScanSubmitResult;
+};
+
+export const scanUrl = async (
+  token: string,
+  url: string
+): Promise<ScanSubmitResult> => {
+  const res = await apiFetch(`${API_URL}/api/scan/url`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ url }),
+  });
+  const json = await res.json() as { success: boolean; data?: ScanSubmitResult; error?: string };
+  if (!res.ok) {
+    throw new Error(json.error ?? "URL scan failed");
+  }
   return json.data as ScanSubmitResult;
 };
 
@@ -154,4 +171,24 @@ export const getScanHistory = async (
     total: json.total ?? 0,
     pages: json.pages ?? 1,
   };
+};
+
+export interface ScanQuota {
+  assigned_limit: number;
+  used: number;
+  remaining: number;
+  global_limit: number;
+  global_used: number;
+  global_remaining: number;
+}
+
+export const getUserQuota = async (token: string): Promise<ScanQuota> => {
+  const res = await apiFetch(`${API_URL}/api/scan/quota`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch user quota');
+  }
+  const json = await res.json() as { success: boolean; data: ScanQuota };
+  return json.data;
 };

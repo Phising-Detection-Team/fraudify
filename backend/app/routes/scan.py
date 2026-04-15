@@ -17,12 +17,13 @@ the primary code path for new scans.
 """
 
 from celery.result import AsyncResult
+from concurrent.futures import ThreadPoolExecutor
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
 
 from app import limiter
-from app.cache import get_scan_cache, set_scan_cache
+from app.cache import get_scan_cache, set_scan_cache, get_vt_quota
 from app.models import db, User
 from app.models.user_scan import UserScan
 from app.utils import require_role
@@ -30,6 +31,7 @@ from app.utils.prompts import build_safe_email_prompt
 from app.tasks.scan_tasks import (
     _run_detector_sync,
     _normalize_verdict,
+    _run_virustotal_sync,
 )
 
 scan_bp = Blueprint('scan', __name__)
@@ -69,6 +71,7 @@ def scan_email():
 
     subject = body_json.get('subject', '').strip()
     body_text = body_json.get('body', '').strip()
+    links = body_json.get('links', [])
 
     if not body_text:
         return jsonify({'success': False, 'error': 'body is required'}), 400
@@ -79,8 +82,17 @@ def scan_email():
     if len(subject.encode('utf-8')) > MAX_SUBJECT_BYTES:
         return jsonify({'success': False, 'error': 'Email subject too large. Maximum size is 1KB.'}), 400
 
+    if not isinstance(links, list):
+        links = []
+    
+    # Optional logic: we can append the raw links to the body text to ensure
+    # the LLM actually 'sees' the structural URL for typosquatting checks
+    body_text_for_llm = body_text
+    if links:
+        body_text_for_llm += f"\n\n[Extracted Links for Analysis: {', '.join(links)}]"
+
     # Cache lookup — return immediately if we've seen this exact content before
-    cached = get_scan_cache(subject, body_text)
+    cached = get_scan_cache(subject, body_text_for_llm)
     if cached:
         # Still persist to UserScan so the hit appears in history and threat intelligence
         try:
@@ -109,10 +121,33 @@ def scan_email():
     # single response, removing the need for status polling and any dependency
     # on the Celery worker being alive.
     
-    email_content = build_safe_email_prompt(subject, body_text)
+    email_content = build_safe_email_prompt(subject, body_text_for_llm)
+
+    # Dynamic calculation for VT quota limits based on active user count
+    total_users = max(1, User.query.filter_by(is_active=True).count())
+    vt_max_scans = max(1, 500 // total_users)
 
     try:
-        parsed = _run_detector_sync(email_content)
+        # Run AI detection and VirusTotal URL checks in parallel
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            detector_future = executor.submit(_run_detector_sync, email_content)
+            vt_future = executor.submit(
+                _run_virustotal_sync,
+                urls=links,
+                user_id=user.id,
+                max_scans=vt_max_scans
+            )
+
+            # Wait for results (timeout on vt to prevent blocking)
+            try:
+                vt_malicious_urls = vt_future.result(timeout=10)
+            except Exception as e:
+                current_app.logger.warning(f"VT parallel execution error/timeout: {str(e)}")
+                vt_malicious_urls = []
+
+            # Wait for AI model
+            parsed = detector_future.result(timeout=45)
+
     except Exception:
         current_app.logger.exception("Detection failed")
         return jsonify({'success': False, 'error': 'Detection service unavailable. Please try again.'}), 503
@@ -124,13 +159,21 @@ def scan_email():
     scam_score = float(parsed.get('scam_score', 0.0)) if parsed.get('scam_score') is not None else 0.0
     reasoning = str(parsed.get('reasoning', ''))
 
+    # Override verdict if VirusTotal flagged any link
+    verdict = _normalize_verdict(parsed.get('verdict', ''))
+    if vt_malicious_urls:
+        verdict = 'phishing'
+        confidence = 1.0
+        scam_score = 10.0
+        reasoning = f"[🚨 VIRUSTOTAL DETERMINISTIC DETECTION] Malicious link(s) found in email: {', '.join(vt_malicious_urls)}\n\n" + reasoning
+
     # Normalise confidence to 0-1 range (detector may return 0-100)
     if confidence > 1:
         confidence = confidence / 100.0
 
     result = {
         'status': 'complete',
-        'verdict': _normalize_verdict(parsed.get('verdict', '')),
+        'verdict': verdict,
         'confidence': confidence,
         'scam_score': scam_score,
         'reasoning': reasoning,
@@ -138,7 +181,7 @@ def scan_email():
 
     # Persist to content-addressed scan cache for instant repeat lookups
     ttl = current_app.config.get('SCAN_CACHE_TTL', 3600)
-    set_scan_cache(subject, body_text, result, ttl=ttl)
+    set_scan_cache(subject, body_text_for_llm, result, ttl=ttl)
 
     # Persist scan result to the UserScan table for history and admin views
     try:
@@ -146,7 +189,7 @@ def scan_email():
             user_id=user.id,
             subject=subject or None,
             body_snippet=(body_text[:200] if body_text else None),
-            full_body=body_text,
+            full_body=body_text_for_llm,
             verdict=result['verdict'],
             confidence=result['confidence'],
             scam_score=result['scam_score'],
@@ -305,3 +348,132 @@ def admin_recent_scans():
         'per_page': per_page,
         'pages': pagination.pages,
     }), 200
+
+# ---------------------------------------------------------------------------
+# POST /api/scan/url  — manual URL scan
+# ---------------------------------------------------------------------------
+
+@scan_bp.route('/scan/url', methods=['POST'])
+@jwt_required()
+@limiter.limit('200 per hour', key_func=get_jwt_identity)
+def scan_manual_url():
+    """
+    Analyse a single URL manually submitted by the user.
+    Uses VT + LLM to judge context and typosquatting.
+    """
+    identity = get_jwt_identity()
+    user = db.session.get(User, int(identity))
+    if not user:
+        return jsonify({'success': False, 'error': 'User not found'}), 404
+
+    body_json = request.get_json(silent=True) or {}
+    url = body_json.get('url', '').strip()
+    
+    if not url:
+        return jsonify({'success': False, 'error': 'url is required'}), 400
+
+    # Avoid caching manually injected prompts by normalising cache keys on just the URL
+    cached = get_scan_cache("URL Scan", url)
+    if cached:
+        # We need to record history
+        try:
+            scan_record = UserScan(
+                user_id=user.id,
+                subject="Manual URL Scan",
+                body_snippet=url[:200],
+                full_body=url,
+                verdict=cached.get('verdict', 'suspicious'),
+                confidence=cached.get('confidence'),
+                scam_score=cached.get('scam_score'),
+                reasoning=cached.get('reasoning'),
+            )
+            db.session.add(scan_record)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            
+        return jsonify({'success': True, 'data': {**cached, 'cached': True, 'status': 'complete'}}), 200
+
+    total_users = max(1, User.query.filter_by(is_active=True).count())
+    vt_max_scans = max(1, 500 // total_users)
+    
+    email_content_mock = build_safe_email_prompt(
+        "Website Risk Assessment",
+        f"The user is visiting the following URL: {url}\nPlease analyse this domain and path for typosquatting, suspicious patterns, or brand impersonation."
+    )
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            detector_future = executor.submit(_run_detector_sync, email_content_mock)
+            vt_future = executor.submit(_run_virustotal_sync, urls=[url], user_id=user.id, max_scans=vt_max_scans)
+
+            try:
+                vt_malicious_urls = vt_future.result(timeout=10)
+            except Exception:
+                vt_malicious_urls = []
+
+            parsed = detector_future.result(timeout=45)
+    except Exception:
+        current_app.logger.exception("URL detection failed")
+        return jsonify({'success': False, 'error': 'Detection service unavailable.'}), 503
+
+    if not parsed:
+        return jsonify({'success': False, 'error': 'Detector returned invalid response'}), 500
+
+    confidence = float(parsed.get('confidence', 0.0))
+    scam_score = float(parsed.get('scam_score', 0.0)) if parsed.get('scam_score') is not None else 0.0
+    reasoning = str(parsed.get('reasoning', ''))
+
+    verdict = _normalize_verdict(parsed.get('verdict', ''))
+    if vt_malicious_urls:
+        verdict = 'phishing'
+        confidence = 1.0
+        scam_score = 10.0
+        reasoning = f"[🚨 VIRUSTOTAL DETERMINISTIC DETECTION] Known malicious URL flagged by engines.\n\n" + reasoning
+
+    if confidence > 1:
+        confidence = confidence / 100.0
+
+    result = {
+        'status': 'complete',
+        'verdict': verdict,
+        'confidence': confidence,
+        'scam_score': scam_score,
+        'reasoning': reasoning,
+    }
+
+    set_scan_cache("URL Scan", url, result, ttl=3600)
+    
+    try:
+        scan_record = UserScan(
+            user_id=user.id,
+            subject="Manual URL Scan",
+            body_snippet=url[:200],
+            full_body=url,
+            verdict=result['verdict'],
+            confidence=result['confidence'],
+            scam_score=result['scam_score'],
+            reasoning=result['reasoning'],
+        )
+        db.session.add(scan_record)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    return jsonify({'success': True, 'data': result}), 200
+
+@scan_bp.route('/scan/quota', methods=['GET'])
+@jwt_required()
+def get_user_quota():
+    """
+    Get the VT detection quota for the current user and the global system.
+    """
+    user_id = get_jwt_identity()
+
+    # Dynamic calculation for VT quota limits based on active user count
+    total_users = max(1, User.query.filter_by(is_active=True).count())
+    vt_max_scans = max(1, 500 // total_users)
+
+    quota = get_vt_quota(user_id, vt_max_scans)
+    
+    return jsonify({'success': True, 'data': quota}), 200

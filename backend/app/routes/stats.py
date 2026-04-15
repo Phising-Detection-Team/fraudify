@@ -14,10 +14,11 @@ from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import func, case
 
-from app.models import db, Round, Email, API as APICall
+from app.models import db, Round, Email, API as APICall, User
 from app.models.user_scan import UserScan
 from app.utils import require_role
 from app import limiter
+from app.cache import get_vt_quota
 
 stats_bp = Blueprint('stats', __name__)
 
@@ -72,6 +73,10 @@ def get_stats():
         UserScan.verdict.in_(['phishing', 'likely_phishing'])
     ).scalar()
 
+    total_users = max(1, User.query.filter_by(is_active=True).count())
+    vt_max_scans = max(1, 500 // total_users)
+    vt_quota = get_vt_quota(0, vt_max_scans)
+
     return jsonify({
         'success': True,
         'data': {
@@ -79,6 +84,9 @@ def get_stats():
             'active_agents': len(_AGENTS),
             'total_emails_scanned': int(round_emails_scanned) + int(user_scans_total),
             'threats_detected': int(round_threats_detected) + int(user_threats_detected),
+            'global_vt_limit': vt_quota['global_limit'],
+            'global_vt_used': vt_quota['global_used'],
+            'global_vt_remaining': vt_quota['global_remaining'],
         },
     }), 200
 

@@ -51,7 +51,7 @@ export default function FeedbackPage() {
           </div>
           
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3 text-foreground">
-            We'd Love Your Input
+            We&apos;d Love Your Input
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto">
             Let us know about any issues or how we can improve the platform.

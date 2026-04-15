@@ -125,12 +125,19 @@ def create_app(config_name=None):
 def _register_jwt_callbacks(app):
     """Set up JWT token-in-blocklist check via Redis."""
 
+    if app.config.get('TESTING'):
+        app.config['TEST_JWT_BLACKLIST'] = set()
+
     @jwt.token_in_blocklist_loader
     def check_if_token_revoked(jwt_header, jwt_payload):
-        import redis as redis_lib
         jti = jwt_payload.get('jti')
         if not jti:
             return False
+
+        if app.config.get('TESTING'):
+            return jti in app.config.get('TEST_JWT_BLACKLIST', set())
+
+        import redis as redis_lib
         try:
             redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379/0')
             r = redis_lib.from_url(redis_url)

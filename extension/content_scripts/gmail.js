@@ -28,9 +28,21 @@ function extractEmailFromDOM() {
   const subjectEl = document.querySelector('h2.hP');
   const bodyEl = document.querySelector('.a3s.aiL');
 
+  const links = [];
+  if (bodyEl) {
+    const anchorTags = bodyEl.querySelectorAll('a[href]');
+    for (const a of anchorTags) {
+      const href = a.getAttribute('href');
+      if (href && !href.startsWith('mailto:') && !href.startsWith('javascript:')) {
+        links.push(href);
+      }
+    }
+  }
+
   return {
     subject: (subjectEl?.textContent || '').trim(),
     body:    (bodyEl?.innerText   || bodyEl?.textContent || '').trim(),
+    links:   Array.from(new Set(links)), // filter out duplicates
   };
 }
 
@@ -187,11 +199,11 @@ function _escapeHtml(str) {
 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
   // We are running inside an actual extension — start the observer
   watchForEmailOpen(() => {
-    const { subject, body } = extractEmailFromDOM();
+    const { subject, body, links } = extractEmailFromDOM();
     if (!body) return;
 
     injectScanning();
-    _scanAndShow(subject, body);
+    _scanAndShow(subject, body, links);
   });
 }
 
@@ -208,14 +220,14 @@ async function _cacheScanResult(subject, verdict, confidence) {
 }
 
 /* istanbul ignore next */
-async function _scanAndShow(subject, body) {
+async function _scanAndShow(subject, body, links) {
   try {
     const stored = await chrome.storage.local.get(['sentra_api_url', 'sentra_auth_token', 'sentra_inference_mode']);
     const apiUrl = stored.sentra_api_url || DEFAULT_API_URL;
     const token = stored.sentra_auth_token;
     if (!token) { removeOverlay(); return; }
 
-    const result = await scanEmail(apiUrl, token, subject, body, stored.sentra_inference_mode || 'gguf');
+    const result = await scanEmail(apiUrl, token, subject, body, links, stored.sentra_inference_mode || 'gguf');
     const data = result && result.data;
 
     let verdictData = null;

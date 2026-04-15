@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { ChevronRight, AlertTriangle, Loader2 } from "lucide-react";
 import { getAdminRounds } from "@/lib/admin-api";
-import { config } from "@/lib/config";
+
 import type { Round } from "@/types";
 
 const STATUS_STYLES: Record<string, string> = {

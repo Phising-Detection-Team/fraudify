@@ -32,6 +32,9 @@ export const getAdminStats = async (token: string): Promise<DashboardStats> => {
     phishingDetected: d.threats_detected ?? 0,
     markedSafe: 0,
     creditsRemaining: 0,
+    globalVtLimit: d.global_vt_limit ?? 0,
+    globalVtUsed: d.global_vt_used ?? 0,
+    globalVtRemaining: d.global_vt_remaining ?? 0,
   };
 };
 

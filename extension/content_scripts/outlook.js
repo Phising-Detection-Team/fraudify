@@ -71,9 +71,21 @@ function extractEmailFromDOM() {
   const subjectEl = _getSubjectEl();
   const bodyEl    = _getBodyContainer();
 
+  const links = [];
+  if (bodyEl) {
+    const anchorTags = bodyEl.querySelectorAll('a[href]');
+    for (const a of anchorTags) {
+      const href = a.getAttribute('href');
+      if (href && !href.startsWith('mailto:') && !href.startsWith('javascript:')) {
+        links.push(href);
+      }
+    }
+  }
+
   return {
     subject: (subjectEl?.textContent || '').trim(),
     body:    (bodyEl?.innerText      || bodyEl?.textContent || '').trim(),
+    links:   Array.from(new Set(links)), // filter out duplicates
   };
 }
 
@@ -238,16 +250,16 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
     watchForEmailOpen(async () => {
       // Outlook renders body asynchronously after the subject appears.
       // Retry up to 8 times (every 500ms = 4s total).
-      let subject = '', body = '';
+      let subject = '', body = '', links = [];
       for (let attempt = 0; attempt < 8; attempt++) {
-        ({ subject, body } = extractEmailFromDOM());
+        ({ subject, body, links } = extractEmailFromDOM());
         if (body) break;
         await new Promise((r) => setTimeout(r, 500));
       }
       if (!body) return;
 
       injectScanning();
-      _scanAndShow(subject, body);
+      _scanAndShow(subject, body, links);
     });
   }
 }
@@ -265,14 +277,14 @@ async function _cacheScanResult(subject, verdict, confidence) {
 }
 
 /* istanbul ignore next */
-async function _scanAndShow(subject, body) {
+async function _scanAndShow(subject, body, links) {
   try {
     const stored = await chrome.storage.local.get(['sentra_api_url', 'sentra_auth_token', 'sentra_inference_mode']);
     const apiUrl = stored.sentra_api_url || DEFAULT_API_URL;
     const token = stored.sentra_auth_token;
     if (!token) { removeOverlay(); return; }
 
-    const result = await scanEmail(apiUrl, token, subject, body, stored.sentra_inference_mode || 'gguf');
+    const result = await scanEmail(apiUrl, token, subject, body, links, stored.sentra_inference_mode || 'gguf');
     const data = result && result.data;
 
     let verdictData = null;

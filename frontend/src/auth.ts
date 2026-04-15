@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
-import { config } from "./lib/config";
+
 import { loginWithBackend, loginWithToken } from "./lib/auth-api";
 
 export const { handlers: { GET, POST }, auth, signIn, signOut } = NextAuth({

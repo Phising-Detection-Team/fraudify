@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 import {
   scanEmail,
+  scanUrl,
   getScanStatus,
+  getUserQuota,
+  type ScanQuota,
   type ScanVerdict,
   type ScanStatusResult,
   type ScanCacheHitResult,
@@ -149,15 +152,39 @@ export default function ScanEmailPage() {
   const { data: session } = useSession();
   const token = session?.accessToken as string | undefined;
 
+  // Add scan mode toggle
+  const [scanMode, setScanMode] = useState<"email" | "url">("email");
+
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [targetUrl, setTargetUrl] = useState("");
+
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<ScanDisplayResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [quota, setQuota] = useState<ScanQuota | null>(null);
+
   // Polling state
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollAttemptsRef = useRef(0);
+
+  const fetchQuota = async () => {
+    if (!token) return;
+    try {
+      const q = await getUserQuota(token);
+      setQuota(q);
+    } catch (err) {
+      console.error('Failed to fetch quota', err);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchQuota();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -186,10 +213,12 @@ export default function ScanEmailPage() {
         scam_score: statusResult.scam_score ?? 0,
         reasoning: statusResult.reasoning ?? '',
       });
+      fetchQuota();
     } else if (statusResult.status === 'failed') {
       stopPolling();
       setScanning(false);
-      setError(statusResult.error ?? 'Detection failed. Please try again.');
+      setError(statusResult.error ?? 'Detection failed. Please Try again.');
+      fetchQuota();
     }
     // 'pending' — keep polling
   };
@@ -218,11 +247,14 @@ export default function ScanEmailPage() {
     }, POLL_INTERVAL_MS);
   };
 
-  const isCacheHit = (result: ReturnType<typeof scanEmail> extends Promise<infer T> ? T : never): result is ScanCacheHitResult =>
-    'cached' in result && result.cached === true && result.status === 'complete';
+  const isCacheHit = (result: unknown): result is ScanCacheHitResult =>
+    typeof result === 'object' && result !== null && 'cached' in result && (result as Record<string, unknown>).cached === true && (result as Record<string, unknown>).status === 'complete';
 
   const handleScan = async () => {
-    if (!token || !body.trim()) return;
+    if (!token) return;
+
+    if (scanMode === "email" && !body.trim()) return;
+    if (scanMode === "url" && !targetUrl.trim()) return;
 
     stopPolling();
     setScanning(true);
@@ -230,7 +262,12 @@ export default function ScanEmailPage() {
     setError(null);
 
     try {
-      const submitResult = await scanEmail(token, subject.trim(), body.trim());
+      let submitResult;
+      if (scanMode === "email") {
+        submitResult = await scanEmail(token, subject.trim(), body.trim());
+      } else {
+        submitResult = await scanUrl(token, targetUrl.trim());
+      }
 
       if (isCacheHit(submitResult)) {
         // Cache hit — render verdict immediately, no polling needed
@@ -241,6 +278,7 @@ export default function ScanEmailPage() {
           scam_score: submitResult.scam_score,
           reasoning: submitResult.reasoning,
         });
+        fetchQuota();
       } else {
         // Cache miss — start polling with the returned job_id
         startPolling(submitResult.job_id, token);
@@ -253,47 +291,97 @@ export default function ScanEmailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-          <ScanText className="text-accent-cyan" size={28} />
-          Scan Email
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Paste an email to instantly check it for phishing or scams.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <ScanText className="text-accent-cyan" size={28} />
+            Scan Phishing
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Paste an email or a URL to instantly check it for phishing or scams.
+          </p>
+        </div>
+        {quota && (
+          <div className="glass-panel p-3 px-5 rounded-lg flex flex-col items-end">
+            <span className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
+              Scans Remaining Today
+            </span>
+            <span className="text-2xl font-bold text-accent-cyan">
+              {quota.remaining} <span className="text-sm font-normal text-muted-foreground">/ {quota.assigned_limit}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Split panel: form + result */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: form */}
         <div className="glass-panel rounded-xl p-6 space-y-4">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Email Content</h2>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Subject <span className="text-muted-foreground font-normal text-xs">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Enter email subject line…"
-              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-            />
+          <div className="flex gap-2 p-1 bg-background/50 rounded-lg p-1 w-fit border border-border/50">
+            <button
+              onClick={() => setScanMode("email")}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                scanMode === "email" ? "bg-accent-cyan text-black" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Email Scan
+            </button>
+            <button
+              onClick={() => setScanMode("url")}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                scanMode === "url" ? "bg-accent-cyan text-black" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              URL Scan
+            </button>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Email Body <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Paste the full email body here…"
-              rows={10}
-              className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 resize-none"
-            />
-          </div>
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+            {scanMode === "email" ? "Email Content" : "Target URL"}
+          </h2>
+
+          {scanMode === "email" ? (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Subject <span className="text-muted-foreground font-normal text-xs">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Enter email subject line…"
+                  className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Email Body <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  placeholder="Paste the full email body here…"
+                  rows={10}
+                  className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 resize-none"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                URL to Scan <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                value={targetUrl}
+                onChange={(e) => setTargetUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              />
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
@@ -303,7 +391,7 @@ export default function ScanEmailPage() {
 
           <button
             onClick={handleScan}
-            disabled={scanning || !body.trim()}
+            disabled={scanning || (scanMode === "email" ? !body.trim() : !targetUrl.trim())}
             className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {scanning ? (
@@ -314,7 +402,7 @@ export default function ScanEmailPage() {
             ) : (
               <>
                 <ScanText size={16} />
-                Scan Email
+                {scanMode === "email" ? "Scan Email" : "Scan URL"}
               </>
             )}
           </button>

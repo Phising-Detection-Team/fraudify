@@ -143,6 +143,7 @@ async function _handleScanRequest(message, sendResponse) {
       stored.sentra_auth_token,
       message.subject || '',
       message.body || '',
+      message.links || [],
       'gguf'
     );
 

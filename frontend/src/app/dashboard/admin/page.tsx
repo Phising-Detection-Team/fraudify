@@ -7,8 +7,8 @@ import { AgentLogsTable } from "@/components/dashboard/AgentLogsTable";
 import { RecentLogsSection } from "@/components/dashboard/RecentLogsSection";
 import RecentScansTable from "@/components/admin/RecentScansTable";
 import IntelligencePanel from "@/components/admin/IntelligencePanel";
-import { Mail, ShieldAlert, BadgeDollarSign, Activity } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Mail, ShieldAlert, BadgeDollarSign, Activity, ServerCrash } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   getAdminStats,
@@ -25,8 +25,7 @@ import {
   type CacheStats,
   type AdminScansPage,
 } from "@/lib/admin-api";
-import { config } from "@/lib/config";
-import type { Round, Agent, ModelCost, DashboardStats } from "@/types";
+import type { Round, Agent, DashboardStats } from "@/types";
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
@@ -40,6 +39,9 @@ export default function AdminDashboard() {
     phishingDetected: 0,
     markedSafe: 0,
     creditsRemaining: 0,
+    globalVtLimit: 0,
+    globalVtUsed: 0,
+    globalVtRemaining: 0,
   });
   const [rounds, setRounds] = useState<Round[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -128,7 +130,7 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
         <StatCard
           title="Total API Cost"
           value={`$${stats.totalApiCost?.toLocaleString()}`}
@@ -154,6 +156,13 @@ export default function AdminDashboard() {
           icon={ShieldAlert}
           valueClassName="text-accent-red"
           delay={0.25}
+        />
+        <StatCard
+          title="Global Quota Left"
+          value={stats.globalVtRemaining?.toLocaleString() || "0"}
+          icon={ServerCrash}
+          delay={0.3}
+          valueClassName="text-yellow-400"
         />
       </div>
 

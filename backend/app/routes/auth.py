@@ -34,6 +34,12 @@ _invite_schema = InviteCodeSchema()
 
 def _blacklist_token(jti: str, expires_delta: timedelta) -> None:
     """Store jti in Redis with TTL equal to the token's remaining lifetime."""
+    if current_app.config.get('TESTING'):
+        if 'TEST_JWT_BLACKLIST' not in current_app.config:
+            current_app.config['TEST_JWT_BLACKLIST'] = set()
+        current_app.config['TEST_JWT_BLACKLIST'].add(jti)
+        return
+
     try:
         redis_url: str = current_app.config.get('REDIS_URL', 'redis://localhost:6379/0')
         r = redis_lib.from_url(redis_url)

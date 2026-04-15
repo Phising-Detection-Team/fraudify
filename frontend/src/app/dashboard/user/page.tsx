@@ -1,6 +1,6 @@
 "use client";
 
-import { config } from "@/lib/config";
+
 import { StatCard } from "@/components/dashboard/StatCard";
 import {
   Mail, ShieldAlert, ShieldCheck,

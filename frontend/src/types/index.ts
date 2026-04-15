@@ -64,4 +64,7 @@ export type DashboardStats = {
   totalApiCost?: number; // admin only
   activeAgents?: number; // admin only
   trainingRounds?: number; // admin only
+  globalVtLimit?: number; // admin only
+  globalVtUsed?: number; // admin only
+  globalVtRemaining?: number; // admin only
 };

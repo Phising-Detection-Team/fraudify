@@ -20,7 +20,7 @@ interface HeartbeatFeedItem {
 }
 
 export function LiveFeed() {
-  const [feed, setFeed] = useState<EmailResult[]>([]);
+  const [feed] = useState<EmailResult[]>([]);
   const [events, setEvents] = useState<HeartbeatFeedItem[]>([]);
 
   useEffect(() => {
