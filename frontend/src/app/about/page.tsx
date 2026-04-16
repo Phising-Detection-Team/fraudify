@@ -17,7 +17,7 @@ const teamMembers: TeamMember[] = [
       <span><strong className="text-cyan-400 font-bold">Backend Security:</strong> Engineered a secure server infrastructure using FastAPI and JWT authentication to keep user data locked down and safe from tampering.</span>,
       <span><strong className="text-cyan-400 font-bold">Threat Intelligence:</strong> Integrated the VirusTotal API to cross-check suspicious links against 70+ active antivirus scanners in real-time.</span>
     ],
-    skills: ["Adversarial Prompt Research", "DOM-Level Prompt Defense", "JWT Auth Architecture", "Database Schema Security", "FastAPI Backend"],
+    skills: ["Adversarial Prompt Research", "DOM-Level Prompt Defense", "JWT Auth Architecture", "Database Schema Security", "Penetration Testing"],
     links: {
       portfolio: "https://thienquypham.vercel.app/",
       linkedin: "https://www.linkedin.com/in/thienquypham/",
@@ -30,9 +30,9 @@ const teamMembers: TeamMember[] = [
     affiliation: "Student at University",
     bio: "Innovative problem solver with a strong background in backend systems and real-time processing architectures.",
     contributions: [
-      "Architected the scalable FastAPI backend infrastructure.",
-      "Implemented the Redis caching layer to reduce scan latency by 40%.",
-      "Designed the AI agentic orchestration logic for browser extensions."
+      <span><strong className="text-cyan-400 font-bold">Backend Architecture:</strong> Architected the scalable FastAPI backend infrastructure to handle high-volume real-time requests.</span>,
+      <span><strong className="text-cyan-400 font-bold">Caching Strategy:</strong> Implemented the Redis caching layer to reduce scan latency by 40%.</span>,
+      <span><strong className="text-cyan-400 font-bold">AI Orchestration:</strong> Designed the AI agentic orchestration logic for browser extensions.</span>
     ],
     skills: ["FastAPI", "Redis", "Docker", "PostgreSQL", "Cloud Config"],
     links: {
