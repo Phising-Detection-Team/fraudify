@@ -7,7 +7,7 @@ export interface TeamMember {
   role: string;
   affiliation?: string;
   bio?: string;
-  contributions?: string[];
+  contributions?: (string | React.ReactNode)[];
   skills?: string[];
   links?: {
     portfolio?: string;
