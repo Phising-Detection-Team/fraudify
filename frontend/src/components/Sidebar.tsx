@@ -102,13 +102,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <Link
               key={link.name}
               href={link.href}
-              target={link.name === "About Us" ? "_blank" : undefined}
-              rel={link.name === "About Us" ? "noopener noreferrer" : undefined}
               onClick={() => {
-                if (link.name === "About Us") {
-                  toast.info("Opening About Us in a new tab...");
-                }
-                if (link.name !== "About Us" && onClose) onClose();
+                if (onClose) onClose();
               }}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${
                 isActive 
