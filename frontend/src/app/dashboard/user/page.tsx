@@ -2,17 +2,18 @@
 
 import { config } from "@/lib/config";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { LiveFeed } from "@/components/dashboard/LiveFeed";
 import {
   Mail, ShieldAlert, ShieldCheck,
-  Puzzle, CheckCircle2, Circle, Wifi, WifiOff,
-  Activity, BarChart3, ShieldCheck as ShieldCheckIcon,
-  ArrowRight,
+  Puzzle, CheckCircle2, Wifi, WifiOff,
+  ShieldCheck as ShieldCheckIcon,
+  ArrowRight, Search, MessageSquare, Bot
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { getUserStats, type UserStats } from "@/lib/user-api";
-import { getExtensionInstances, type ExtensionInstance, getAdminStats } from "@/lib/admin-api";
+import { getExtensionInstances, type ExtensionInstance } from "@/lib/admin-api";
 import { parseUTC } from "@/lib/utils";
 import Link from "next/link";
 
@@ -57,7 +58,7 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
 
   return (
     <div
-      className={`glass-panel rounded-xl p-6 space-y-5 ${
+      className={`glass-panel rounded-xl p-6 space-y-5 h-full flex flex-col ${
         allDone ? "border border-accent-green/20" : ""
       }`}
     >
@@ -68,53 +69,42 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
           <Puzzle size={20} className="text-accent-cyan" />
         )}
         <h3 className={`font-semibold ${allDone ? "text-accent-green" : ""}`}>
-          {allDone ? "Your Emails are Protected" : "Get Started with Sentra"}
+          {allDone ? "Emails Protected" : "Setup Sentra"}
         </h3>
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-xs text-muted-foreground mb-2">
         {allDone
-          ? "Sentra is actively monitoring your inbox. Your browser extension is connected and scanning emails in real-time."
-          : "Follow these steps to start protecting your inbox from phishing attacks."}
+          ? "Sentra is monitoring your inbox. Browser extension is connected and scanning."
+          : "Follow steps to protect your inbox."}
       </p>
 
-      <div className="space-y-4">
+      <div className="space-y-4 flex-1">
         {/* Step 1 — Install extension */}
-        <Step number={1} label="Install the Sentra browser extension" done={hasInstance}>
+        <Step number={1} label="Install extension" done={hasInstance}>
           {!hasInstance && (
-            <p className="text-xs text-muted-foreground">
-              Load the extension in{" "}
-              <span className="font-medium text-foreground">Chrome</span> or{" "}
-              <span className="font-medium text-foreground">Edge</span> via Developer Mode.{" "}
+            <p className="text-xs text-muted-foreground mt-1">
+              Load in Chrome/Edge via Dev Mode.{" "}
               <Link href="/extension" className="text-accent-cyan hover:underline">
-                See install guide →
+                Install guide →
               </Link>
             </p>
           )}
         </Step>
 
         {/* Step 2 — Sign in to link */}
-        <Step number={2} label="Sign in — extension links automatically" done={hasInstance}>
+        <Step number={2} label="Sign in & link" done={hasInstance}>
           {!hasInstance && (
-            <p className="text-xs text-muted-foreground">
-              Once the extension is installed, it detects your session on this page and registers
-              your device automatically. No token copy-pasting needed.
+            <p className="text-xs text-muted-foreground mt-1">
+              Done automatically on this page.
             </p>
           )}
         </Step>
 
         {/* Step 3 — Active scanning */}
-        <Step number={3} label="Extension connected and scanning" done={hasActive}>
+        <Step number={3} label="Connected & scanning" done={hasActive}>
           {!hasActive && hasInstance && (
-            <p className="text-xs text-muted-foreground">
-              Your device is registered. The extension will show as{" "}
-              <span className="font-medium text-foreground">Active</span> once it sends its first
-              heartbeat (within 4 minutes of opening the browser).
-            </p>
-          )}
-          {!hasActive && !hasInstance && (
-            <p className="text-xs text-muted-foreground">
-              The extension sends a heartbeat every 4 minutes — this status will update
-              automatically.
+            <p className="text-xs text-muted-foreground mt-1">
+              Waiting for first heartbeat (within 4 mins).
             </p>
           )}
         </Step>
@@ -122,7 +112,7 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
 
       {/* Connected instances list */}
       {hasInstance && (
-        <ul className="space-y-2 pt-1">
+        <ul className="space-y-2 mt-4">
           {instances.map((inst) => (
             <li
               key={inst.id}
@@ -155,68 +145,42 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
 
       <Link
         href="/dashboard/user/settings"
-        className="inline-flex items-center gap-1.5 text-xs text-accent-cyan hover:underline"
+        className="inline-flex items-center gap-1.5 text-xs text-accent-cyan hover:underline mt-2"
       >
         Manage extension instances <ArrowRight size={12} />
       </Link>
-    </div>
-  );
-}
 
-// ---------------------------------------------------------------------------
-// Platform stats panel
-// ---------------------------------------------------------------------------
-
-type PlatformStats = {
-  totalEmailsScanned: number;
-  phishingDetected: number;
-  activeAgents: number;
-} | null;
-
-function PlatformStatsPanel({ platformStats }: { platformStats: PlatformStats }) {
-  const rows = [
-    {
-      icon: Mail,
-      label: "Training emails analysed",
-      value: platformStats?.totalEmailsScanned.toLocaleString() ?? "—",
-    },
-    {
-      icon: ShieldAlert,
-      label: "Phishing patterns detected",
-      value: platformStats?.phishingDetected.toLocaleString() ?? "—",
-    },
-    {
-      icon: Activity,
-      label: "AI agents active",
-      value: platformStats?.activeAgents ?? "—",
-    },
-  ];
-
-  return (
-    <div className="glass-panel rounded-xl p-6 space-y-4">
-      <div className="flex items-center gap-2 border-b border-border/50 pb-3">
-        <BarChart3 size={18} className="text-accent-cyan" />
-        <h3 className="font-semibold">Platform Intelligence</h3>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Sentra continuously trains its AI model on synthetic phishing data so it can protect you
-        from real-world threats.
-      </p>
-      <ul className="space-y-3">
-        {rows.map(({ icon: Icon, label, value }) => (
-          <li key={label} className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Icon size={14} className="flex-shrink-0" />
-              {label}
+      {/* Quick Actions (merged inside Onboarding Panel) */}
+      <div className="pt-4 border-t border-border/50">
+        <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <Bot size={16} className="text-accent-cyan" />
+          Quick Actions
+        </h4>
+        <div className="space-y-3">
+          <Link
+            href="/dashboard/user/scan"
+            className="flex items-center gap-3 rounded-lg border border-border/40 bg-muted/10 px-3 py-2 hover:bg-muted/20 transition-colors group"
+          >
+            <div className="text-accent-cyan bg-accent-cyan/10 p-1.5 rounded-full group-hover:scale-110 transition-transform">
+              <Search size={14} />
             </div>
-            <span className="text-sm font-semibold tabular-nums">{value}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="pt-2 border-t border-border/50">
-        <div className="flex items-center gap-2">
-          <Circle size={8} className="fill-accent-green text-accent-green" />
-          <span className="text-xs text-muted-foreground">AI model online and improving</span>
+            <div>
+              <p className="text-sm font-medium">Scan an Email</p>
+              <p className="text-[11px] text-muted-foreground">Manually analyze suspicious content</p>
+            </div>
+          </Link>
+          <Link
+            href="/dashboard/user/feedback"
+            className="flex items-center gap-3 rounded-lg border border-border/40 bg-muted/10 px-3 py-2 hover:bg-muted/20 transition-colors group"
+          >
+            <div className="text-accent-cyan bg-accent-cyan/10 p-1.5 rounded-full group-hover:scale-110 transition-transform">
+              <MessageSquare size={14} />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Report Phishing</p>
+              <p className="text-[11px] text-muted-foreground">Help improve Sentra AI training</p>
+            </div>
+          </Link>
         </div>
       </div>
     </div>
@@ -238,7 +202,6 @@ export default function UserDashboard() {
     creditsRemaining: 1000,
   });
   const [instances, setInstances] = useState<ExtensionInstance[]>([]);
-  const [platformStats, setPlatformStats] = useState<PlatformStats>(null);
 
   useEffect(() => {
     if (session?.user?.fromBackend && session.accessToken) {
@@ -246,15 +209,6 @@ export default function UserDashboard() {
       Promise.all([
         getUserStats(token).then(setStats).catch(() => {}),
         getExtensionInstances(token).then(setInstances).catch(() => {}),
-        getAdminStats(token)
-          .then((d) =>
-            setPlatformStats({
-              totalEmailsScanned: d.totalEmailsScanned,
-              phishingDetected: d.phishingDetected,
-              activeAgents: d.activeAgents ?? 0,
-            })
-          )
-          .catch(() => {}),
       ]).finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -266,7 +220,7 @@ export default function UserDashboard() {
   if (loading) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
         <p className="text-muted-foreground mt-2">
@@ -275,7 +229,7 @@ export default function UserDashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
         <StatCard
           title="Emails Scanned"
           value={stats.totalEmailsScanned.toLocaleString()}
@@ -283,7 +237,7 @@ export default function UserDashboard() {
           delay={0.1}
         />
         <StatCard
-          title="Threats Blocked"
+          title="Threats Detected"
           value={stats.phishingDetected.toLocaleString()}
           icon={ShieldAlert}
           valueClassName="text-accent-red"
@@ -308,36 +262,25 @@ export default function UserDashboard() {
       </div>
 
       {/* Bottom panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-[500px] lg:h-[600px] pb-6">
+        {/* Left (Bigger): Live Feed */}
         <motion.div
-          className="lg:col-span-2"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15, delay: 0.15 }}
+           className="lg:col-span-2 h-full min-h-0"
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ duration: 0.15, delay: 0.15 }}
         >
-          <OnboardingPanel instances={instances} />
+          <LiveFeed />
         </motion.div>
 
+        {/* Right (Smaller): Setup Sentra & Quick Actions */}
         <motion.div
-          className="lg:col-span-1"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15, delay: 0.2 }}
+           className="lg:col-span-1 h-full min-h-0"
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ duration: 0.15, delay: 0.2 }}
         >
-          {session?.user?.fromBackend && session.accessToken ? (
-            <PlatformStatsPanel platformStats={platformStats} />
-          ) : (
-            <div className="glass-panel rounded-xl p-6 space-y-3">
-              <div className="flex items-center gap-2 border-b border-border/50 pb-3">
-                <BarChart3 size={18} className="text-accent-cyan" />
-                <h3 className="font-semibold">Platform Intelligence</h3>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Sentra trains AI on synthetic phishing data to protect your inbox. Log in with a
-                backend account to see live platform stats.
-              </p>
-            </div>
-          )}
+          <OnboardingPanel instances={instances} />
         </motion.div>
       </div>
     </div>

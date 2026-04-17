@@ -60,6 +60,29 @@ vi.mock('lucide-react', () => ({
 }))
 
 // ---------------------------------------------------------------------------
+// Mock next-auth/react and lib/user-api
+// ---------------------------------------------------------------------------
+vi.mock('next-auth/react', () => ({
+  useSession: vi.fn(() => ({
+    data: {
+      user: { fromBackend: true },
+      accessToken: 'token',
+    },
+    status: 'authenticated',
+  })),
+}))
+
+vi.mock('@/lib/user-api', () => ({
+  getScanHistory: vi.fn(() => Promise.resolve({
+    scans: [],
+    page: 1,
+    limit: 10,
+    total: 0,
+    total_pages: 1,
+  })),
+}))
+
+// ---------------------------------------------------------------------------
 // Import component AFTER mocks
 // ---------------------------------------------------------------------------
 import { LiveFeed } from '@/components/dashboard/LiveFeed'
@@ -135,16 +158,12 @@ describe('LiveFeed', () => {
   // -------------------------------------------------------------------------
 describe('component feed', () => {
       it('renders without crashing', async () => {
-        await act(async () => {
-          render(<LiveFeed />)
-        })
+        render(<LiveFeed />)
         expect(document.body).toBeTruthy()
       })
 
       it('shows the feed container', async () => {
-        await act(async () => {
-          render(<LiveFeed />)
-      })
+        render(<LiveFeed />)
       expect(document.querySelector('.glass-panel')).toBeTruthy()
     })
   })
@@ -167,13 +186,11 @@ describe('component feed', () => {
         off: mockSocketOff,
       })
 
-      await act(async () => {
-        render(<LiveFeed />)
-      })
+      render(<LiveFeed />)
 
       expect(heartbeatHandler).not.toBeNull()
 
-      await act(async () => {
+      act(() => {
         heartbeatHandler!({
           instance_id: 'inst-123',
           browser: 'Chrome 120',
@@ -199,14 +216,12 @@ describe('component feed', () => {
         off: mockSocketOff,
       })
 
-      await act(async () => {
-        render(<LiveFeed />)
-      })
+      render(<LiveFeed />)
 
       expect(heartbeatHandler).not.toBeNull()
 
       // Fire 25 heartbeat events
-      await act(async () => {
+      act(() => {
         for (let idx = 0; idx < 25; idx++) {
           heartbeatHandler!({
             instance_id: `inst-${idx}`,

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, ShieldAlert, Clock } from "lucide-react";
 import { io } from "socket.io-client";
-import { EmailResult } from "@/types";
+import { useSession } from "next-auth/react";
+import { getScanHistory, ScanHistoryItem } from "@/lib/user-api";
 
 interface HeartbeatEvent {
   instance_id: string;
@@ -19,9 +20,43 @@ interface HeartbeatFeedItem {
   type: "heartbeat";
 }
 
+interface ScanFeedItem {
+  id: string;
+  subject: string;
+  detectorResponse: string;
+  verdict: string;
+  confidence: number;
+}
+
 export function LiveFeed() {
-  const [feed, setFeed] = useState<EmailResult[]>([]);
+  const { data: session } = useSession();
+  const [feed, setFeed] = useState<ScanFeedItem[]>([]);
   const [events, setEvents] = useState<HeartbeatFeedItem[]>([]);
+
+  useEffect(() => {
+    const fetchScans = async () => {
+      if (session?.user?.fromBackend && session.accessToken) {
+        try {
+          const history = await getScanHistory(session.accessToken, 1, 10);
+          const mapped: ScanFeedItem[] = history.scans.map((s: ScanHistoryItem) => ({
+            id: s.id.toString(),
+            subject: s.subject || "(No Subject)",
+            detectorResponse: s.reasoning || "No reasoning provided.",
+            verdict: s.verdict === "phishing" || s.verdict === "likely_phishing" ? "phishing" : "safe",
+            confidence: s.confidence || s.scam_score || 0,
+          }));
+          setFeed(mapped);
+        } catch (err) {
+          console.error("Failed to fetch scans", err);
+        }
+      }
+    };
+
+    fetchScans();
+    // Poll every 10 seconds for new scans
+    const interval = setInterval(fetchScans, 10000);
+    return () => clearInterval(interval);
+  }, [session]);
 
   useEffect(() => {
     const socket = io(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000");
@@ -46,7 +81,7 @@ export function LiveFeed() {
   }, []);
 
   // Combine heartbeat events with the static feed
-  const displayFeed: EmailResult[] = feed.length > 0 ? feed : [];
+  const displayFeed: ScanFeedItem[] = feed.length > 0 ? feed : [];
 
   return (
     <div className="glass-panel p-6 rounded-xl h-full flex flex-col">
@@ -105,7 +140,7 @@ export function LiveFeed() {
 
                 <div className="text-xs text-muted-foreground flex items-center justify-between">
                   <span className="truncate max-w-[200px]">{item.detectorResponse}</span>
-                  <span className="font-mono">{item.confidence}% Conf</span>
+                  <span className="font-mono">{Math.round(item.confidence * 100)}% Conf</span>
                 </div>
               </motion.div>
             ))}
