@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
 from . import db
 
@@ -31,7 +31,8 @@ class EmailVerification(db.Model):
 
         token = secrets.token_urlsafe(32)
         code = f'{secrets.randbelow(1_000_000):06d}'
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+        # Store UTC as naive datetime to match DateTime columns without timezone.
+        expires_at = datetime.utcnow() + timedelta(minutes=15)
 
         return cls(
             user_id=user_id,
@@ -42,7 +43,7 @@ class EmailVerification(db.Model):
 
     def is_valid(self) -> bool:
         """Return True if this record has not been used and has not expired."""
-        return not self.is_used and datetime.now(timezone.utc) < self.expires_at
+        return not self.is_used and datetime.utcnow() < self.expires_at
 
     def __repr__(self):
         return f'<EmailVerification user_id={self.user_id} used={self.is_used}>'

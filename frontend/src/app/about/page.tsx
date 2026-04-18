@@ -13,7 +13,7 @@ const teamMembers: TeamMember[] = [
     bio: "Cybersecurity researcher and AI builder. I specialize in hardening LLMs against prompt injection and building the secure backend infrastructure needed to catch zero-day phishing attacks in real time.",
     contributions: [
       <span><strong className="text-cyan-400 font-bold">Browser Defense:</strong> Built a DOM-level interception system that catches and disables hidden HTML payloads before they can trick the AI.</span>,
-      <span><strong className="text-cyan-400 font-bold">AI Safety & Training:</strong> Trained the AI on 44,000+ data points and stress-tested it against 10,000+ adversarial attack prompts to eliminate vulnerabilities.</span>,
+      <span><strong className="text-cyan-400 font-bold">AI Safety & Training:</strong> Pen-tested the Sentra AI model using prompt injection attacks and hardened it with stronger, more secure prompt defenses.</span>,
       <span><strong className="text-cyan-400 font-bold">Backend Security:</strong> Engineered a secure server infrastructure using FastAPI and JWT authentication to keep user data locked down and safe from tampering.</span>,
       <span><strong className="text-cyan-400 font-bold">Threat Intelligence:</strong> Integrated the VirusTotal API to cross-check suspicious links against 70+ active antivirus scanners in real-time.</span>
     ],

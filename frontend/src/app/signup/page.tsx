@@ -88,12 +88,26 @@ function SignupForm(): JSX.Element {
         ? config.API.AUTH.ADMIN_SIGNUP
         : config.API.AUTH.SIGNUP;
 
+      // Backend username only allows letters, digits, and underscores.
+      // If the entered full name is not valid as a username, omit it and let backend auto-generate.
+      const sanitizedNameUsername = name
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
+      const computedUsername =
+        sanitizedNameUsername.length >= 3 && sanitizedNameUsername.length <= 30
+          ? sanitizedNameUsername
+          : email.split("@")[0].replace(/[^A-Za-z0-9_]/g, "");
+
       const signupBody: Record<string, string | boolean | null> = {
         email,
         password,
-        username: name || email.split("@")[0],
         allow_training: allowTraining,
       };
+      if (computedUsername.length >= 3 && computedUsername.length <= 30) {
+        signupBody.username = computedUsername;
+      }
       if (inviteCode) {
         signupBody.invite_code = inviteCode;
       }

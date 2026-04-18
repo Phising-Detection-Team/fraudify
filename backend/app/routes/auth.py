@@ -161,7 +161,7 @@ def send_verification():
     existing = (
         EmailVerification.query
         .filter_by(user_id=user.id, is_used=False)
-        .filter(EmailVerification.expires_at > datetime.now(timezone.utc))
+        .filter(EmailVerification.expires_at > datetime.utcnow())
         .first()
     )
     if existing:
@@ -213,7 +213,7 @@ def verify_email():
         return jsonify({'success': False, 'error': 'User not found'}), 404
 
     ev.is_used = True
-    ev.used_at = datetime.now(timezone.utc)
+    ev.used_at = datetime.utcnow()
     user.email_verified = True
     db.session.commit()
 
