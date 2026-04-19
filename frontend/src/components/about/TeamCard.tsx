@@ -27,14 +27,27 @@ const itemVariants: Variants = {
   },
 };
 
-function Avatar({ photo, name, className }: { photo?: string; name: string; className: string }) {
+function Avatar({
+  photo,
+  name,
+  className,
+  sizes,
+}: {
+  photo?: string;
+  name: string;
+  className: string;
+  /** Display width hint for srcset (fill layout); avoids soft or blocky downscales. */
+  sizes: string;
+}) {
   if (photo) {
     return (
       <Image
         src={photo}
         alt={name}
         fill
-        className={`object-cover ${className}`}
+        sizes={sizes}
+        quality={92}
+        className={`object-cover object-top contrast-[1.07] saturate-[1.06] brightness-[1.02] ${className}`}
       />
     );
   }
@@ -59,9 +72,14 @@ export const TeamCard: React.FC<{ member: TeamMember }> = ({ member }) => {
         <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
         <div className="flex flex-col items-center space-y-4 mt-2">
-          <div className="relative w-28 h-28 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 p-[2px] flex-shrink-0 cursor-pointer shadow-md group-hover:shadow-[0_0_25px_rgba(0,255,255,0.4)] transition-all duration-300 group-hover:scale-105">
+          <div className="relative w-28 h-28 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 p-[2px] flex-shrink-0 cursor-pointer shadow-md group-hover:shadow-[0_0_25px_rgba(0,255,255,0.4)] transition-shadow duration-300">
             <div className="relative w-full h-full rounded-full bg-background flex items-center justify-center overflow-hidden">
-              <Avatar photo={member.photo} name={member.name} className="rounded-full" />
+              <Avatar
+                photo={member.photo}
+                name={member.name}
+                className="rounded-full"
+                sizes="128px"
+              />
             </div>
           </div>
 
@@ -132,7 +150,12 @@ export const TeamCard: React.FC<{ member: TeamMember }> = ({ member }) => {
                 <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end">
                   <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl bg-gradient-to-tr from-cyan-500 to-purple-500 p-[2px] shadow-lg flex-shrink-0">
                     <div className="relative w-full h-full rounded-[14px] bg-background flex items-center justify-center overflow-hidden">
-                      <Avatar photo={member.photo} name={member.name} className="rounded-[14px]" />
+                      <Avatar
+                        photo={member.photo}
+                        name={member.name}
+                        className="rounded-[14px]"
+                        sizes="(min-width: 768px) 160px, 128px"
+                      />
                     </div>
                   </div>
 
