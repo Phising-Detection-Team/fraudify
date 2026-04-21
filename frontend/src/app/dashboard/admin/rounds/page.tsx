@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createRound, runRound, getRound, getAdminRounds } from "@/lib/admin-api";
 import { config } from "@/lib/config";
 import type { Round } from "@/types";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const STATUS_STYLES: Record<string, string> = {
   completed: "bg-accent-green/10 text-accent-green",
@@ -16,6 +17,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function AdminRoundsPage() {
+  const { tr } = useLanguage();
   const { data: session } = useSession();
   const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function AdminRoundsPage() {
       setShowModal(false);
       startPolling(String(newId));
     } catch (e) {
-      setError((e as Error).message ?? "Failed to trigger round");
+      setError((e as Error).message ?? tr("rounds.errorTrigger"));
     } finally {
       setTriggering(false);
     }
@@ -94,9 +96,9 @@ export default function AdminRoundsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Detection Rounds</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{tr("rounds.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            All synthetic data generation rounds.
+            {tr("rounds.subtitleAdmin")}
           </p>
         </div>
         <button
@@ -105,7 +107,7 @@ export default function AdminRoundsPage() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-cyan text-black font-semibold text-sm hover:bg-accent-cyan/90 transition-colors shadow-[0_4px_14px_hsl(var(--accent-cyan)/0.3)]"
         >
           <Plus size={16} />
-          Trigger New Round
+          {tr("rounds.triggerNew")}
         </button>
       </div>
 
@@ -114,25 +116,25 @@ export default function AdminRoundsPage() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground uppercase bg-background/50 border-b border-border/50">
               <tr>
-                <th className="px-6 py-4 font-medium">Round ID</th>
-                <th className="px-6 py-4 font-medium">Started</th>
-                <th className="px-6 py-4 font-medium">Total Emails</th>
-                <th className="px-6 py-4 font-medium">Detection Rate</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.roundId")}</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.started")}</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.totalEmails")}</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.detectionRate")}</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.status")}</th>
+                <th className="px-6 py-4 font-medium text-right">{tr("rounds.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                    Loading…
+                    {tr("common.loading")}
                   </td>
                 </tr>
               ) : rounds.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                    No rounds yet. Trigger your first round above.
+                    {tr("rounds.emptyAdmin")}
                   </td>
                 </tr>
               ) : (
@@ -215,7 +217,7 @@ export default function AdminRoundsPage() {
               className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl"
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Trigger New Round</h2>
+                <h2 className="text-xl font-bold">{tr("rounds.triggerNew")}</h2>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
@@ -228,7 +230,7 @@ export default function AdminRoundsPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1.5" htmlFor="total-emails">
-                    Total Emails
+                    {tr("rounds.totalEmails")}
                   </label>
                   <input
                     id="total-emails"
@@ -239,13 +241,13 @@ export default function AdminRoundsPage() {
                     className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-cyan"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Number of synthetic emails to generate and evaluate.
+                    {tr("rounds.totalEmailsHint")}
                   </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1.5" htmlFor="parallel-workflows">
-                    Parallel Workflows
+                    {tr("rounds.parallelWorkflows")}
                   </label>
                   <input
                     id="parallel-workflows"
@@ -257,7 +259,7 @@ export default function AdminRoundsPage() {
                     className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-cyan"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Concurrent agent pipelines (default: 2).
+                    {tr("rounds.parallelWorkflowsHint")}
                   </p>
                 </div>
 
@@ -274,7 +276,7 @@ export default function AdminRoundsPage() {
                   onClick={() => setShowModal(false)}
                   className="flex-1 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors"
                 >
-                  Cancel
+                  {tr("common.cancel")}
                 </button>
                 <button
                   type="button"
@@ -285,10 +287,10 @@ export default function AdminRoundsPage() {
                   {triggering ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />
-                      Starting…
+                      {tr("rounds.starting")}
                     </>
                   ) : (
-                    "Start Round"
+                    tr("rounds.startRound")
                   )}
                 </button>
               </div>

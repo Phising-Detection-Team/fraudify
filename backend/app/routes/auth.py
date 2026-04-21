@@ -26,6 +26,7 @@ auth_bp = Blueprint('auth', __name__)
 _signup_schema = SignupSchema()
 _login_schema = LoginSchema()
 _invite_schema = InviteCodeSchema()
+_supported_languages = {'en', 'vi'}
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +68,11 @@ def _generate_username(email: str) -> str:  # noqa: D401
     return f'{base}{secrets.randbelow(90000) + 10000}'
 
 
+def _normalize_language(value: str | None) -> str:
+    candidate = (value or 'en').strip().lower()
+    return candidate if candidate in _supported_languages else 'en'
+
+
 def _send_verification(user: User) -> bool:
     """Create an EmailVerification record and dispatch the Resend email.
 
@@ -85,6 +91,7 @@ def _send_verification(user: User) -> bool:
         frontend_url=current_app.config.get('FRONTEND_URL', 'http://localhost:3000'),
         from_email=current_app.config.get('RESEND_FROM_EMAIL', 'noreply@example.com'),
         api_key=current_app.config.get('RESEND_API_KEY', ''),
+        locale=_normalize_language(user.preferred_language),
     )
     if not sent:
         current_app.logger.warning('Verification email failed to send for user %s', user.id)
@@ -125,7 +132,8 @@ def signup():
     if not user_role:
         return jsonify({'success': False, 'error': 'Server misconfiguration: roles not seeded'}), 500
 
-    user = User(email=data['email'], username=username)
+    requested_language = _normalize_language((request.get_json(silent=True) or {}).get('preferred_language'))
+    user = User(email=data['email'], username=username, preferred_language=requested_language)
     user.set_password(data['password'])
     user.roles.append(user_role)
     db.session.add(user)
@@ -216,6 +224,47 @@ def verify_email():
     ev.used_at = datetime.now(timezone.utc)
     user.email_verified = True
     db.session.commit()
+
+    # Send localized welcome email once verification succeeds.
+    try:
+        is_vi = _normalize_language(user.preferred_language) == 'vi'
+        welcome_subject = 'Chào mừng bạn đến với Sentra' if is_vi else 'Welcome to Sentra'
+        welcome_body = (
+            f"Xin chào {user.username},\n\n"
+            f"Cảm ơn bạn đã xác minh email thành công.\n"
+            f"Tài khoản Sentra của bạn đã sẵn sàng để bảo vệ hộp thư.\n\n"
+            f"Trân trọng,\n"
+            f"Sentra Team"
+            if is_vi
+            else (
+                f"Hi {user.username},\n\n"
+                f"Thanks for verifying your email.\n"
+                f"Your Sentra account is now ready to protect your inbox.\n\n"
+                f"Best,\n"
+                f"Sentra Team"
+            )
+        )
+        welcome_html = (
+            f"<p>Xin chào <strong>{user.username}</strong>,</p>"
+            f"<p>Cảm ơn bạn đã xác minh email thành công.</p>"
+            f"<p>Tài khoản Sentra của bạn đã sẵn sàng để bảo vệ hộp thư.</p>"
+            f"<p>Trân trọng,<br/>Sentra Team</p>"
+            if is_vi
+            else (
+                f"<p>Hi <strong>{user.username}</strong>,</p>"
+                f"<p>Thanks for verifying your email.</p>"
+                f"<p>Your Sentra account is now ready to protect your inbox.</p>"
+                f"<p>Best,<br/>Sentra Team</p>"
+            )
+        )
+        mail.send(Message(
+            subject=welcome_subject,
+            recipients=[user.email],
+            body=welcome_body,
+            html=welcome_html,
+        ))
+    except Exception as exc:
+        current_app.logger.warning('Failed to send welcome email: %s', exc)
 
     access_token = create_access_token(identity=str(user.id))
     refresh_token = create_refresh_token(identity=str(user.id))
@@ -415,7 +464,8 @@ def admin_signup():
     if User.query.filter_by(username=username).first():
         username = _generate_username(data['email'])
 
-    user = User(email=data['email'], username=username)
+    requested_language = _normalize_language(body.get('preferred_language'))
+    user = User(email=data['email'], username=username, preferred_language=requested_language)
     user.set_password(data['password'])
     user.roles.append(invite.role)
     # Admin-invited users are considered verified
@@ -444,6 +494,35 @@ def get_me():
     if not user:
         return jsonify({'success': False, 'error': 'User not found'}), 404
     return jsonify({'success': True, 'user': user.to_dict()}), 200
+
+
+# ---------------------------------------------------------------------------
+# PUT /api/auth/me/language
+# ---------------------------------------------------------------------------
+
+@auth_bp.route('/auth/me/language', methods=['PUT'])
+@jwt_required()
+def update_language():
+    """Update the authenticated user's preferred UI language."""
+    identity = get_jwt_identity()
+    user = db.session.get(User, int(identity))
+    if not user:
+        return jsonify({'success': False, 'error': 'User not found'}), 404
+
+    body = request.get_json(silent=True) or {}
+    preferred_language = (body.get('preferred_language') or '').strip().lower()
+    if preferred_language not in _supported_languages:
+        return jsonify({
+            'success': False,
+            'error': 'preferred_language must be one of: en, vi',
+        }), 400
+
+    user.preferred_language = preferred_language
+    db.session.commit()
+    return jsonify({
+        'success': True,
+        'preferred_language': user.preferred_language,
+    }), 200
 
 
 # ---------------------------------------------------------------------------
@@ -501,6 +580,7 @@ def forgot_password():
     """
     body = request.get_json(silent=True) or {}
     email = body.get('email', '').strip().lower()
+    requested_language = _normalize_language(body.get('preferred_language'))
     if not email:
         return jsonify({'success': False, 'error': 'email is required'}), 400
 
@@ -518,25 +598,46 @@ def forgot_password():
         reset_link = f"{frontend_url}/reset-password?token={raw_token}"
 
         try:
+            locale = _normalize_language(user.preferred_language or requested_language)
+            is_vi = locale == 'vi'
             msg = Message(
-                subject='Reset your Sentra password',
+                subject='Đặt lại mật khẩu Sentra' if is_vi else 'Reset your Sentra password',
                 recipients=[user.email],
                 body=(
-                    f"Hi {user.username},\n\n"
-                    f"You requested a password reset. Click the link below to set a new password:\n\n"
+                    f"Xin chào {user.username},\n\n"
+                    f"Bạn đã yêu cầu đặt lại mật khẩu. Bấm vào liên kết bên dưới để tạo mật khẩu mới:\n\n"
                     f"{reset_link}\n\n"
-                    f"This link expires in {expiry_hours} hour(s). If you didn't request this, "
-                    f"you can safely ignore this email.\n\n"
-                    f"— The Sentra Team"
+                    f"Liên kết này hết hạn sau {expiry_hours} giờ. Nếu bạn không thực hiện yêu cầu này, "
+                    f"bạn có thể bỏ qua email này.\n\n"
+                    f"— Sentra Team"
+                    if is_vi
+                    else (
+                        f"Hi {user.username},\n\n"
+                        f"You requested a password reset. Click the link below to set a new password:\n\n"
+                        f"{reset_link}\n\n"
+                        f"This link expires in {expiry_hours} hour(s). If you didn't request this, "
+                        f"you can safely ignore this email.\n\n"
+                        f"— The Sentra Team"
+                    )
                 ),
                 html=(
-                    f"<p>Hi <strong>{user.username}</strong>,</p>"
-                    f"<p>You requested a password reset. Click the button below to set a new password:</p>"
+                    f"<p>Xin chào <strong>{user.username}</strong>,</p>"
+                    f"<p>Bạn đã yêu cầu đặt lại mật khẩu. Bấm nút bên dưới để tạo mật khẩu mới:</p>"
                     f"<p><a href='{reset_link}' style='background:#2563eb;color:#fff;padding:10px 20px;"
-                    f"border-radius:6px;text-decoration:none;'>Reset Password</a></p>"
-                    f"<p>This link expires in <strong>{expiry_hours} hour(s)</strong>. "
-                    f"If you didn't request this, you can safely ignore this email.</p>"
-                    f"<p>— The Sentra Team</p>"
+                    f"border-radius:6px;text-decoration:none;'>Đặt lại mật khẩu</a></p>"
+                    f"<p>Liên kết này hết hạn sau <strong>{expiry_hours} giờ</strong>. "
+                    f"Nếu bạn không thực hiện yêu cầu này, bạn có thể bỏ qua email này.</p>"
+                    f"<p>— Sentra Team</p>"
+                    if is_vi
+                    else (
+                        f"<p>Hi <strong>{user.username}</strong>,</p>"
+                        f"<p>You requested a password reset. Click the button below to set a new password:</p>"
+                        f"<p><a href='{reset_link}' style='background:#2563eb;color:#fff;padding:10px 20px;"
+                        f"border-radius:6px;text-decoration:none;'>Reset Password</a></p>"
+                        f"<p>This link expires in <strong>{expiry_hours} hour(s)</strong>. "
+                        f"If you didn't request this, you can safely ignore this email.</p>"
+                        f"<p>— The Sentra Team</p>"
+                    )
                 ),
             )
             mail.send(msg)

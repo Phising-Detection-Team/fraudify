@@ -3,9 +3,13 @@
 import { Agent } from "@/types";
 import { Activity, BrainCircuit, Cpu, Coins, Clock } from "lucide-react";
 import { parseUTC } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
 
-function formatLastActive(iso: string): string {
-  if (!iso || iso === "null" || iso === "undefined") return "Never";
+function formatLastActive(
+  iso: string,
+  labels: { never: string; justNow: string; agoMins: string; agoHours: string; agoDays: string }
+): string {
+  if (!iso || iso === "null" || iso === "undefined") return labels.never;
   const date = parseUTC(iso);
   if (isNaN(date.getTime())) return iso;
 
@@ -16,23 +20,24 @@ function formatLastActive(iso: string): string {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffSecs < 60) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffSecs < 60) return labels.justNow;
+  if (diffMins < 60) return `${diffMins}${labels.agoMins}`;
+  if (diffHours < 24) return `${diffHours}${labels.agoHours}`;
+  if (diffDays < 7) return `${diffDays}${labels.agoDays}`;
 
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export function AgentLogsTable({ agents }: { agents: Agent[] }) {
+  const { tr } = useLanguage();
   return (
     <div className="glass-panel p-6 rounded-xl flex flex-col h-full">
-      <h3 className="text-lg font-semibold mb-4">Active Agents</h3>
+      <h3 className="text-lg font-semibold mb-4">{tr("dashboard.activeAgentsPanel")}</h3>
 
       <div className="flex flex-col gap-3 flex-1">
         {agents.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            No agents found.
+            {tr("dashboard.noAgentsFound")}
           </p>
         ) : (
           agents.map((agent) => {
@@ -85,7 +90,7 @@ export function AgentLogsTable({ agents }: { agents: Agent[] }) {
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <Cpu size={11} />
                       <span className="text-[10px] uppercase tracking-wider font-semibold">
-                        Calls
+                        {tr("dashboard.calls")}
                       </span>
                     </div>
                     <span className="text-sm font-bold tabular-nums">
@@ -97,7 +102,7 @@ export function AgentLogsTable({ agents }: { agents: Agent[] }) {
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <Coins size={11} />
                       <span className="text-[10px] uppercase tracking-wider font-semibold">
-                        Cost
+                        {tr("dashboard.cost")}
                       </span>
                     </div>
                     <span className="text-sm font-bold tabular-nums">
@@ -111,11 +116,17 @@ export function AgentLogsTable({ agents }: { agents: Agent[] }) {
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <Clock size={11} />
                       <span className="text-[10px] uppercase tracking-wider font-semibold">
-                        Last Active
+                        {tr("dashboard.lastActive")}
                       </span>
                     </div>
                     <span className="text-sm font-bold">
-                      {formatLastActive(agent.lastActive)}
+                      {formatLastActive(agent.lastActive, {
+                        never: tr("dashboard.never"),
+                        justNow: tr("dashboard.justNow"),
+                        agoMins: tr("dashboard.agoMins"),
+                        agoHours: tr("dashboard.agoHours"),
+                        agoDays: tr("dashboard.agoDays"),
+                      })}
                     </span>
                   </div>
                 </div>

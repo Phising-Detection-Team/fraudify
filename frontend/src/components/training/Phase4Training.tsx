@@ -7,6 +7,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { SentraMascot } from "./SentraMascot";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface PhaseProps { autoPlay: boolean; phaseProgress: number; wasCompleted?: boolean; onComplete?: () => void; }
 
@@ -172,6 +173,7 @@ function trajectoryPath(traj: Trajectory) {
 }
 
 function GradientDescentLandscape({ active }: { active: boolean }) {
+  const { tr } = useLanguage();
   const [mode, setMode] = useState<"sgd" | "high_lr" | "adamw">("high_lr");
   const [ballStep, setBallStep] = useState(0);
   const intRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -204,7 +206,7 @@ function GradientDescentLandscape({ active }: { active: boolean }) {
     <div className="glass-panel rounded-xl p-5">
       <div className="flex items-center gap-2 mb-1">
         <TrendingDown size={15} className="text-accent-green" />
-        <h3 className="font-semibold text-sm">Loss Landscape — Gradient Descent Visualization</h3>
+        <h3 className="font-semibold text-sm">{tr("training.phase4Landscape")}</h3>
       </div>
       <p className="text-xs text-muted-foreground mb-4">
         The optimizer must navigate a rugged loss surface to find the global minimum. Different strategies lead to very different convergence behavior.
@@ -342,6 +344,7 @@ function useMomentValues(active: boolean) {
 }
 
 export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
+  const { tr } = useLanguage();
   const [stage, setStage]         = useState(0);
   const [playing, setPlaying]     = useState(false);
   const [visibleData, setVData]   = useState<typeof FULL_DATA>([]);
@@ -483,15 +486,15 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <RefreshCw size={20} className="text-accent-green" />
-            Training Loop
+            {tr("training.phase4")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            3 epochs · ~7,500 steps · cosine LR decay · best model by eval_loss
+            {tr("training.phase4Subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
-          {playing && <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border/60 hover:bg-muted transition-colors"><RotateCcw size={12} /> Reset</button>}
-          {!playing && <button onClick={startPlay} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-accent-green/40 bg-accent-green/5 text-accent-green hover:bg-accent-green/10 transition-colors"><Play size={12} /> Play Phase</button>}
+          {playing && <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border/60 hover:bg-muted transition-colors"><RotateCcw size={12} /> {tr("training.reset")}</button>}
+          {!playing && <button onClick={startPlay} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-accent-green/40 bg-accent-green/5 text-accent-green hover:bg-accent-green/10 transition-colors"><Play size={12} /> {tr("training.playPhase")}</button>}
         </div>
       </div>
 
@@ -520,7 +523,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
               animate={{ opacity: 1, scale: 1 }}
               className="glass-panel rounded-xl p-5 flex flex-col"
             >
-              <h3 className="font-semibold text-sm mb-3">Training Loop</h3>
+              <h3 className="font-semibold text-sm mb-3">{tr("training.phase4Loop")}</h3>
 
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="text-center p-2.5 rounded-lg bg-accent-cyan/5 border border-accent-cyan/20">
@@ -588,7 +591,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
               className="glass-panel rounded-xl p-5 lg:col-span-2"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-sm">Training Loss  (3 epochs · 7,500 steps)</h3>
+                <h3 className="font-semibold text-sm">{tr("training.phase4TrainingLoss")}</h3>
                 {/* Epoch milestone badges */}
                 <div className="flex gap-1.5">
                   {EPOCH_MILESTONES.map(m => (
@@ -648,7 +651,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
           >
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40 bg-card/50">
               <Terminal size={14} className="text-accent-green" />
-              <span className="text-xs font-semibold text-accent-green">Training Output</span>
+              <span className="text-xs font-semibold text-accent-green">{tr("training.phase4TrainingOutput")}</span>
               <div className="flex gap-1 ml-auto">
                 {["bg-accent-red","bg-amber-400","bg-accent-green"].map(c => (
                   <div key={c} className={`w-2.5 h-2.5 rounded-full ${c} opacity-60`} />
@@ -707,7 +710,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
             <div className="glass-panel rounded-xl p-5">
               <div className="flex items-center gap-2 mb-1">
                 <Mail size={15} className="text-accent-cyan" />
-                <h3 className="font-semibold text-sm">Mini-Batch  —  16 Samples per Step</h3>
+                <h3 className="font-semibold text-sm">{tr("training.phase4MiniBatch")}</h3>
               </div>
               <p className="text-xs text-muted-foreground mb-4">
                 Each training step picks 16 random emails from ~40K. Mixed phishing &amp; legitimate.
@@ -772,7 +775,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
             <div className="glass-panel rounded-xl p-5">
               <div className="flex items-center gap-2 mb-1">
                 <RefreshCw size={15} className="text-accent-red" />
-                <h3 className="font-semibold text-sm">paged_adamw_32bit — Optimizer</h3>
+                <h3 className="font-semibold text-sm">{tr("training.phase4Optimizer")}</h3>
               </div>
               <p className="text-xs text-muted-foreground mb-4">
                 AdamW tracks two moment estimates per parameter. &ldquo;Paged&rdquo; offloads optimizer state to CPU pages when needed, saving GPU memory.
@@ -780,7 +783,7 @@ export function Phase4Training({ autoPlay, wasCompleted, onComplete }: PhaseProp
 
               {/* Update formula */}
               <div className="p-3 rounded-lg bg-card border border-border/40 font-mono text-xs mb-4">
-                <div className="text-[9px] text-muted-foreground mb-2 uppercase tracking-wider">Update rule</div>
+                <div className="text-[9px] text-muted-foreground mb-2 uppercase tracking-wider">{tr("training.phase4UpdateRule")}</div>
                 <div className="space-y-1.5 leading-relaxed">
                   <div>
                     <span className="text-amber-400 font-bold">m</span>

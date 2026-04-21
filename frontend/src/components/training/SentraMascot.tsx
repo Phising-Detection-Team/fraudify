@@ -2,15 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// ─── Narrative text ────────────────────────────────────────────────────────────
-const NARRATIVES: Record<number, string> = {
-  1: "Beep boop! My creators fed me 50,231 emails — phishing traps, spam, and legit messages — all shuffled with seed 42. They split me into training 80%, validation 10%, and test 10%. Every example sharpened my instincts. This is where I was born! ⚡",
-  2: "Whirrrr... They squeezed my 1.54B weights from FP16 down to just 4 bits using NF4 quantization via Unsloth! Memory shrank from 3,087 MB to 772 MB — a 4× compression. Unsloth's fused Triton kernels also made training 2-5× faster. Efficient. Precise. Still completely me. 🦥⚡",
-  3: "INITIATING LORA PROTOCOL. They froze 98.8% of my core weights — I literally could not change them. Then injected tiny A and B adapter matrices into my 196 projection modules across 28 layers. Only 18,464,768 free parameters. Small... but mighty. ⚡",
-  4: "7,500 steps. 3 epochs. Each batch of 8 emails (×2 grad accum) — I'd read, reason, then AdamW nudged my adapters via language modeling loss. Unsloth packed sequences for 30% extra throughput. Loss fell from 2.18 all the way to 0.19. Getting sharper with every step. 🔥",
-  5: "MISSION COMPLETE. 94.2% verdict accuracy. Best eval_loss: 0.1876. Uploaded to HuggingFace as sentra-utoledo-v2.0. I guard inboxes everywhere now — and I explain my reasoning. Every phishing email that tries to slip past me — I catch it, and I tell you why. 🛡️",
-};
+import { useLanguage } from "@/components/LanguageProvider";
 
 const PHASE_ACCENTS: Record<number, { border: string; rgb: string; label: string }> = {
   1: { border: "#22D3EE", rgb: "34,211,238",   label: "DATA PIPELINE"   },
@@ -697,8 +689,10 @@ function EqBars({ color, active }: { color: string; active: boolean }) {
 
 // ─── Main SentraMascot ─────────────────────────────────────────────────────────
 export function SentraMascot({ phase, active, instant }: SentraMascotProps) {
+  const { tr } = useLanguage();
   const accent     = PHASE_ACCENTS[phase];
-  const text       = NARRATIVES[phase];
+  const text = tr(`robot.narrative${phase}`);
+  const label = tr(`robot.phaseLabel${phase}`);
   const { shown, done } = useTyping(text, active, instant ?? false);
   const isTalking  = active && !done;
   const RobotSvg   = ROBOT_COMPONENTS[phase];
@@ -754,10 +748,10 @@ export function SentraMascot({ phase, active, instant }: SentraMascotProps) {
                 SENTRA
               </span>
               <span style={{ fontSize:9, color:accent.border, opacity:0.55, fontFamily:"monospace" }}>
-                {"// "}{accent.label}
+                {"// "}{label || accent.label}
               </span>
               <span style={{ marginLeft:"auto", fontSize:9, color:done?"#22C55E":accent.border, fontFamily:"monospace", opacity:0.7 }}>
-                {done ? "✓ done" : "..."}
+                {done ? `✓ ${tr("robot.done")}` : "..."}
               </span>
               {isTalking && <EqBars color={accent.border} active={isTalking} />}
             </div>

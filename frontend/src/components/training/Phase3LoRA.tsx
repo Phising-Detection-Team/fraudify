@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GitBranch, Lock, Zap, Play, RotateCcw, Info, Snowflake } from "lucide-react";
 import { SentraMascot } from "./SentraMascot";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface PhaseProps { autoPlay: boolean; phaseProgress: number; wasCompleted?: boolean; onComplete?: () => void; }
 
@@ -63,6 +64,7 @@ function IceBurst({ active }: { active: boolean }) {
 }
 
 export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
+  const { tr } = useLanguage();
   const [stage, setStage]               = useState(0);
   const [playing, setPlaying]           = useState(false);
   const [frozenLayers, setFrozen]       = useState<number[]>([]);
@@ -147,21 +149,21 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <GitBranch size={20} className="text-accent-purple" />
-            LoRA Adapter Injection
+            {tr("training.phase3")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Freeze 99.1% of weights — inject trainable low-rank adapters into attention layers
+            {tr("training.phase3Subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
           {playing && (
             <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border/60 hover:bg-muted transition-colors">
-              <RotateCcw size={12} /> Reset
+              <RotateCcw size={12} /> {tr("training.reset")}
             </button>
           )}
           {!playing && (
             <button onClick={startPlay} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-accent-purple/40 bg-accent-purple/5 text-accent-purple hover:bg-accent-purple/10 transition-colors">
-              <Play size={12} /> Play Phase
+              <Play size={12} /> {tr("training.playPhase")}
             </button>
           )}
         </div>
@@ -175,7 +177,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
             animate={{ opacity: 1, y: 0 }}
             className="glass-panel rounded-xl p-6"
           >
-            <h3 className="font-semibold text-sm mb-1">Low-Rank Decomposition — Why LoRA Works</h3>
+            <h3 className="font-semibold text-sm mb-1">{tr("training.phase3LowRank")}</h3>
             <p className="text-xs text-muted-foreground mb-5 max-w-2xl">
               Instead of updating the full W matrix (1536×1536 = <strong>2,359,296 params per module (q_proj)</strong>),
               LoRA learns two small matrices A and B whose product approximates the weight update ΔW.
@@ -293,7 +295,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
             </motion.div>
             <div>
               <div className="text-sm font-bold text-sky-300 tracking-widest uppercase">
-                ❄ Freeze Protocol Initiated
+                ❄ {tr("training.phase3FreezeProtocol")}
               </div>
               <div className="text-xs text-sky-400/70 mt-0.5">
                 Locking all {(ALL_PARAMS - TRAINABLE_TOTAL).toLocaleString()} base parameters — no gradients will flow through W
@@ -319,7 +321,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
             className="glass-panel rounded-xl px-6 py-4 border border-sky-300/60 bg-sky-300/10 text-center"
           >
             <div className="text-base font-bold text-sky-200 tracking-widest uppercase">
-              ✦ ALL 1.54B BASE WEIGHTS FROZEN ✦
+              ✦ {tr("training.phase3AllFrozen")} ✦
             </div>
             <div className="text-xs text-sky-300/70 mt-1">
               Gradient computation disabled — model cannot modify these weights during training
@@ -345,7 +347,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
             </motion.div>
             <div>
               <div className="text-sm font-bold text-accent-purple tracking-widest uppercase">
-                ⚡ LoRA Adapters Injecting…
+                ⚡ {tr("training.phase3Injecting")}
               </div>
               <div className="text-xs text-accent-purple/70 mt-0.5">
                 Inserting trainable A &amp; B matrices alongside each frozen attention module
@@ -371,7 +373,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
               className="lg:col-span-2 glass-panel rounded-xl p-5"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-sm">Qwen2.5-1.5B — 28 Transformer Layers</h3>
+                <h3 className="font-semibold text-sm">{tr("training.phase3TransformerLayers")}</h3>
                 <div className="flex gap-3 text-[10px] text-muted-foreground">
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-muted-foreground/30" />warm</div>
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-sky-400/50" />frozen</div>
@@ -562,7 +564,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
               >
                 <div className="flex items-center gap-2 mb-3">
                   <Zap size={16} className="text-accent-cyan" />
-                  <h3 className="font-semibold text-sm">Trainable Params</h3>
+                  <h3 className="font-semibold text-sm">{tr("training.phase3TrainableParams")}</h3>
                 </div>
 
                 <div className="text-3xl font-bold font-mono text-accent-cyan tabular-nums mb-1">
@@ -610,7 +612,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
                 animate={{ opacity: 1, y: 0 }}
                 className="glass-panel rounded-xl p-5"
               >
-                <h3 className="font-semibold text-sm mb-3">LoRA Formula</h3>
+                <h3 className="font-semibold text-sm mb-3">{tr("training.phase3Formula")}</h3>
 
                 <div className="p-3 rounded-lg bg-card border border-border/40 font-mono text-center mb-3">
                   <div className="text-[9px] text-muted-foreground mb-1.5 uppercase tracking-wider">Forward Pass</div>
@@ -651,7 +653,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
             animate={{ opacity: 1, y: 0 }}
             className="glass-panel rounded-xl p-6"
           >
-            <h3 className="font-semibold text-sm mb-1">Gradient Flow — What Gets Updated?</h3>
+            <h3 className="font-semibold text-sm mb-1">{tr("training.phase3GradientFlow")}</h3>
             <p className="text-xs text-muted-foreground mb-5">
               During backprop, <strong>W stays frozen</strong>. Only A and B receive gradient updates — cutting 99% of optimizer memory.
             </p>
@@ -745,7 +747,7 @@ export function Phase3LoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
             className="glass-panel rounded-xl px-6 py-5 border border-accent-purple/40 bg-accent-purple/5 text-center"
           >
             <div className="text-base font-bold text-accent-purple tracking-wider mb-1">
-              ✦ LoRA Injection Complete — 24 Adapter Pairs Active ✦
+              ✦ {tr("training.phase3InjectionComplete")} — 24 Adapter Pairs Active ✦
             </div>
             <div className="text-xs text-muted-foreground">
               18,464,768 trainable parameters · 1,525,250,048 frozen · Ready for training

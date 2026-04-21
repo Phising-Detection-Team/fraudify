@@ -4,6 +4,7 @@ import { Round } from "@/types";
 import Link from "next/link";
 import { ChevronRight, AlertTriangle } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface RoundTableProps {
   rounds: Round[];
@@ -11,15 +12,16 @@ interface RoundTableProps {
 
 export function RoundTable({ rounds }: RoundTableProps) {
   const { data: session } = useSession();
+  const { tr } = useLanguage();
   const isAdmin = session?.user?.role === 'admin';
   const basePath = isAdmin ? "/dashboard/admin/rounds" : "/dashboard/user/rounds";
 
   return (
     <div className="glass-panel rounded-xl overflow-hidden">
       <div className="p-6 border-b border-border/50 flex justify-between items-center bg-card/30">
-        <h3 className="text-lg font-semibold">Recent Detection Rounds</h3>
+        <h3 className="text-lg font-semibold">{tr("dashboard.recentDetectionRounds")}</h3>
         <Link href={basePath} className="text-sm text-accent-cyan hover:underline hover:text-accent-cyan/80 transition-colors">
-          View All
+          {tr("dashboard.viewAll")}
         </Link>
       </div>
       
@@ -27,12 +29,12 @@ export function RoundTable({ rounds }: RoundTableProps) {
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-muted-foreground uppercase bg-background/50 border-b border-border/50">
             <tr>
-              <th className="px-6 py-4 font-medium">Round ID</th>
-              <th className="px-6 py-4 font-medium">Date</th>
-              <th className="px-6 py-4 font-medium">Total Scanned</th>
-              <th className="px-6 py-4 font-medium">Detection Rate</th>
-              <th className="px-6 py-4 font-medium">Status</th>
-              <th className="px-6 py-4 font-medium text-right">Action</th>
+              <th className="px-6 py-4 font-medium">{tr("dashboard.roundId")}</th>
+              <th className="px-6 py-4 font-medium">{tr("dashboard.date")}</th>
+              <th className="px-6 py-4 font-medium">{tr("dashboard.totalScanned")}</th>
+              <th className="px-6 py-4 font-medium">{tr("dashboard.detectionRate")}</th>
+              <th className="px-6 py-4 font-medium">{tr("dashboard.status")}</th>
+              <th className="px-6 py-4 font-medium text-right">{tr("dashboard.action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/30">
@@ -42,7 +44,7 @@ export function RoundTable({ rounds }: RoundTableProps) {
                 <td className="px-6 py-4 text-muted-foreground">
                   {new Date(round.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </td>
-                <td className="px-6 py-4">{round.totalEmails} emails</td>
+                <td className="px-6 py-4">{round.totalEmails} {tr("dashboard.emailsUnit")}</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     {round.detectionRate > 80 && (

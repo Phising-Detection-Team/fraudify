@@ -6,6 +6,7 @@ import { Play, Pause, RotateCcw, BrainCircuit, ChevronLeft, ChevronRight } from 
 import dynamic from "next/dynamic";
 import { PhaseNav } from "@/components/training/PhaseNav";
 import { NeuralBackground } from "@/components/training/NeuralBackground";
+import { useLanguage } from "@/components/LanguageProvider";
 const Phase1Data    = dynamic(() => import("@/components/training/Phase1Data").then((m) => ({ default: m.Phase1Data })), { ssr: false });
 const Phase2QLoRA   = dynamic(() => import("@/components/training/Phase2QLoRA").then((m) => ({ default: m.Phase2QLoRA })), { ssr: false });
 const Phase3LoRA    = dynamic(() => import("@/components/training/Phase3LoRA").then((m) => ({ default: m.Phase3LoRA })), { ssr: false });
@@ -25,6 +26,7 @@ const TOTAL_DURATION = PHASES.reduce((acc, p) => acc + p.duration, 0);
 const PHASE_COMPONENTS = [Phase1Data, Phase2QLoRA, Phase3LoRA, Phase4Training, Phase5Results];
 
 export default function TrainingPage() {
+  const { tr } = useLanguage();
   const [currentPhase, setCurrentPhase]       = useState(1);
   const [phaseKey, setPhaseKey]               = useState(0);
   const [autoRunning, setAutoRunning]         = useState(false);
@@ -161,20 +163,19 @@ export default function TrainingPage() {
                 <BrainCircuit className="text-accent-cyan" size={22} />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Fine-Tuning Pipeline · sentra-utoledo-v2.0 · Unsloth
+                {tr("training.heroBadge")}
               </span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight mb-2">
               <span className="neon-text">Sentra</span>
-              <span className="text-foreground"> — Training Journey</span>
+              <span className="text-foreground"> — {tr("training.fineTuningTitle")}</span>
             </h1>
             <p className="text-muted-foreground text-sm max-w-lg leading-relaxed">
-              Watch how we fine-tuned{" "}
+              {tr("training.heroDescriptionPrefix")}{" "}
               <code className="text-accent-cyan text-xs bg-accent-cyan/10 px-1.5 py-0.5 rounded">
                 Qwen2.5-1.5B-Instruct (1.54B params)
               </code>{" "}
-              into a production-grade phishing detector using QLoRA — every
-              hyperparameter, every phase, visualized live.
+              {tr("training.heroDescriptionSuffix")}
             </p>
           </div>
 
@@ -186,14 +187,14 @@ export default function TrainingPage() {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/60 bg-background/60 text-sm font-medium hover:bg-muted transition-colors"
                 >
                   {paused ? <Play size={15} /> : <Pause size={15} />}
-                  {paused ? "Resume" : "Pause"}
+                  {paused ? tr("training.resume") : tr("training.pause")}
                 </button>
                 <button
                   onClick={resetPipeline}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/60 bg-background/60 text-sm font-medium hover:bg-muted transition-colors"
                 >
                   <RotateCcw size={15} />
-                  Reset
+                  {tr("training.reset")}
                 </button>
               </>
             )}
@@ -205,9 +206,9 @@ export default function TrainingPage() {
                 className="btn-neon flex items-center gap-2.5 px-7 py-3.5 rounded-xl border border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan font-semibold text-sm hover:bg-accent-cyan/20 transition-all shadow-[0_0_30px_hsl(var(--accent-cyan)/0.2)]"
               >
                 {done ? (
-                  <><RotateCcw size={16} /> Run Again</>
+                  <><RotateCcw size={16} /> {tr("training.runAgain")}</>
                 ) : (
-                  <><Play size={16} fill="currentColor" /> Run Pipeline</>
+                  <><Play size={16} fill="currentColor" /> {tr("training.runPipeline")}</>
                 )}
               </motion.button>
             )}
@@ -218,7 +219,7 @@ export default function TrainingPage() {
         {(autoRunning || done) && (
           <div className="mt-6 relative z-10">
             <div className="flex justify-between text-xs text-muted-foreground mb-2">
-              <span className="font-medium">Pipeline Progress</span>
+              <span className="font-medium">{tr("training.pipelineProgress")}</span>
               <span>{Math.round(totalProgress)}%</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -238,7 +239,7 @@ export default function TrainingPage() {
             className="mt-4 p-3 rounded-lg bg-accent-green/10 border border-accent-green/30 text-accent-green text-sm font-medium flex items-center gap-2"
           >
             <span className="text-base">✓</span>
-            Pipeline complete — Sentra successfully fine-tuned and pushed to HuggingFace
+            {tr("training.pipelineComplete")}
           </motion.div>
         )}
       </motion.div>
@@ -278,11 +279,11 @@ export default function TrainingPage() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border/60 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronLeft size={16} />
-          Previous
+          {tr("training.previous")}
         </button>
 
         <span className="text-xs text-muted-foreground">
-          Phase {currentPhase} of {PHASES.length}
+          {tr("training.phase")} {currentPhase} {tr("training.of")} {PHASES.length}
         </span>
 
         <button
@@ -290,7 +291,7 @@ export default function TrainingPage() {
           disabled={currentPhase === PHASES.length}
           className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border/60 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          Next
+          {tr("training.next")}
           <ChevronRight size={16} />
         </button>
       </div>

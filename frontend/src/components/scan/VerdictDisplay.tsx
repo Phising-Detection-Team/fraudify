@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, ShieldAlert, Copy } from "lucide-react";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface VerdictDisplayProps {
   verdict: "phishing" | "safe";
@@ -47,6 +48,7 @@ export default function VerdictDisplay({
   reasoning,
   subject,
 }: VerdictDisplayProps) {
+  const { tr } = useLanguage();
   const isPhishing = verdict === "phishing";
   const confidencePercent = Math.round(confidence * 100);
   const countedPercent = useCountUp(confidencePercent);
@@ -136,13 +138,13 @@ export default function VerdictDisplay({
             initial="hidden"
             animate="visible"
           >
-            {verdict === "phishing" ? "PHISHING" : "SAFE"}
+            {verdict === "phishing" ? tr("scan.verdictDisplayPhishing") : tr("scan.verdictDisplaySafe")}
           </motion.p>
         </div>
 
         <div className="space-y-1.5">
           <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-            Threat Level
+            {tr("scan.scamScore")}
           </p>
           <div className="h-2.5 bg-background/50 rounded-full overflow-hidden">
             <motion.div
@@ -159,15 +161,15 @@ export default function VerdictDisplay({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                Reasoning
+                {tr("scan.reasoning")}
               </p>
               <button
                 onClick={handleCopy}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border/50 hover:bg-muted/30"
-                aria-label="Copy reasoning"
+                aria-label={tr("scan.copyReasoning")}
               >
                 <Copy size={12} />
-                Copy
+                {tr("scan.copy")}
               </button>
             </div>
             <motion.ul

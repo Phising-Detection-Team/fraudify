@@ -6,6 +6,7 @@ import { ShieldCheck, ShieldAlert, Clock } from "lucide-react";
 import { io } from "socket.io-client";
 import { useSession } from "next-auth/react";
 import { getScanHistory, ScanHistoryItem } from "@/lib/user-api";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface HeartbeatEvent {
   instance_id: string;
@@ -24,12 +25,13 @@ interface ScanFeedItem {
   id: string;
   subject: string;
   detectorResponse: string;
-  verdict: string;
+  verdict: "phishing" | "safe";
   confidence: number;
 }
 
 export function LiveFeed() {
   const { data: session } = useSession();
+  const { tr } = useLanguage();
   const [feed, setFeed] = useState<ScanFeedItem[]>([]);
   const [events, setEvents] = useState<HeartbeatFeedItem[]>([]);
 
@@ -40,8 +42,8 @@ export function LiveFeed() {
           const history = await getScanHistory(session.accessToken, 1, 10);
           const mapped: ScanFeedItem[] = history.scans.map((s: ScanHistoryItem) => ({
             id: s.id.toString(),
-            subject: s.subject || "(No Subject)",
-            detectorResponse: s.reasoning || "No reasoning provided.",
+            subject: s.subject || tr("dashboard.noSubject"),
+            detectorResponse: s.reasoning || tr("dashboard.noReasoningProvided"),
             verdict: s.verdict === "phishing" || s.verdict === "likely_phishing" ? "phishing" : "safe",
             confidence: s.confidence || s.scam_score || 0,
           }));
@@ -91,10 +93,10 @@ export function LiveFeed() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-cyan opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-accent-cyan"></span>
           </span>
-          Live Detection Feed
+          {tr("dashboard.liveDetectionFeed")}
         </h3>
         <span className="text-xs text-muted-foreground flex items-center gap-1">
-          <Clock size={12} /> Auto-updating
+          <Clock size={12} /> {tr("dashboard.autoUpdating")}
         </span>
       </div>
 
@@ -134,13 +136,13 @@ export function LiveFeed() {
                     item.verdict === "phishing" ? "bg-accent-red/10 text-accent-red" : "bg-accent-green/10 text-accent-green"
                   }`}>
                     {item.verdict === "phishing" ? <ShieldAlert size={12} /> : <ShieldCheck size={12} />}
-                    {item.verdict}
+                    {item.verdict === "phishing" ? tr("scan.verdictDisplayPhishing") : tr("scan.verdictDisplaySafe")}
                   </div>
                 </div>
 
                 <div className="text-xs text-muted-foreground flex items-center justify-between">
                   <span className="truncate max-w-[200px]">{item.detectorResponse}</span>
-                  <span className="font-mono">{Math.round(item.confidence * 100)}% Conf</span>
+                  <span className="font-mono">{Math.round(item.confidence * 100)}% {tr("dashboard.confidenceShort")}</span>
                 </div>
               </motion.div>
             ))}

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { Wifi, WifiOff, RefreshCw, Users, Activity, Clock } from "lucide-react";
 import { getAllExtensionInstances, type ExtensionInstance } from "@/lib/admin-api";
 import { parseUTC } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
 
 function StatCard({ label, value, icon: Icon, highlight }: {
   label: string;
@@ -35,6 +36,7 @@ function Initials({ name }: { name: string }) {
 }
 
 export default function AdminLiveFeedPage() {
+  const { tr } = useLanguage();
   const { data: session } = useSession();
   const [instances, setInstances] = useState<ExtensionInstance[]>([]);
   const [total, setTotal] = useState(0);
@@ -104,9 +106,9 @@ export default function AdminLiveFeedPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Live Feed</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{tr("nav.liveFeed")}</h1>
           <p className="text-muted-foreground mt-1">
-            Real-time view of all active browser extension instances.
+            {tr("feedAdmin.subtitle")}
           </p>
         </div>
         <button
@@ -115,37 +117,37 @@ export default function AdminLiveFeedPage() {
           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 hover:bg-muted text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <RefreshCw size={14} />
-          Refresh
+          {tr("feed.refresh")}
         </button>
       </div>
 
       {lastRefresh && (
         <p className="text-xs text-muted-foreground -mt-4">
-          Last updated {lastRefresh.toLocaleTimeString()} · auto-refreshes every 10s
+          {tr("feed.lastUpdated")} {lastRefresh.toLocaleTimeString()} · {tr("feed.autoRefresh30s")}
         </p>
       )}
 
       {/* Summary stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard label="Total Registered" value={total} icon={Users} />
+        <StatCard label={tr("feedAdmin.totalRegistered")} value={total} icon={Users} />
         <StatCard
-          label="Currently Active"
+          label={tr("feedAdmin.currentlyActive")}
           value={active}
           icon={Wifi}
           highlight={active > 0 ? "text-accent-green" : ""}
         />
-        <StatCard label="Active Last 24h" value={last24h} icon={Clock} />
+        <StatCard label={tr("feedAdmin.activeLast24h")} value={last24h} icon={Clock} />
       </div>
 
       {/* Instances table */}
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="p-5 border-b border-border/50 flex items-center gap-2 bg-card/30">
           <Activity size={16} className="text-accent-cyan" />
-          <h3 className="font-semibold">Extension Instances</h3>
+          <h3 className="font-semibold">{tr("feedAdmin.extensionInstances")}</h3>
           {active > 0 && (
             <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent-green/10 text-accent-green">
               <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
-              {active} active
+              {active} {tr("feed.active")}
             </span>
           )}
         </div>
@@ -153,24 +155,24 @@ export default function AdminLiveFeedPage() {
         {loading ? (
           <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
             <RefreshCw size={16} className="animate-spin" />
-            Loading…
+            {tr("common.loading")}
           </div>
         ) : instances.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground space-y-2">
             <WifiOff size={28} className="mx-auto" />
-            <p className="text-sm font-medium">No extension instances registered yet</p>
-            <p className="text-xs">Users can register instances from their Profile Settings page.</p>
+            <p className="text-sm font-medium">{tr("feedAdmin.empty")}</p>
+            <p className="text-xs">{tr("feedAdmin.emptyHint")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-background/50 border-b border-border/50">
                 <tr>
-                  <th className="px-6 py-4 font-medium">User</th>
-                  <th className="px-6 py-4 font-medium">Browser</th>
-                  <th className="px-6 py-4 font-medium">OS</th>
-                  <th className="px-6 py-4 font-medium">Last Seen</th>
-                  <th className="px-6 py-4 font-medium">Status</th>
+                  <th className="px-6 py-4 font-medium">{tr("feedbackAdmin.user")}</th>
+                  <th className="px-6 py-4 font-medium">{tr("feed.browser")}</th>
+                  <th className="px-6 py-4 font-medium">{tr("feed.os")}</th>
+                  <th className="px-6 py-4 font-medium">{tr("dashboard.lastSeen")}</th>
+                  <th className="px-6 py-4 font-medium">{tr("rounds.status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
@@ -190,7 +192,7 @@ export default function AdminLiveFeedPage() {
                     <td className="px-6 py-4 text-muted-foreground text-xs">
                       {inst.last_seen
                         ? parseUTC(inst.last_seen).toLocaleString()
-                        : "Never"}
+                        : tr("dashboard.never")}
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -203,7 +205,7 @@ export default function AdminLiveFeedPage() {
                         {inst.is_active && (
                           <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
                         )}
-                        {inst.is_active ? "Active" : "Idle"}
+                        {inst.is_active ? tr("dashboard.active") : tr("dashboard.idle")}
                       </span>
                     </td>
                   </tr>

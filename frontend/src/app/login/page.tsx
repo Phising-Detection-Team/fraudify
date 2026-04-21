@@ -7,6 +7,8 @@ import { signIn } from "next-auth/react";
 import { config } from "@/lib/config";
 import { checkLoginStatus, sendVerificationEmail } from "@/lib/auth-api";
 import { Logo } from "@/components/Logo";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/components/LanguageProvider";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ShieldCheck, LogIn, AlertCircle, Eye, EyeOff, Clock, MailCheck, Loader2, Check } from "lucide-react";
@@ -25,6 +27,7 @@ function LoginForm() {
   // Unverified email state
   const [unverifiedEmail, setUnverifiedEmail] = useState(false);
   const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const { tr } = useLanguage();
 
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
@@ -46,9 +49,9 @@ function LoginForm() {
       if (loginStatus.status === 403 && loginStatus.error === "Email not verified") {
         setUnverifiedEmail(true);
       } else if (loginStatus.status === 401) {
-        setError("Wrong email or password");
+        setError(tr("login.wrongEmailPassword"));
       } else {
-        setError(loginStatus.error || "Login failed. Please try again.");
+        setError(loginStatus.error || tr("login.loginFailedTryAgain"));
       }
       setLoading(false);
       return;
@@ -62,7 +65,7 @@ function LoginForm() {
     });
 
     if (result?.error || !result?.ok) {
-      setError("Login failed. Please try again.");
+      setError(tr("login.loginFailedTryAgain"));
       setLoading(false);
       return;
     }
@@ -100,15 +103,16 @@ function LoginForm() {
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent-cyan to-accent-purple" />
 
         <div className="flex flex-col items-center mb-8">
+          <LanguageSelector className="self-end mb-3" />
           <Logo className="mb-6 scale-110" />
-          <h1 className="text-2xl font-bold tracking-tight">Welcome Back</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sign in to your Sentra platform</p>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("login.welcomeBack")}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{tr("login.signInSubtitle")}</p>
         </div>
 
         {sessionExpired && (
           <div className="mb-6 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm p-3 rounded-lg flex items-center gap-2">
             <Clock size={16} className="flex-shrink-0" />
-            Your session has expired. Please sign in again.
+            {tr("login.sessionExpired")}
           </div>
         )}
 
@@ -127,9 +131,9 @@ function LoginForm() {
               <div className="flex items-start gap-2">
                 <MailCheck size={16} className="text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-amber-300">Email not verified</p>
+                  <p className="text-sm font-medium text-amber-300">{tr("login.emailNotVerified")}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Please verify your email address before logging in.
+                    {tr("login.verifyBeforeLogin")}
                   </p>
                 </div>
               </div>
@@ -141,13 +145,17 @@ function LoginForm() {
               >
                 {resendStatus === "sending" && <Loader2 size={12} className="animate-spin" />}
                 {resendStatus === "sent" && <Check size={12} />}
-                {resendStatus === "idle" ? "Resend verification email" : resendStatus === "sending" ? "Sending…" : "Email sent! Check your inbox."}
+                {resendStatus === "idle"
+                  ? tr("login.resendVerificationEmail")
+                  : resendStatus === "sending"
+                    ? tr("login.sending")
+                    : tr("login.emailSentCheckInbox")}
               </button>
             </div>
           )}
 
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email Address</label>
+            <label htmlFor="email" className="text-sm font-medium">{tr("login.emailAddress")}</label>
             <input
               id="email"
               type="text"
@@ -160,7 +168,7 @@ function LoginForm() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">Password</label>
+            <label htmlFor="password" className="text-sm font-medium">{tr("login.password")}</label>
             <div className="relative">
               <input
                 id="password"
@@ -173,7 +181,7 @@ function LoginForm() {
               />
               <button
                 type="button"
-                aria-label="Toggle password visibility"
+                aria-label={tr("login.togglePasswordVisibility")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
@@ -183,7 +191,7 @@ function LoginForm() {
             </div>
             <div className="text-right">
               <Link href="/forgot-password" passHref>
-                <p className="text-sm text-accent-cyan hover:underline">Forgot Password?</p>
+                <p className="text-sm text-accent-cyan hover:underline">{tr("login.forgotPassword")}</p>
               </Link>
             </div>
           </div>
@@ -198,7 +206,7 @@ function LoginForm() {
             ) : (
               <>
                 <LogIn size={18} />
-                Sign In
+                {tr("login.signIn")}
               </>
             )}
           </button>
@@ -206,9 +214,9 @@ function LoginForm() {
 
         <div className="text-center mt-6">
           <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            {tr("login.noAccount")}{" "}
             <Link href="/signup" className="text-accent-cyan hover:text-accent-cyan/80 transition-colors">
-              Sign up
+              {tr("login.signUp")}
             </Link>
           </p>
         </div>
@@ -221,7 +229,7 @@ function LoginForm() {
             className="text-sm text-muted-foreground hover:text-accent-cyan transition-colors inline-flex items-center gap-2"
           >
             <ShieldCheck size={16} />
-            View Browser Extension Preview →
+            {tr("login.extensionPreview")}
           </Link>
         </div>
       </motion.div>

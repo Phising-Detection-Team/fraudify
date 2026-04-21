@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">87.09% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>27/27</span>
+                <span class='fraction'>27/31</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">77.77% </span>
+                <span class="strong">71.42% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>14/18</span>
+                <span class='fraction'>15/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>5/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">86.36% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>19/19</span>
+                <span class='fraction'>19/22</span>
             </div>
         
             
@@ -164,7 +164,23 @@
 <a name='L99'></a><a href='#L99'>99</a>
 <a name='L100'></a><a href='#L100'>100</a>
 <a name='L101'></a><a href='#L101'>101</a>
-<a name='L102'></a><a href='#L102'>102</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -183,6 +199,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -265,6 +282,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Sentra Extension — API client
  * Shared by the service worker and popup.
@@ -282,12 +314,13 @@ const DEFAULT_API_URL = 'http://localhost:5000';
  * @param {string} body       - Email body text (required)
  * @returns {Promise&lt;object&gt;} - { success, verdict, confidence, scam_score, reasoning, id }
  */
-async function scanEmail(apiUrl, authToken, subject, body) {
+async function scanEmail(apiUrl, authToken, subject, body, inferenceMode = 'gguf') {
   const res = await fetch(`${apiUrl}/api/scan`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`,
+      'X-Inference-Mode': inferenceMode,
     },
     body: JSON.stringify({ subject, body }),
   });
@@ -361,10 +394,25 @@ async function pollScanResult(apiUrl, authToken, jobId, maxAttempts = <span clas
   throw new Error('Scan timed out');
 }
 &nbsp;
+/**
+ * Fetch system capability info (e.g. GPU availability) from the backend.
+ *
+ * @param {string} apiUrl    - Backend base URL
+ * @param {string} authToken - User's JWT access token
+ * @returns {Promise&lt;object&gt;} - { cuda_available, gpu_name }
+ */
+async function <span class="fstat-no" title="function not covered" >getSystemInfo(</span>apiUrl, authToken) {
+  const res = <span class="cstat-no" title="statement not covered" >await fetch(`${apiUrl}/api/system/info`, {</span>
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+<span class="cstat-no" title="statement not covered" >  if (!res.ok) <span class="cstat-no" title="statement not covered" >throw new Error(`${res.status}`);</span></span>
+<span class="cstat-no" title="statement not covered" >  return res.json();</span>
+}
+&nbsp;
 // CommonJS export for Jest; in the extension itself the functions are globals.
 /* istanbul ignore next */
 if (typeof module !== 'undefined') {
-  module.exports = { scanEmail, registerInstance, sendHeartbeat, pollScanResult, DEFAULT_API_URL };
+  module.exports = { scanEmail, registerInstance, sendHeartbeat, pollScanResult, getSystemInfo, DEFAULT_API_URL };
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -373,7 +421,7 @@ if (typeof module !== 'undefined') {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-08T17:32:34.475Z
+                at 2026-04-21T14:17:46.013Z
             </div>
         <script src="../prettify.js"></script>
         <script>
