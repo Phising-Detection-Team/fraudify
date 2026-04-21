@@ -7,8 +7,7 @@ spam filters, push notification previews, and Resend's own logs.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
+from app.services.email_sender import welcome_email_sender
 from app.services.email_verification_service import send_verification_email
 
 CODE = '472819'
@@ -54,4 +53,45 @@ class TestSendVerificationEmail:
         """Service must return False when Resend raises an exception."""
         with patch('resend.Emails.send', side_effect=Exception('network error')):
             result = send_verification_email(**BASE_ARGS)
+        assert result is False
+
+
+WELCOME_BASE = dict(
+    to_email='welcome@example.com',
+    display_name='alex_user',
+    cta_url='http://localhost:3000/dashboard/user',
+    from_email='noreply@sentra.test',
+    api_key='re_test_key',
+)
+
+
+class TestWelcomeEmailSender:
+    def _send(self, mock_send: MagicMock) -> dict:
+        mock_send.return_value = {'id': 'msg-welcome-1'}
+        result = welcome_email_sender(**WELCOME_BASE)
+        assert result is True
+        return mock_send.call_args[0][0]
+
+    def test_success_sends_resend_with_expected_fields(self):
+        with patch('resend.Emails.send') as mock_send:
+            params = self._send(mock_send)
+        assert params['to'] == [WELCOME_BASE['to_email']]
+        assert params['from'] == WELCOME_BASE['from_email']
+        assert 'welcome' in params['subject'].lower()
+        assert 'sentra' in params['subject'].lower()
+        assert WELCOME_BASE['display_name'] in params['html']
+        assert WELCOME_BASE['cta_url'] in params['html']
+
+    def test_escapes_display_name_in_html(self):
+        malicious = '<script>alert(1)</script>'
+        with patch('resend.Emails.send') as mock_send:
+            mock_send.return_value = {'id': 'x'}
+            welcome_email_sender(**{**WELCOME_BASE, 'display_name': malicious})
+        html_out = mock_send.call_args[0][0]['html']
+        assert '<script>' not in html_out
+        assert '&lt;script&gt;' in html_out
+
+    def test_returns_false_on_send_failure(self):
+        with patch('resend.Emails.send', side_effect=Exception('resend down')):
+            result = welcome_email_sender(**WELCOME_BASE)
         assert result is False

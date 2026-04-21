@@ -52,6 +52,8 @@ All items below are **fully implemented and running** in the current codebase.
 - ✅ Role-based access control (`admin` / `user`) enforced on every protected route
 - ✅ Full CRUD for Rounds, Emails, API Calls, Logs, Overrides
 - ✅ User management: registration, login, password change, forgot/reset-password (Flask-Mail)
+- ✅ Email verification flow (`send-verification`, token/code verify) with Resend delivery
+- ✅ Post-verification welcome email with shared HTML/CSS templates and dark/light rendering support
 - ✅ Invite-code based registration — regular users never see the mechanism
 - ✅ Browser extension instance registration and tracking
 - ✅ User-specific email scanning: `POST /api/scan` (synchronous, 1–5 s) + `GET /api/scan/history`
@@ -160,7 +162,7 @@ Admin trigger "Run Round"
 | Auth | Flask-JWT-Extended (access token only; expiry = session signout) |
 | ORM | SQLAlchemy 2.x + Flask-SQLAlchemy |
 | Migrations | Alembic |
-| Email | Flask-Mail (password reset) |
+| Email | Flask-Mail (password reset) + Resend (verification + welcome) |
 | Rate limiting | Flask-Limiter + Redis |
 | Testing | pytest, pytest-flask, factory_boy (237+ tests) |
 
@@ -250,7 +252,7 @@ REDIS_URL=redis://localhost:6379/0
 ANTHROPIC_API_KEY=your_anthropic_key
 GOOGLE_API_KEY=your_google_key
 
-# Frontend URL (used in password-reset emails)
+# Frontend URL (used in password-reset, verification, and welcome email links)
 FRONTEND_URL=http://localhost:3000
 
 # Email (optional — for password reset)
@@ -260,6 +262,10 @@ MAIL_USE_TLS=true
 MAIL_USERNAME=your_email@gmail.com
 MAIL_PASSWORD=your_app_password
 MAIL_DEFAULT_SENDER=your_email@gmail.com
+
+# Resend (required for verification + welcome email delivery)
+RESEND_API_KEY=re_xxxxxxxxx
+RESEND_FROM_EMAIL=SentraAI <noreply@sentra.quest>
 ```
 
 ### Running Tests
@@ -307,7 +313,7 @@ An earlier implementation using **Semantic Kernel** with GPT-4o (orchestration/g
 
 ## 📡 API Reference
 
-All endpoints require `Authorization: Bearer <access_token>` except `/api/auth/signup`, `/api/auth/login`, `/api/auth/forgot-password`, and `/api/auth/reset-password`.
+All endpoints require `Authorization: Bearer <access_token>` except `/api/auth/signup`, `/api/auth/login`, `/api/auth/send-verification`, `/api/auth/verify-email`, `/api/auth/forgot-password`, and `/api/auth/reset-password`.
 
 ### Auth
 
@@ -315,6 +321,8 @@ All endpoints require `Authorization: Bearer <access_token>` except `/api/auth/s
 |--------|------|-------------|
 | POST | `/api/auth/signup` | Register (public) |
 | POST | `/api/auth/admin/signup` | Register with invite code |
+| POST | `/api/auth/send-verification` | Send or resend verification email (public) |
+| POST | `/api/auth/verify-email` | Verify email via token or 6-digit code; returns JWT pair |
 | POST | `/api/auth/login` | Login → access token |
 | POST | `/api/auth/logout` | Blocklist token |
 | GET | `/api/auth/me` | Current user profile |
@@ -403,7 +411,7 @@ phishing_detection/
 │       │   ├── user_scan.py          # User-submitted scans
 │       │   └── training_data_log.py  # Training pipeline ingestion log
 │       ├── routes/
-│       │   ├── auth.py               # Auth + invite + password reset
+│       │   ├── auth.py               # Auth + email verification + invite + password reset
 │       │   ├── rounds.py             # Round management
 │       │   ├── emails.py             # Email detail + overrides
 │       │   ├── stats.py              # Stats + cost breakdown + agents
@@ -412,7 +420,14 @@ phishing_detection/
 │       │   ├── users.py              # Admin user management
 │       │   └── scan.py               # User-facing scan endpoint
 │       ├── services/
+│       │   ├── email_sender.py       # Resend welcome sender + shared email template rendering
+│       │   ├── email_verification_service.py  # Verification email sender (token/code)
 │       │   └── openai_orchestration_runner.py  # Round execution thread
+│       ├── templates/email/
+│       │   ├── sentra_document.html  # Shared email HTML shell
+│       │   ├── sentra_theme.css      # Shared email theme (light/dark)
+│       │   ├── verification_inner.html  # Verification email body
+│       │   └── welcome_inner.html    # Welcome email body
 │       └── utils/
 │           └── helpers.py            # paginate(), require_role()
 │
@@ -564,4 +579,4 @@ phishing_detection/
 
 ---
 
-**Status**: ✅ Full-Stack MVP + Extension Complete | **Last Updated**: April 2, 2026
+**Status**: ✅ Full-Stack MVP + Extension Complete | **Last Updated**: April 20, 2026

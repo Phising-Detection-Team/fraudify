@@ -1,0 +1,23 @@
+    <h1>Verify your email address</h1>
+    <p>Welcome to Sentra! To complete your signup and start protecting your inbox from phishing threats, please verify your email address.</p>
+
+    <p style="margin-bottom: 8px;">Enter this code on the verification page:</p>
+    <div class="code-box">
+      <div class="code">{{ code }}</div>
+    </div>
+
+    <p class="expiry">⏱ This code expires in <strong>15 minutes</strong></p>
+
+    <hr class="divider" />
+
+    <p>Or click the button below to verify automatically:</p>
+    <div style="text-align: center; margin: 20px 0;">
+      <a href="{{ verify_link }}" class="btn">Verify my email →</a>
+    </div>
+
+    <p class="expiry">⏱ This link also expires in <strong>15 minutes</strong></p>
+
+    <div class="footer">
+      <p>If you didn't create a Sentra account, you can safely ignore this email.</p>
+      <p>© Sentra — Phishing Detection &amp; Protection</p>
+    </div>
