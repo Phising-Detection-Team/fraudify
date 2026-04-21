@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { config } from "@/lib/config";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { useLanguage } from "@/components/LanguageProvider";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
 
 function ResetPasswordForm() {
+  const { tr } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
@@ -24,19 +26,19 @@ function ResetPasswordForm() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(tr("resetPassword.passwordsDoNotMatch"));
       return;
     }
     if (password.length <= 10) {
-      setError("Password must be at least 11 characters.");
+      setError(tr("resetPassword.passwordMinLength"));
       return;
     }
     if (!/\d/.test(password)) {
-      setError("Password must contain at least one number.");
+      setError(tr("resetPassword.passwordOneNumber"));
       return;
     }
     if (!/[!@#$%^&*]/.test(password)) {
-      setError("Password must contain at least one special character (!@#$%^&*).");
+      setError(tr("resetPassword.passwordOneSpecial"));
       return;
     }
 
@@ -51,13 +53,13 @@ function ResetPasswordForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Failed to reset password. The link may have expired.");
+        setError(data.message || tr("resetPassword.resetFailed"));
         return;
       }
 
       router.push("/login?reset=success");
     } catch {
-      setError("Unable to connect to the server. Please try again.");
+      setError(tr("resetPassword.serverError"));
     } finally {
       setLoading(false);
     }
@@ -66,9 +68,9 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="text-center space-y-4 py-4">
-        <p className="text-sm text-red-400">Invalid or missing reset token.</p>
+        <p className="text-sm text-red-400">{tr("resetPassword.invalidToken")}</p>
         <Link href="/forgot-password" className="text-sm text-accent-cyan hover:text-accent-cyan/80 transition-colors">
-          Request a new reset link
+          {tr("forgotPassword.requestNewResetLink")}
         </Link>
       </div>
     );
@@ -77,7 +79,7 @@ function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <label htmlFor="rp-password" className="text-sm font-medium">New Password</label>
+        <label htmlFor="rp-password" className="text-sm font-medium">{tr("resetPassword.newPassword")}</label>
         <div className="relative">
           <input
             id="rp-password"
@@ -86,11 +88,11 @@ function ResetPasswordForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-            placeholder="Min. 11 characters"
+            placeholder={tr("resetPassword.minChars")}
           />
           <button
             type="button"
-            aria-label="Toggle password visibility"
+            aria-label={tr("login.togglePasswordVisibility")}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setShowPassword(!showPassword)}
             tabIndex={-1}
@@ -101,7 +103,7 @@ function ResetPasswordForm() {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="rp-confirm" className="text-sm font-medium">Confirm Password</label>
+        <label htmlFor="rp-confirm" className="text-sm font-medium">{tr("resetPassword.confirmPassword")}</label>
         <input
           id="rp-confirm"
           type={showPassword ? "text" : "password"}
@@ -109,7 +111,7 @@ function ResetPasswordForm() {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-          placeholder="Re-enter your password"
+          placeholder={tr("resetPassword.reenterPassword")}
         />
       </div>
 
@@ -128,7 +130,7 @@ function ResetPasswordForm() {
         {loading ? (
           <span className="animate-spin w-5 h-5 border-2 border-background border-t-transparent rounded-full" />
         ) : (
-          "Reset Password"
+          tr("resetPassword.resetPassword")
         )}
       </button>
 
@@ -138,7 +140,7 @@ function ResetPasswordForm() {
           className="text-sm text-muted-foreground hover:text-accent-cyan transition-colors inline-flex items-center gap-1"
         >
           <ArrowLeft size={14} />
-          Back to login
+          {tr("common.backToLogin")}
         </Link>
       </div>
     </form>
@@ -146,6 +148,7 @@ function ResetPasswordForm() {
 }
 
 export default function ResetPasswordPage() {
+  const { tr } = useLanguage();
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <motion.div
@@ -158,11 +161,11 @@ export default function ResetPasswordPage() {
 
         <div className="flex flex-col items-center mb-8">
           <Logo className="mb-6 scale-110" />
-          <h1 className="text-2xl font-bold tracking-tight">Reset Password</h1>
-          <p className="text-muted-foreground text-sm mt-1">Choose a new password for your account.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("resetPassword.title")}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{tr("resetPassword.subtitle")}</p>
         </div>
 
-        <Suspense fallback={<div className="text-center text-sm text-muted-foreground">Loading...</div>}>
+        <Suspense fallback={<div className="text-center text-sm text-muted-foreground">{tr("common.loading")}</div>}>
           <ResetPasswordForm />
         </Suspense>
       </motion.div>

@@ -7,6 +7,7 @@ import { ChevronRight, AlertTriangle, Loader2 } from "lucide-react";
 import { getAdminRounds } from "@/lib/admin-api";
 import { config } from "@/lib/config";
 import type { Round } from "@/types";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const STATUS_STYLES: Record<string, string> = {
   completed: "bg-accent-green/10 text-accent-green",
@@ -15,6 +16,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function UserRoundsPage() {
+  const { tr } = useLanguage();
   const { data: session } = useSession();
   const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,9 +35,9 @@ export default function UserRoundsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Detection Rounds</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{tr("rounds.title")}</h1>
         <p className="text-muted-foreground mt-1">
-          View all synthetic data generation rounds.
+          {tr("rounds.subtitleUser")}
         </p>
       </div>
 
@@ -44,25 +46,25 @@ export default function UserRoundsPage() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground uppercase bg-background/50 border-b border-border/50">
               <tr>
-                <th className="px-6 py-4 font-medium">Round ID</th>
-                <th className="px-6 py-4 font-medium">Started</th>
-                <th className="px-6 py-4 font-medium">Total Emails</th>
-                <th className="px-6 py-4 font-medium">Detection Rate</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.roundId")}</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.started")}</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.totalEmails")}</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.detectionRate")}</th>
+                <th className="px-6 py-4 font-medium">{tr("rounds.status")}</th>
+                <th className="px-6 py-4 font-medium text-right">{tr("rounds.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                    Loading…
+                    {tr("common.loading")}
                   </td>
                 </tr>
               ) : rounds.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                    No rounds available yet.
+                    {tr("rounds.emptyUser")}
                   </td>
                 </tr>
               ) : (

@@ -5,12 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, getSession } from "next-auth/react";
 import { Logo } from "@/components/Logo";
 import { sendVerificationEmail } from "@/lib/auth-api";
+import { useLanguage } from "@/components/LanguageProvider";
 import { Loader2, CheckCircle2, XCircle, ArrowRight, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 type VerifyState = "loading" | "success" | "error";
 
 function VerifyEmailContent() {
+  const { tr } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [state, setState] = useState<VerifyState>("loading");
@@ -28,7 +30,7 @@ function VerifyEmailContent() {
     const token = searchParams.get("token");
     if (!token) {
       setState("error");
-      setErrorMsg("No verification token found in the URL.");
+      setErrorMsg(tr("verifyEmail.noToken"));
       return;
     }
 
@@ -38,7 +40,7 @@ function VerifyEmailContent() {
 
       if (!signInResult?.ok) {
         setState("error");
-        setErrorMsg(signInResult?.error || "This link has expired or is invalid.");
+        setErrorMsg(signInResult?.error || tr("verifyEmail.linkExpired"));
         return;
       }
 
@@ -52,7 +54,7 @@ function VerifyEmailContent() {
       if (!session?.user) {
         // Session didn't appear — show success but instruct manual login
         setState("error");
-        setErrorMsg("Verification succeeded but automatic sign-in failed. Please sign in manually.");
+        setErrorMsg(tr("verifyEmail.autoSignInFailed"));
         return;
       }
 
@@ -77,7 +79,7 @@ function VerifyEmailContent() {
     return (
       <div className="text-center space-y-4">
         <Loader2 className="w-10 h-10 animate-spin text-accent-cyan mx-auto" />
-        <p className="text-sm text-muted-foreground">Verifying your email…</p>
+        <p className="text-sm text-muted-foreground">{tr("verifyEmail.verifying")}</p>
       </div>
     );
   }
@@ -87,18 +89,18 @@ function VerifyEmailContent() {
       <div className="text-center space-y-5">
         <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto" />
         <div>
-          <h1 className="text-xl font-bold">Email verified!</h1>
+          <h1 className="text-xl font-bold">{tr("verifyEmail.verified")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Your account is active. You&apos;re being redirected to the dashboard…
+            {tr("verifyEmail.redirectingToDashboard")}
           </p>
         </div>
         <button
           onClick={() => router.push("/dashboard/user")}
           className="w-full btn-primary flex items-center justify-center gap-2"
         >
-          Go to Dashboard <ArrowRight size={16} />
+          {tr("verifyEmail.goToDashboard")} <ArrowRight size={16} />
         </button>
-        <p className="text-xs text-muted-foreground">Redirecting automatically in a few seconds…</p>
+        <p className="text-xs text-muted-foreground">{tr("verifyEmail.redirectingSoon")}</p>
       </div>
     );
   }
@@ -107,7 +109,7 @@ function VerifyEmailContent() {
     <div className="text-center space-y-5">
       <XCircle className="w-12 h-12 text-red-400 mx-auto" />
       <div>
-        <h1 className="text-xl font-bold">Verification failed</h1>
+        <h1 className="text-xl font-bold">{tr("verifyEmail.failed")}</h1>
         <p className="text-sm text-muted-foreground mt-1">{errorMsg}</p>
       </div>
 
@@ -123,14 +125,14 @@ function VerifyEmailContent() {
             <RefreshCw size={14} />
           )}
           {resendStatus === "idle"
-            ? "Request a new verification email"
+            ? tr("verifyEmail.requestNewEmail")
             : resendStatus === "sending"
-            ? "Sending…"
-            : "New email sent — check your inbox"}
+            ? tr("login.sending")
+            : tr("verifyEmail.newEmailSent")}
         </button>
       ) : (
         <Link href="/signup" className="w-full btn-primary flex items-center justify-center gap-2">
-          Back to Sign Up <ArrowRight size={16} />
+          {tr("verifyEmail.backToSignUp")} <ArrowRight size={16} />
         </Link>
       )}
     </div>
@@ -138,6 +140,7 @@ function VerifyEmailContent() {
 }
 
 export default function VerifyEmailPage() {
+  const { tr } = useLanguage();
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="glass-panel w-full max-w-sm p-8 rounded-2xl relative overflow-hidden">
@@ -149,7 +152,7 @@ export default function VerifyEmailPage() {
           fallback={
             <div className="text-center space-y-4">
               <Loader2 className="w-10 h-10 animate-spin text-accent-cyan mx-auto" />
-              <p className="text-sm text-muted-foreground">Loading…</p>
+              <p className="text-sm text-muted-foreground">{tr("common.loading")}</p>
             </div>
           }
         >

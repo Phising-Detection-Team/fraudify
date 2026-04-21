@@ -6,8 +6,10 @@ import { submitFeedback } from "@/lib/user-api";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Loader2, Mail, MessageSquare } from "lucide-react";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function FeedbackPage() {
+  const { tr } = useLanguage();
   const { data: session } = useSession();
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
@@ -16,19 +18,19 @@ export default function FeedbackPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) {
-      toast.error("Description is required.");
+      toast.error(tr("feedbackUser.descriptionRequired"));
       return;
     }
 
     try {
       setIsLoading(true);
       await submitFeedback(session?.accessToken as string, { subject, description });
-      toast.success("Feedback submitted successfully!");
+      toast.success(tr("feedbackUser.submitted"));
       setSubject("");
       setDescription("");
     } catch (err: unknown) {
       const e = err as Error;
-      toast.error(e.message || "Failed to submit feedback.");
+      toast.error(e.message || tr("feedbackUser.submitFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -51,10 +53,10 @@ export default function FeedbackPage() {
           </div>
           
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3 text-foreground">
-            We'd Love Your Input
+            {tr("feedbackUser.title")}
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto">
-            Let us know about any issues or how we can improve the platform.
+            {tr("feedbackUser.subtitle")}
           </p>
         </motion.div>
 
@@ -68,12 +70,12 @@ export default function FeedbackPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <label htmlFor="subject" className="text-sm font-semibold text-foreground/90">
-                  Subject <span className="text-muted-foreground text-xs font-normal ml-1">(Optional)</span>
+                  {tr("feedbackUser.subject")} <span className="text-muted-foreground text-xs font-normal ml-1">({tr("scan.optional")})</span>
                 </label>
                 <input
                   id="subject"
                   type="text"
-                  placeholder="What is this regarding?"
+                  placeholder={tr("feedbackUser.subjectPlaceholder")}
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   className="w-full bg-background border border-border/80 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 focus:border-accent-cyan/50 transition-all shadow-sm placeholder:text-muted-foreground/60"
@@ -82,11 +84,11 @@ export default function FeedbackPage() {
               
               <div className="space-y-2">
                 <label htmlFor="description" className="text-sm font-semibold text-foreground/90 flex justify-between">
-                  <span>Description <span className="text-destructive ml-0.5">*</span></span>
+                  <span>{tr("feedbackUser.description")} <span className="text-destructive ml-0.5">*</span></span>
                 </label>
                 <textarea
                   id="description"
-                  placeholder="Please provide details about your suggestion or any issues you encountered..."
+                  placeholder={tr("feedbackUser.descriptionPlaceholder")}
                   className="w-full min-h-[300px] bg-background border border-border/80 rounded-xl px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 focus:border-accent-cyan/50 transition-all shadow-sm resize-y placeholder:text-muted-foreground/60 leading-relaxed"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -103,10 +105,10 @@ export default function FeedbackPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                      Submitting...
+                      {tr("feedbackUser.submitting")}
                     </>
                   ) : (
-                    "Send Feedback"
+                    tr("feedbackUser.send")
                   )}
                 </button>
               </div>
@@ -114,7 +116,7 @@ export default function FeedbackPage() {
 
             <div className="pt-6 border-t border-border/40 text-center">
               <p className="text-sm text-muted-foreground flex items-center justify-center flex-wrap gap-1.5">
-                Prefer email? Contact us directly at
+                {tr("feedbackUser.preferEmail")}
                 <a 
                   href="mailto:sentra.quest@gmail.com" 
                   className="inline-flex items-center gap-1.5 text-accent-cyan hover:text-accent-cyan/80 font-medium transition-colors hover:underline"

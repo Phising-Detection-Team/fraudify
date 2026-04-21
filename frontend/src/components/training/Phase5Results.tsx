@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Rocket, Trophy, Play, RotateCcw, CheckCircle2, ExternalLink } from "lucide-react";
 import { SentraMascot } from "./SentraMascot";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface PhaseProps { autoPlay: boolean; phaseProgress: number; wasCompleted?: boolean; onComplete?: () => void; }
 
@@ -75,6 +76,7 @@ function RadialRing({ value, color, size = 96 }: { value: number; color: string;
 }
 
 export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
+  const { tr } = useLanguage();
   const [stage, setStage]         = useState(0);
   const [playing, setPlaying]     = useState(false);
   const [countActive, setCount]   = useState(false);
@@ -140,15 +142,15 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Rocket size={20} className="text-accent-green" />
-            Results &amp; Deployment
+            {tr("training.phase5ResultsDeploy")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Evaluation on held-out test set, confusion matrix, and push to HuggingFace Hub
+            {tr("training.phase5Subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
-          {playing && <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border/60 hover:bg-muted transition-colors"><RotateCcw size={12} /> Reset</button>}
-          {!playing && <button onClick={startPlay} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-accent-green/40 bg-accent-green/5 text-accent-green hover:bg-accent-green/10 transition-colors"><Play size={12} /> Play Phase</button>}
+          {playing && <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border/60 hover:bg-muted transition-colors"><RotateCcw size={12} /> {tr("training.reset")}</button>}
+          {!playing && <button onClick={startPlay} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-accent-green/40 bg-accent-green/5 text-accent-green hover:bg-accent-green/10 transition-colors"><Play size={12} /> {tr("training.playPhase")}</button>}
         </div>
       </div>
 
@@ -192,7 +194,7 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
               animate={{ opacity: 1, x: 0 }}
               className="glass-panel rounded-xl p-5"
             >
-              <h3 className="font-semibold text-sm mb-4">Confusion Matrix  (500 test samples)</h3>
+              <h3 className="font-semibold text-sm mb-4">{tr("training.phase5ConfusionMatrix")}</h3>
 
               <div className="flex gap-3">
                 {/* Matrix grid */}
@@ -258,7 +260,7 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
             >
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2 h-2 rounded-full bg-accent-green animate-pulse" />
-                <h3 className="font-semibold text-sm">Sample Model Output</h3>
+                <h3 className="font-semibold text-sm">{tr("training.phase5SampleOutput")}</h3>
               </div>
               <pre className="text-[10px] font-mono bg-background/50 rounded-lg p-3 border border-border/30 text-accent-green overflow-x-auto leading-relaxed">{`{
   "verdict": "SCAM",
@@ -282,13 +284,13 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
             >
               <div className="flex items-center gap-2 mb-4">
                 <Rocket size={16} className="text-accent-purple" />
-                <h3 className="font-semibold text-sm">Pushed to HuggingFace Hub</h3>
+                <h3 className="font-semibold text-sm">{tr("training.phase5PushedHub")}</h3>
               </div>
 
               {/* Upload progress */}
               <div className="mb-5">
                 <div className="flex justify-between text-xs mb-2">
-                  <span className="text-muted-foreground">Uploading model weights...</span>
+                  <span className="text-muted-foreground">{tr("training.phase5Uploading")}</span>
                   <span className="font-mono text-accent-purple">{deployProgress}%</span>
                 </div>
                 <div className="h-2.5 bg-muted rounded-full overflow-hidden">
@@ -308,7 +310,7 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
                 >
                   <div className="flex items-center gap-2 text-accent-green text-sm font-semibold">
                     <CheckCircle2 size={16} />
-                    Upload complete!
+                    {tr("training.phase5UploadComplete")}
                   </div>
 
                   {/* Model card */}
@@ -348,7 +350,7 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
                         target="_blank" rel="noopener noreferrer"
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
                       >
-                        View on HuggingFace
+                        {tr("training.phase5ViewHF")}
                         <ExternalLink size={11} />
                       </a>
                     </div>
@@ -362,7 +364,7 @@ export function Phase5Results({ autoPlay, wasCompleted, onComplete }: PhaseProps
                     className="p-3 rounded-lg bg-gradient-to-r from-accent-cyan/10 to-accent-purple/10 border border-accent-cyan/20 text-center"
                   >
                     <p className="text-xs font-semibold neon-text">
-                      Sentra is production-ready 🚀
+                      {tr("training.phase5ProdReady")} 🚀
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       1.54B params · 1.20% trainable · 94.2% accuracy

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Database, Cpu, GitBranch, RefreshCw, Rocket, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const PHASES = [
   { id: 1, label: "Data Pipeline",    shortLabel: "Data",     icon: Database   },
@@ -27,6 +28,15 @@ export function PhaseNav({
   phaseProgress,
   completedPhases,
 }: PhaseNavProps) {
+  const { tr } = useLanguage();
+  const phaseLabels = [
+    tr("training.phase1"),
+    tr("training.phase2"),
+    tr("training.phase3"),
+    tr("training.phase4"),
+    tr("training.phase5"),
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -124,10 +134,10 @@ export function PhaseNav({
       {/* Phase label */}
       <div className="mt-4 text-center">
         <span className="text-xs font-semibold tracking-widest uppercase text-accent-cyan">
-          Phase {currentPhase} —{" "}
+          {tr("training.phase")} {currentPhase} —{" "}
         </span>
         <span className="text-xs font-medium text-muted-foreground">
-          {PHASES[currentPhase - 1]?.label}
+          {phaseLabels[currentPhase - 1] ?? PHASES[currentPhase - 1]?.label}
         </span>
       </div>
     </motion.div>

@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { config } from "@/lib/config";
 import { Logo } from "@/components/Logo";
+import { useLanguage } from "@/components/LanguageProvider";
 import { motion } from "framer-motion";
 import { Mail, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
 
 export default function ForgotPasswordPage() {
+  const { tr, locale } = useLanguage();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,12 +24,12 @@ export default function ForgotPasswordPage() {
       await fetch(`${config.API.BASE_URL}${config.API.AUTH.FORGOT_PASSWORD}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, preferred_language: locale }),
       });
       // Always show success — never reveal whether email exists
       setSubmitted(true);
     } catch {
-      setError("Unable to connect to the server. Please try again.");
+      setError(tr("forgotPassword.serverError"));
     } finally {
       setLoading(false);
     }
@@ -45,9 +47,9 @@ export default function ForgotPasswordPage() {
 
         <div className="flex flex-col items-center mb-8">
           <Logo className="mb-6 scale-110" />
-          <h1 className="text-2xl font-bold tracking-tight">Forgot Password</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("forgotPassword.title")}</h1>
           <p className="text-muted-foreground text-sm mt-1 text-center">
-            Enter your email and we&apos;ll send you a reset link.
+            {tr("forgotPassword.subtitle")}
           </p>
         </div>
 
@@ -55,21 +57,21 @@ export default function ForgotPasswordPage() {
           <div className="flex flex-col items-center gap-4 py-4">
             <CheckCircle size={48} className="text-accent-cyan" />
             <p className="text-sm text-center text-muted-foreground">
-              If an account exists for <span className="text-foreground font-medium">{email}</span>,
-              you&apos;ll receive a password reset link shortly.
+              {tr("forgotPassword.resetEmailSent")} <span className="text-foreground font-medium">{email}</span>,{" "}
+              {tr("forgotPassword.resetEmailSentSuffix")}
             </p>
             <Link
               href="/login"
               className="mt-2 text-sm text-accent-cyan hover:text-accent-cyan/80 transition-colors inline-flex items-center gap-1"
             >
               <ArrowLeft size={14} />
-              Back to login
+              {tr("common.backToLogin")}
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label htmlFor="fp-email" className="text-sm font-medium">Email Address</label>
+              <label htmlFor="fp-email" className="text-sm font-medium">{tr("login.emailAddress")}</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -99,7 +101,7 @@ export default function ForgotPasswordPage() {
               {loading ? (
                 <span className="animate-spin w-5 h-5 border-2 border-background border-t-transparent rounded-full" />
               ) : (
-                "Send Reset Link"
+                tr("forgotPassword.sendResetLink")
               )}
             </button>
 
@@ -109,7 +111,7 @@ export default function ForgotPasswordPage() {
                 className="text-sm text-muted-foreground hover:text-accent-cyan transition-colors inline-flex items-center gap-1"
               >
                 <ArrowLeft size={14} />
-                Back to login
+                {tr("common.backToLogin")}
               </Link>
             </div>
           </form>

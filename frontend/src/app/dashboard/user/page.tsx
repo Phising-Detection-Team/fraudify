@@ -16,6 +16,7 @@ import { getUserStats, type UserStats } from "@/lib/user-api";
 import { getExtensionInstances, type ExtensionInstance } from "@/lib/admin-api";
 import { parseUTC } from "@/lib/utils";
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 
 // ---------------------------------------------------------------------------
 // Onboarding / Protection status panel
@@ -52,6 +53,7 @@ function Step({
 }
 
 function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
+  const { tr } = useLanguage();
   const hasInstance = instances.length > 0;
   const hasActive = instances.some((i) => i.is_active);
   const allDone = hasInstance && hasActive;
@@ -69,42 +71,42 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
           <Puzzle size={20} className="text-accent-cyan" />
         )}
         <h3 className={`font-semibold ${allDone ? "text-accent-green" : ""}`}>
-          {allDone ? "Emails Protected" : "Setup Sentra"}
+          {allDone ? tr("dashboard.emailsProtected") : tr("dashboard.setupSentra")}
         </h3>
       </div>
       <p className="text-xs text-muted-foreground mb-2">
         {allDone
-          ? "Sentra is monitoring your inbox. Browser extension is connected and scanning."
-          : "Follow steps to protect your inbox."}
+          ? tr("dashboard.monitoringInbox")
+          : tr("dashboard.followSteps")}
       </p>
 
       <div className="space-y-4 flex-1">
         {/* Step 1 — Install extension */}
-        <Step number={1} label="Install extension" done={hasInstance}>
+        <Step number={1} label={tr("dashboard.installExtension")} done={hasInstance}>
           {!hasInstance && (
             <p className="text-xs text-muted-foreground mt-1">
               Load in Chrome/Edge via Dev Mode.{" "}
               <Link href="/extension" className="text-accent-cyan hover:underline">
-                Install guide →
+                {tr("dashboard.installGuide")}
               </Link>
             </p>
           )}
         </Step>
 
         {/* Step 2 — Sign in to link */}
-        <Step number={2} label="Sign in & link" done={hasInstance}>
+        <Step number={2} label={tr("dashboard.signInAndLink")} done={hasInstance}>
           {!hasInstance && (
             <p className="text-xs text-muted-foreground mt-1">
-              Done automatically on this page.
+              {tr("dashboard.autoOnThisPage")}
             </p>
           )}
         </Step>
 
         {/* Step 3 — Active scanning */}
-        <Step number={3} label="Connected & scanning" done={hasActive}>
+        <Step number={3} label={tr("dashboard.connectedScanning")} done={hasActive}>
           {!hasActive && hasInstance && (
             <p className="text-xs text-muted-foreground mt-1">
-              Waiting for first heartbeat (within 4 mins).
+              {tr("dashboard.waitingHeartbeat")}
             </p>
           )}
         </Step>
@@ -125,7 +127,7 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
                 <p className="text-sm font-medium truncate">{inst.browser ?? "Extension"}</p>
                 {inst.last_seen && (
                   <p className="text-[11px] text-muted-foreground">
-                    Last seen {parseUTC(inst.last_seen).toLocaleString()}
+                    {tr("dashboard.lastSeen")} {parseUTC(inst.last_seen).toLocaleString()}
                   </p>
                 )}
               </div>
@@ -136,7 +138,7 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
                     : "bg-muted text-muted-foreground"
                 }`}
               >
-                {inst.is_active ? "Active" : "Idle"}
+                {inst.is_active ? tr("dashboard.active") : tr("dashboard.idle")}
               </span>
             </li>
           ))}
@@ -147,14 +149,14 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
         href="/dashboard/user/settings"
         className="inline-flex items-center gap-1.5 text-xs text-accent-cyan hover:underline mt-2"
       >
-        Manage extension instances <ArrowRight size={12} />
+        {tr("dashboard.manageInstances")} <ArrowRight size={12} />
       </Link>
 
       {/* Quick Actions (merged inside Onboarding Panel) */}
       <div className="pt-4 border-t border-border/50">
         <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Bot size={16} className="text-accent-cyan" />
-          Quick Actions
+          {tr("dashboard.quickActions")}
         </h4>
         <div className="space-y-3">
           <Link
@@ -165,8 +167,8 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
               <Search size={14} />
             </div>
             <div>
-              <p className="text-sm font-medium">Scan an Email</p>
-              <p className="text-[11px] text-muted-foreground">Manually analyze suspicious content</p>
+              <p className="text-sm font-medium">{tr("dashboard.scanAnEmail")}</p>
+              <p className="text-[11px] text-muted-foreground">{tr("dashboard.analyzeSuspicious")}</p>
             </div>
           </Link>
           <Link
@@ -177,8 +179,8 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
               <MessageSquare size={14} />
             </div>
             <div>
-              <p className="text-sm font-medium">Report Phishing</p>
-              <p className="text-[11px] text-muted-foreground">Help improve Sentra AI training</p>
+              <p className="text-sm font-medium">{tr("dashboard.reportPhishing")}</p>
+              <p className="text-[11px] text-muted-foreground">{tr("dashboard.helpImproveTraining")}</p>
             </div>
           </Link>
         </div>
@@ -192,6 +194,7 @@ function OnboardingPanel({ instances }: { instances: ExtensionInstance[] }) {
 // ---------------------------------------------------------------------------
 
 export default function UserDashboard() {
+  const { tr } = useLanguage();
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
 
@@ -222,37 +225,37 @@ export default function UserDashboard() {
   return (
     <div className="flex flex-col h-full space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{tr("dashboard.userOverview")}</h1>
         <p className="text-muted-foreground mt-2">
-          Your personal protection status and inbox security insights.
+          {tr("dashboard.userSubtitle")}
         </p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
         <StatCard
-          title="Emails Scanned"
+          title={tr("dashboard.emailsScanned")}
           value={stats.totalEmailsScanned.toLocaleString()}
           icon={Mail}
           delay={0.1}
         />
         <StatCard
-          title="Threats Detected"
+          title={tr("dashboard.threatsDetected")}
           value={stats.phishingDetected.toLocaleString()}
           icon={ShieldAlert}
           valueClassName="text-accent-red"
           delay={0.2}
         />
         <StatCard
-          title="Marked Safe"
+          title={tr("dashboard.markedSafe")}
           value={stats.markedSafe.toLocaleString()}
           icon={ShieldCheck}
           valueClassName="text-accent-green"
           delay={0.3}
         />
         <StatCard
-          title="Extension Status"
-          value={hasActiveExtension ? "Active" : "Not installed"}
+          title={tr("dashboard.extensionStatus")}
+          value={hasActiveExtension ? tr("dashboard.active") : tr("dashboard.notInstalled")}
           icon={Puzzle}
           valueClassName={
             hasActiveExtension ? "text-accent-green" : "text-muted-foreground"

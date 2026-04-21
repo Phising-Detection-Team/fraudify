@@ -19,6 +19,7 @@ import {
 } from "@/lib/user-api";
 import dynamic from "next/dynamic";
 import VerdictDisplay from "@/components/scan/VerdictDisplay";
+import { useLanguage } from "@/components/LanguageProvider";
 const ScanHistoryPanel = dynamic(() => import("@/components/scan/ScanHistoryPanel"), { ssr: false });
 
 // ---------------------------------------------------------------------------
@@ -38,41 +39,36 @@ interface ScanDisplayResult {
 
 const VERDICT_CONFIG: Record<
   ScanVerdict,
-  { label: string; color: string; bg: string; icon: typeof ShieldCheck }
+  { color: string; bg: string; icon: typeof ShieldCheck }
 > = {
   phishing: {
-    label: "Phishing",
     color: "text-red-400",
     bg: "bg-red-500/10 border-red-500/30",
     icon: AlertTriangle,
   },
   likely_phishing: {
-    label: "Likely Phishing",
     color: "text-orange-400",
     bg: "bg-orange-500/10 border-orange-500/30",
     icon: ShieldAlert,
   },
   suspicious: {
-    label: "Suspicious",
     color: "text-yellow-400",
     bg: "bg-yellow-500/10 border-yellow-500/30",
     icon: HelpCircle,
   },
   likely_legitimate: {
-    label: "Likely Legitimate",
     color: "text-emerald-400",
     bg: "bg-emerald-500/10 border-emerald-500/30",
     icon: ShieldCheck,
   },
   legitimate: {
-    label: "Legitimate",
     color: "text-green-400",
     bg: "bg-green-500/10 border-green-500/30",
     icon: ShieldCheck,
   },
 };
 
-function VerdictBadge({ verdict }: { verdict: ScanVerdict }) {
+function VerdictBadge({ verdict, label }: { verdict: ScanVerdict; label: string }) {
   const cfg = VERDICT_CONFIG[verdict] ?? VERDICT_CONFIG.suspicious;
   const Icon = cfg.icon;
   return (
@@ -80,7 +76,7 @@ function VerdictBadge({ verdict }: { verdict: ScanVerdict }) {
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.bg} ${cfg.color}`}
     >
       <Icon size={12} />
-      {cfg.label}
+      {label}
     </span>
   );
 }
@@ -89,7 +85,7 @@ function VerdictBadge({ verdict }: { verdict: ScanVerdict }) {
 // Result Card
 // ---------------------------------------------------------------------------
 
-function ResultCard({ result }: { result: ScanDisplayResult }) {
+function ResultCard({ result, tr }: { result: ScanDisplayResult; tr: (key: string) => string }) {
   const cfg = VERDICT_CONFIG[result.verdict] ?? VERDICT_CONFIG.suspicious;
   const scorePercent = Math.round(result.scam_score ?? 0);
   const confidencePercent = Math.round((result.confidence ?? 0) * 100);
@@ -97,13 +93,13 @@ function ResultCard({ result }: { result: ScanDisplayResult }) {
   return (
     <div className={`glass-panel rounded-xl border p-6 space-y-4 ${cfg.bg}`}>
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Analysis Result</h3>
-        <VerdictBadge verdict={result.verdict} />
+        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{tr("scan.analysisResult")}</h3>
+        <VerdictBadge verdict={result.verdict} label={tr(`scan.verdict.${result.verdict}`)} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Scam Score</p>
+          <p className="text-xs text-muted-foreground">{tr("scan.scamScore")}</p>
           <div className="flex items-center gap-2">
             <div className="flex-1 h-2 bg-background/50 rounded-full overflow-hidden">
               <div
@@ -115,7 +111,7 @@ function ResultCard({ result }: { result: ScanDisplayResult }) {
           </div>
         </div>
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Confidence</p>
+          <p className="text-xs text-muted-foreground">{tr("scan.confidence")}</p>
           <div className="flex items-center gap-2">
             <div className="flex-1 h-2 bg-background/50 rounded-full overflow-hidden">
               <div
@@ -130,7 +126,7 @@ function ResultCard({ result }: { result: ScanDisplayResult }) {
 
       {result.reasoning && (
         <div className="pt-2 border-t border-border/30">
-          <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide font-medium">Reasoning</p>
+          <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide font-medium">{tr("scan.reasoning")}</p>
           <p className="text-sm leading-relaxed">{result.reasoning}</p>
         </div>
       )}
@@ -146,6 +142,7 @@ const POLL_INTERVAL_MS = 1500;
 const MAX_POLL_ATTEMPTS = 120; // 3 minutes maximum
 
 export default function ScanEmailPage() {
+  const { tr } = useLanguage();
   const { data: session } = useSession();
   const token = session?.accessToken as string | undefined;
 
@@ -189,7 +186,7 @@ export default function ScanEmailPage() {
     } else if (statusResult.status === 'failed') {
       stopPolling();
       setScanning(false);
-      setError(statusResult.error ?? 'Detection failed. Please try again.');
+      setError(statusResult.error ?? tr("scan.errorDetectionFailed"));
     }
     // 'pending' — keep polling
   };
@@ -203,7 +200,7 @@ export default function ScanEmailPage() {
       if (pollAttemptsRef.current > MAX_POLL_ATTEMPTS) {
         stopPolling();
         setScanning(false);
-        setError('Scan timed out. Please try again.');
+        setError(tr("scan.errorTimedOut"));
         return;
       }
 
@@ -213,7 +210,7 @@ export default function ScanEmailPage() {
       } catch {
         stopPolling();
         setScanning(false);
-        setError('Failed to check scan status. Please try again.');
+        setError(tr("scan.errorCheckStatus"));
       }
     }, POLL_INTERVAL_MS);
   };
@@ -247,7 +244,7 @@ export default function ScanEmailPage() {
       }
     } catch (err) {
       setScanning(false);
-      setError(err instanceof Error ? err.message : "Scan failed. Please try again.");
+      setError(err instanceof Error ? err.message : tr("scan.errorScanFailed"));
     }
   };
 
@@ -256,10 +253,10 @@ export default function ScanEmailPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
           <ScanText className="text-accent-cyan" size={28} />
-          Scan Email
+          {tr("scan.title")}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Paste an email to instantly check it for phishing or scams.
+          {tr("scan.subtitle")}
         </p>
       </div>
 
@@ -267,29 +264,29 @@ export default function ScanEmailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: form */}
         <div className="glass-panel rounded-xl p-6 space-y-4">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Email Content</h2>
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{tr("scan.emailContent")}</h2>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Subject <span className="text-muted-foreground font-normal text-xs">(optional)</span>
+              {tr("scan.subject")} <span className="text-muted-foreground font-normal text-xs">({tr("scan.optional")})</span>
             </label>
             <input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Enter email subject line…"
+              placeholder={tr("scan.subjectPlaceholder")}
               className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Email Body <span className="text-red-500">*</span>
+              {tr("scan.emailBody")} <span className="text-red-500">*</span>
             </label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              placeholder="Paste the full email body here…"
+              placeholder={tr("scan.bodyPlaceholder")}
               rows={10}
               className="w-full bg-background/50 border border-border/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 resize-none"
             />
@@ -309,12 +306,12 @@ export default function ScanEmailPage() {
             {scanning ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
-                Analysing…
+                {tr("scan.analysing")}
               </>
             ) : (
               <>
                 <ScanText size={16} />
-                Scan Email
+                {tr("scan.scanButton")}
               </>
             )}
           </button>
@@ -338,15 +335,15 @@ export default function ScanEmailPage() {
                 }
                 subject={subject}
               />
-              <ResultCard result={result} />
+              <ResultCard result={result} tr={tr} />
             </>
           ) : (
             <div className="glass-panel rounded-xl p-10 text-center text-muted-foreground space-y-3 h-full flex flex-col items-center justify-center">
               <ShieldCheck size={40} className="opacity-30" />
               <p className="text-sm">
                 {scanning
-                  ? "Analysing your email with AI…"
-                  : "Your scan result will appear here."}
+                  ? tr("scan.analysingWithAI")
+                  : tr("scan.resultPlaceholder")}
               </p>
             </div>
           )}
@@ -358,7 +355,7 @@ export default function ScanEmailPage() {
         <ScanHistoryPanel token={token} />
       ) : (
         <div className="glass-panel rounded-xl p-6 text-center text-sm text-muted-foreground">
-          Log in with a backend account to view scan history.
+          {tr("scan.loginToViewHistory")}
         </div>
       )}
     </div>

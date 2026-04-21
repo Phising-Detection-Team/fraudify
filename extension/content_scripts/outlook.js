@@ -9,6 +9,30 @@
  */
 
 const OVERLAY_ID = 'sentra-phishing-overlay';
+const EXT_I18N = {
+  en: {
+    phishing: '⚠ Sentra: Phishing Detected',
+    suspicious: '⚠ Sentra: Suspicious Email',
+    safe: '✓ Sentra: Email Looks Safe (Legitimate)',
+    confidence: 'confidence',
+    analyzing: '⟳ Sentra: Analyzing…',
+    unknownVerdict: 'Unable to determine verdict.',
+    unavailable: 'Sentra: Analysis unavailable',
+  },
+  vi: {
+    phishing: '⚠ Sentra: Phát hiện lừa đảo',
+    suspicious: '⚠ Sentra: Email đáng ngờ',
+    safe: '✓ Sentra: Email có vẻ an toàn',
+    confidence: 'độ tin cậy',
+    analyzing: '⟳ Sentra: Đang phân tích…',
+    unknownVerdict: 'Không thể xác định kết luận.',
+    unavailable: 'Sentra: Không thể phân tích',
+  },
+};
+
+function _dict(locale) {
+  return EXT_I18N[locale] || EXT_I18N.en;
+}
 
 // Tracks which document currently hosts the overlay (top-level or an iframe's doc).
 // Updated each time _getBodyContainer() succeeds.
@@ -92,7 +116,8 @@ function getOverlayId() {
  * @param {{ verdict: string, confidence: number, reasoning?: string }} data
  * @returns {string}
  */
-function buildOverlayElement({ verdict, confidence, reasoning }) {
+function buildOverlayElement({ verdict, confidence, reasoning, locale = 'en' }) {
+  const i18n = _dict(locale);
   const isPhishing   = verdict === 'phishing' || verdict === 'likely_phishing';
   const isSuspicious = verdict === 'suspicious';
 
@@ -100,10 +125,10 @@ function buildOverlayElement({ verdict, confidence, reasoning }) {
   const pct     = Math.round((confidence || 0) * 100);
 
   const label = isPhishing
-    ? '⚠ Sentra: Phishing Detected'
+    ? i18n.phishing
     : isSuspicious
-      ? '⚠ Sentra: Suspicious Email'
-      : '✓ Sentra: Email Looks Safe (Legitimate)';
+      ? i18n.suspicious
+      : i18n.safe;
 
   const div = document.createElement('div');
   div.id = OVERLAY_ID;
@@ -123,7 +148,7 @@ function buildOverlayElement({ verdict, confidence, reasoning }) {
   `;
 
   const span = document.createElement('span');
-  span.textContent = `${label} — ${pct}% confidence`;
+  span.textContent = `${label} — ${pct}% ${i18n.confidence}`;
   div.appendChild(span);
 
   if (reasoning) {
@@ -157,7 +182,8 @@ function removeOverlay() {
 }
 
 /** Inject a temporary "Analyzing…" placeholder while scanning. */
-function injectScanning() {
+function injectScanning(locale = 'en') {
+  const i18n = _dict(locale);
   const existing = _readingPaneDoc.getElementById(OVERLAY_ID);
   if (existing) existing.remove();
 
@@ -180,7 +206,7 @@ function injectScanning() {
       gap:2px;
       box-shadow:0 2px 8px rgba(0,0,0,0.2);
     ">
-      <span>⟳ Sentra: Analyzing…</span>
+      <span>${i18n.analyzing}</span>
     </div>
   `.trim();
   container.prepend(wrapper.firstChild);
@@ -246,7 +272,9 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
       }
       if (!body) return;
 
-      injectScanning();
+      const { sentra_locale } = await chrome.storage.local.get(['sentra_locale']);
+      const locale = sentra_locale === 'vi' ? 'vi' : 'en';
+      injectScanning(locale);
       _scanAndShow(subject, body);
     });
   }
@@ -267,9 +295,10 @@ async function _cacheScanResult(subject, verdict, confidence) {
 /* istanbul ignore next */
 async function _scanAndShow(subject, body) {
   try {
-    const stored = await chrome.storage.local.get(['sentra_api_url', 'sentra_auth_token', 'sentra_inference_mode']);
+    const stored = await chrome.storage.local.get(['sentra_api_url', 'sentra_auth_token', 'sentra_inference_mode', 'sentra_locale']);
     const apiUrl = stored.sentra_api_url || DEFAULT_API_URL;
     const token = stored.sentra_auth_token;
+    const locale = stored.sentra_locale === 'vi' ? 'vi' : 'en';
     if (!token) { removeOverlay(); return; }
 
     const result = await scanEmail(apiUrl, token, subject, body, stored.sentra_inference_mode || 'gguf');
@@ -285,12 +314,14 @@ async function _scanAndShow(subject, body) {
     removeOverlay();
     if (verdictData && verdictData.verdict) {
       await _cacheScanResult(subject, verdictData.verdict, verdictData.confidence);
-      injectOverlay(verdictData);
+      injectOverlay({ ...verdictData, locale });
     } else {
-      injectOverlay({ verdict: 'suspicious', confidence: 0, reasoning: 'Unable to determine verdict.' });
+      injectOverlay({ verdict: 'suspicious', confidence: 0, reasoning: _dict(locale).unknownVerdict, locale });
     }
   } catch (err) {
-    _injectError('Sentra: Analysis unavailable');
+    const { sentra_locale } = await chrome.storage.local.get(['sentra_locale']);
+    const locale = sentra_locale === 'vi' ? 'vi' : 'en';
+    _injectError(_dict(locale).unavailable);
   }
 }
 

@@ -6,6 +6,7 @@ import { Search, Users as UsersIcon, ShieldCheck, User as UserIcon, Loader2, Lin
 import { getUsers, createInviteCode, type BackendUser } from "@/lib/admin-api";
 import { parseUTC } from "@/lib/utils";
 import InvitePanel from "@/components/admin/InvitePanel";
+import { useLanguage } from "@/components/LanguageProvider";
 
 function Initials({ name }: { name: string }) {
   const chars = name.split(/\s+/).map((w) => w[0]?.toUpperCase() ?? "").slice(0, 2).join("");
@@ -23,6 +24,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function AdminUsersPage() {
+  const { tr } = useLanguage();
   const { data: session } = useSession();
   const [users, setUsers] = useState<BackendUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,7 @@ export default function AdminUsersPage() {
       setInviteCopied(true);
       setTimeout(() => setInviteCopied(false), 3000);
     } catch {
-      alert("Failed to generate invite link. Please try again.");
+      alert(tr("teamAdmin.inviteFailed"));
     } finally {
       setInviteLoading(false);
     }
@@ -66,9 +68,9 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{tr("nav.users")}</h1>
         <p className="text-muted-foreground mt-1">
-          All registered accounts on this platform.
+          {tr("teamAdmin.subtitle")}
         </p>
       </div>
 
@@ -81,7 +83,7 @@ export default function AdminUsersPage() {
           />
           <input
             type="text"
-            placeholder="Search by name or email…"
+            placeholder={tr("teamAdmin.searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent-cyan"
@@ -90,7 +92,7 @@ export default function AdminUsersPage() {
         <div className="flex items-center gap-3 flex-shrink-0">
           {!loading && (
             <span className="text-sm text-muted-foreground">
-              {filtered.length} / {users.length} users
+              {filtered.length} / {users.length} {tr("teamAdmin.users")}
             </span>
           )}
           <button
@@ -105,7 +107,7 @@ export default function AdminUsersPage() {
             ) : (
               <Link2 size={13} />
             )}
-            {inviteCopied ? "Copied!" : "Copy Invite Link"}
+            {inviteCopied ? tr("teamAdmin.copied") : tr("teamAdmin.copyInviteLink")}
           </button>
         </div>
       </div>
@@ -114,19 +116,19 @@ export default function AdminUsersPage() {
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="p-5 border-b border-border/50 bg-card/30 flex items-center gap-2">
           <UsersIcon size={16} className="text-accent-cyan" />
-          <h3 className="font-semibold">All Users</h3>
+          <h3 className="font-semibold">{tr("teamAdmin.allUsers")}</h3>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
             <Loader2 size={16} className="animate-spin" />
-            Loading users…
+            {tr("teamAdmin.loadingUsers")}
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground space-y-2">
             <UserIcon size={28} className="mx-auto" />
             <p className="text-sm font-medium">
-              {query ? "No users match your search." : "No users found."}
+              {query ? tr("teamAdmin.noMatch") : tr("teamAdmin.noUsers")}
             </p>
           </div>
         ) : (
@@ -134,10 +136,10 @@ export default function AdminUsersPage() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-background/50 border-b border-border/50">
                 <tr>
-                  <th className="px-6 py-4 font-medium">User</th>
-                  <th className="px-6 py-4 font-medium">Roles</th>
-                  <th className="px-6 py-4 font-medium">Joined</th>
-                  <th className="px-6 py-4 font-medium">Status</th>
+                  <th className="px-6 py-4 font-medium">{tr("feedbackAdmin.user")}</th>
+                  <th className="px-6 py-4 font-medium">{tr("profile.roles")}</th>
+                  <th className="px-6 py-4 font-medium">{tr("teamAdmin.joined")}</th>
+                  <th className="px-6 py-4 font-medium">{tr("rounds.status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
@@ -186,7 +188,7 @@ export default function AdminUsersPage() {
                             : "bg-accent-red/10 text-accent-red"
                         }`}
                       >
-                        {user.is_active ? "Active" : "Inactive"}
+                        {user.is_active ? tr("dashboard.active") : tr("teamAdmin.inactive")}
                       </span>
                     </td>
                   </tr>

@@ -193,6 +193,7 @@ export interface BackendUser {
   roles: string[];
   created_at: string;
   is_active: boolean;
+  preferred_language?: "en" | "vi";
 }
 
 export const getMe = async (token: string): Promise<BackendUser> => {
@@ -223,6 +224,23 @@ export const updatePassword = async (
       (err as { error?: string }).error ?? "Failed to update password"
     );
   }
+};
+
+export const updatePreferredLanguage = async (
+  token: string,
+  preferredLanguage: "en" | "vi"
+): Promise<"en" | "vi"> => {
+  const res = await apiFetch(`${API_URL}/api/auth/me/language`, {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify({ preferred_language: preferredLanguage }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error ?? "Failed to update preferred language");
+  }
+  const json = await res.json();
+  return ((json.preferred_language ?? "en") as "en" | "vi");
 };
 
 // ---------------------------------------------------------------------------

@@ -33,6 +33,7 @@ async function _getStorage() {
     'sentra_api_url',
     'sentra_auth_token',
     'sentra_instance_token',
+    'sentra_locale',
   ]);
 }
 
@@ -108,6 +109,7 @@ async function _handleSetAuthToken(message) {
   await chrome.storage.local.set({
     sentra_auth_token: message.token,
     sentra_user_email: message.email,
+    sentra_locale: message.locale || 'en',
   });
 
   // Auto-register instance when user first logs in or token rotates

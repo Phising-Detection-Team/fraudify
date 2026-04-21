@@ -29,6 +29,7 @@
       type: 'SET_AUTH_TOKEN',
       token: data.token,
       email: data.email || '',
+      locale: data.locale || 'en',
     });
   } else {
     chrome.runtime.sendMessage({ type: 'CLEAR_AUTH_TOKEN' });

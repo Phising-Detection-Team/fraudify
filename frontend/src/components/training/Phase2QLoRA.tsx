@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cpu, Play, RotateCcw, Zap, HelpCircle } from "lucide-react";
 import { SentraMascot } from "./SentraMascot";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface PhaseProps { autoPlay: boolean; phaseProgress: number; wasCompleted?: boolean; onComplete?: () => void; }
 
@@ -138,6 +139,7 @@ function WeightHistogram({ showNF4 }: { showNF4: boolean }) {
 
 /* ── Main component ──────────────────────────────────────────── */
 export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
+  const { tr } = useLanguage();
   const [stage, setStage]           = useState(0);
   const [playing, setPlaying]       = useState(false);
   const [showNF4Levels, setNF4]     = useState(false);
@@ -231,15 +233,15 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Cpu size={20} className="text-accent-cyan" />
-            QLoRA Setup
+            {tr("training.phase2")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Quantizing Qwen2.5-1.5B weights to 4-bit NF4 via Unsloth — cutting GPU memory 4× with 2-5× faster training
+            {tr("training.phase2Subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
-          {playing && <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border/60 hover:bg-muted transition-colors"><RotateCcw size={12} /> Reset</button>}
-          {!playing && <button onClick={startPlay} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-accent-cyan/40 bg-accent-cyan/5 text-accent-cyan hover:bg-accent-cyan/10 transition-colors"><Play size={12} /> Play Phase</button>}
+          {playing && <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border/60 hover:bg-muted transition-colors"><RotateCcw size={12} /> {tr("training.reset")}</button>}
+          {!playing && <button onClick={startPlay} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-accent-cyan/40 bg-accent-cyan/5 text-accent-cyan hover:bg-accent-cyan/10 transition-colors"><Play size={12} /> {tr("training.playPhase")}</button>}
         </div>
       </div>
 
@@ -357,7 +359,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <HelpCircle size={16} className="text-accent-cyan" />
-              <h3 className="font-semibold text-sm">Precision Format Comparison</h3>
+              <h3 className="font-semibold text-sm">{tr("training.phase2PrecisionComparison")}</h3>
               <span className="text-[10px] text-muted-foreground ml-1">Click a row to explore</span>
             </div>
             <div className="overflow-x-auto">
@@ -413,7 +415,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
       <AnimatePresence>
         {stage >= 3 && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl p-5">
-            <h3 className="font-semibold text-sm mb-4">Why NF4 beats INT4 — Quantization Level Distribution</h3>
+            <h3 className="font-semibold text-sm mb-4">{tr("training.phase2WhyNF4")}</h3>
             <div className="space-y-4">
               <WeightHistogram showNF4={showNF4Levels} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -447,8 +449,8 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
                 <Zap size={16} className="text-accent-cyan" />
                 <h3 className="font-semibold text-sm">
                   {!scanDone
-                    ? scanCol >= 0 ? "⚡ Quantization in progress..." : "Scanning weight matrix..."
-                    : "✓ Quantization complete"}
+                    ? scanCol >= 0 ? `⚡ ${tr("training.phase2Quantizing")}` : tr("training.phase2Scanning")
+                    : `✓ ${tr("training.phase2Complete")}`}
                 </h3>
               </div>
               <div className="flex items-center gap-3 text-xs">
@@ -474,7 +476,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
                     onClick={startScan}
                     className="mb-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-accent-cyan/40 bg-accent-cyan/5 text-accent-cyan text-xs font-semibold hover:bg-accent-cyan/10 transition-colors"
                   >
-                    <Zap size={12} /> Start Quantization Scan
+                    <Zap size={12} /> {tr("training.phase2StartScan")}
                   </motion.button>
                 )}
 
@@ -548,7 +550,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
                         transition={{ duration: 0.5, repeat: 3 }}
                         className="text-accent-green font-bold text-sm"
                       >
-                        ⚡ 4× COMPRESSION ACHIEVED
+                        ⚡ {tr("training.phase2CompressionAchieved")}
                       </motion.div>
                       <div className="text-[10px] text-accent-green/70 font-mono mt-0.5">3,087 MB → 772 MB</div>
                     </motion.div>
@@ -605,7 +607,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
                     { label: "Quality",      val: "~98%",                                              sub: "preserved",     color: "text-accent-green"  },
                   ].map(r => (
                     <div key={r.label} className="p-2 rounded-lg bg-background/50 border border-border/30 text-center">
-                      <div className="text-[10px] text-muted-foreground">{r.label}</div>
+                      <div className="text-[10px] text-muted-foreground">{r.label === "Compression" ? tr("training.phase2MemorySaved") : r.label === "Weights done" ? tr("training.phase2WeightsDone") : r.label === "Quality" ? tr("training.phase2Quality") : r.label}</div>
                       <div className={`text-sm font-bold font-mono ${r.color}`}>{r.val}</div>
                       <div className="text-[9px] text-muted-foreground">{r.sub}</div>
                     </div>
@@ -632,7 +634,7 @@ export function Phase2QLoRA({ autoPlay, wasCompleted, onComplete }: PhaseProps) 
       <AnimatePresence>
         {stage >= 5 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl p-5">
-            <h3 className="font-semibold text-sm mb-1">FastLanguageModel — Unsloth&apos;s unified load API</h3>
+            <h3 className="font-semibold text-sm mb-1">{tr("training.phase2UnifiedApi")}</h3>
             <p className="text-[11px] text-muted-foreground mb-3">
               Unsloth replaces the manual BitsAndBytes + PEFT setup with a single call that applies
               custom Triton/CUDA kernels for 2-5× faster training at identical accuracy.

@@ -22,6 +22,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import type { Round } from "@/types";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface BackendEmail {
   id: number;
@@ -49,6 +50,7 @@ interface DisplayEmail {
 
 export function RoundDetailView() {
   const { data: session } = useSession();
+  const { tr } = useLanguage();
   const params = useParams();
 
   const [loading, setLoading] = useState(true);
@@ -82,10 +84,10 @@ export function RoundDetailView() {
         overrideVerdict,
         overrideReason || undefined
       );
-      setOverrideSuccess(`Verdict overridden to "${overrideVerdict}"`);
+      setOverrideSuccess(`${tr("roundDetail.overrideSuccessPrefix")} "${overrideVerdict}"`);
       setOverrideReason("");
     } catch (err) {
-      setOverrideError(err instanceof Error ? err.message : "Override failed");
+      setOverrideError(err instanceof Error ? err.message : tr("roundDetail.overrideFailed"));
     } finally {
       setOverrideSubmitting(false);
     }
@@ -151,7 +153,7 @@ export function RoundDetailView() {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
         <Loader2 size={20} className="animate-spin" />
-        Loading round details…
+        {tr("roundDetail.loading")}
       </div>
     );
   }
@@ -163,10 +165,10 @@ export function RoundDetailView() {
           href={baseHref}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-cyan transition-colors"
         >
-          <ArrowLeft size={16} /> Back to Dashboard
+          <ArrowLeft size={16} /> {tr("roundDetail.backToDashboard")}
         </Link>
         <div className="p-8 text-center text-muted-foreground pt-20">
-          Round not found or no data available yet.
+          {tr("roundDetail.notFound")}
         </div>
       </div>
     );
@@ -174,7 +176,7 @@ export function RoundDetailView() {
 
   const displayEmails: DisplayEmail[] = emails.map((e) => ({
       id: String(e.id),
-        subject: e.generated_email_subject ?? "(no subject)",
+        subject: e.generated_email_subject ?? tr("dashboard.noSubject"),
         body: e.generated_email_body ?? e.generated_content ?? null,
         generatorResponse: e.generated_content ?? "",
         detectorResponse: e.detector_reasoning ?? "",
@@ -191,13 +193,13 @@ export function RoundDetailView() {
           href={`${baseHref}/rounds`}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-cyan transition-colors"
         >
-          <ArrowLeft size={16} /> Back to Rounds
+          <ArrowLeft size={16} /> {tr("roundDetail.backToRounds")}
         </Link>
 
         <div className="glass-panel p-6 rounded-xl flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight mb-1">
-              Round #{round.id} details
+              {tr("roundDetail.round")} #{round.id} {tr("roundDetail.details")}
             </h1>
             <p className="text-muted-foreground text-sm flex items-center gap-2">
               <span>{new Date(round.date).toLocaleString()}</span> •
@@ -206,7 +208,7 @@ export function RoundDetailView() {
                   round.detectionRate > 80 ? "text-accent-red font-medium" : ""
                 }
               >
-                {round.detectionRate}% Detection
+                {round.detectionRate}% {tr("roundDetail.detection")}
               </span>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -228,7 +230,7 @@ export function RoundDetailView() {
           <div className="flex gap-4">
             <div className="text-right">
               <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">
-                Generator
+                {tr("roundDetail.generator")}
               </div>
               <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded border border-border/50 text-sm">
                 <Bot size={16} className="text-accent-purple" />
@@ -237,7 +239,7 @@ export function RoundDetailView() {
             </div>
             <div className="text-right">
               <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">
-                Detector
+                {tr("roundDetail.detector")}
               </div>
               <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded border border-border/50 text-sm">
                 <Activity size={16} className="text-accent-cyan" />
@@ -255,10 +257,10 @@ export function RoundDetailView() {
           >
             <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground">
               <span>
-                Processing emails: {progress.processed} / {progress.total}
+                {tr("roundDetail.processingEmails")}: {progress.processed} / {progress.total}
               </span>
               <span>
-                Accuracy so far: {(progress.accuracy * 100).toFixed(1)}%
+                {tr("roundDetail.accuracySoFar")}: {(progress.accuracy * 100).toFixed(1)}%
               </span>
             </div>
             <div className="h-2 w-full bg-background/50 rounded-full overflow-hidden">
@@ -284,9 +286,9 @@ export function RoundDetailView() {
               <thead className="text-xs text-muted-foreground uppercase bg-background/50 border-b border-border/50">
                 <tr>
                   <th className="px-6 py-4 font-medium w-16">#</th>
-                  <th className="px-6 py-4 font-medium">Subject</th>
-                  <th className="px-6 py-4 font-medium">Detector Reasoning</th>
-                  <th className="px-6 py-4 font-medium w-32">Verdict</th>
+                  <th className="px-6 py-4 font-medium">{tr("scan.subject")}</th>
+                  <th className="px-6 py-4 font-medium">{tr("scanHistory.detectorReasoning")}</th>
+                  <th className="px-6 py-4 font-medium w-32">{tr("roundDetail.verdict")}</th>
                   <th className="px-6 py-4 font-medium w-24 text-right">Conf.</th>
                 </tr>
               </thead>
@@ -295,8 +297,8 @@ export function RoundDetailView() {
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
                       {round.status === "in_progress"
-                        ? "Round is still running — refresh to see results."
-                        : "No emails processed in this round."}
+                        ? tr("roundDetail.runningRefresh")
+                        : tr("roundDetail.noEmails")}
                     </td>
                   </tr>
                 ) : (
@@ -326,7 +328,7 @@ export function RoundDetailView() {
                         <td className="px-6 py-4 max-w-sm">
                           <p className="text-xs text-muted-foreground line-clamp-2">
                             {email.detectorResponse || (
-                              <span className="italic opacity-50">No reasoning available</span>
+                              <span className="italic opacity-50">{tr("scanHistory.noReasoning")}</span>
                             )}
                           </p>
                         </td>
@@ -343,7 +345,7 @@ export function RoundDetailView() {
                             ) : (
                               <ShieldCheck size={12} />
                             )}
-                            {email.verdict}
+                            {email.verdict === "phishing" ? tr("scan.verdictDisplayPhishing") : tr("scan.verdictDisplaySafe")}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right font-mono font-medium">
@@ -358,7 +360,7 @@ export function RoundDetailView() {
           </div>
           {displayEmails.length > 0 && (
             <div className="px-6 py-3 border-t border-border/30 text-xs text-muted-foreground">
-              Click any row to view full email content
+              {tr("roundDetail.clickRowHint")}
             </div>
           )}
         </div>
@@ -410,10 +412,10 @@ export function RoundDetailView() {
                         ) : (
                           <ShieldCheck size={11} />
                         )}
-                        {selectedEmail.verdict}
+                        {selectedEmail.verdict === "phishing" ? tr("scan.verdictDisplayPhishing") : tr("scan.verdictDisplaySafe")}
                       </span>
                       <span className="text-xs text-muted-foreground font-mono">
-                        {selectedEmail.confidence}% confidence
+                        {selectedEmail.confidence}% {tr("scan.confidence")}
                       </span>
                       {selectedEmail.isPhishing !== null && (
                         <span
@@ -428,7 +430,7 @@ export function RoundDetailView() {
                           ) : (
                             <CheckCircle2 size={11} />
                           )}
-                          Ground truth: {selectedEmail.isPhishing ? "phishing" : "legitimate"}
+                          {tr("roundDetail.groundTruth")}: {selectedEmail.isPhishing ? tr("scan.verdict.phishing") : tr("scan.verdict.legitimate")}
                         </span>
                       )}
                     </div>
@@ -448,7 +450,7 @@ export function RoundDetailView() {
                     <div className="flex items-center gap-2 mb-2">
                       <Bot size={14} className="text-accent-purple" />
                       <span className="text-xs font-semibold text-accent-purple uppercase tracking-wider">
-                        Generated Email Body
+                        {tr("roundDetail.generatedEmailBody")}
                       </span>
                     </div>
                     <div className="bg-background/60 rounded-lg p-4 border border-border/40">
@@ -458,7 +460,7 @@ export function RoundDetailView() {
                         </p>
                       ) : (
                         <p className="text-sm text-muted-foreground italic">
-                          No email body available
+                          {tr("scanHistory.noBody")}
                         </p>
                       )}
                     </div>
@@ -469,7 +471,7 @@ export function RoundDetailView() {
                     <div className="flex items-center gap-2 mb-2">
                       <Brain size={14} className="text-accent-cyan" />
                       <span className="text-xs font-semibold text-accent-cyan uppercase tracking-wider">
-                        Detector Reasoning
+                        {tr("scanHistory.detectorReasoning")}
                       </span>
                     </div>
                     <div className="bg-background/60 rounded-lg p-4 border border-border/40">
@@ -479,7 +481,7 @@ export function RoundDetailView() {
                         </p>
                       ) : (
                         <p className="text-sm text-muted-foreground italic">
-                          No detector reasoning available
+                          {tr("scanHistory.noReasoning")}
                         </p>
                       )}
                     </div>
@@ -491,7 +493,7 @@ export function RoundDetailView() {
                       <div className="flex items-center gap-2 mb-2">
                         <AlertTriangle size={14} className="text-accent-yellow" />
                         <span className="text-xs font-semibold text-accent-yellow uppercase tracking-wider">
-                          Override Verdict
+                          {tr("roundDetail.overrideVerdict")}
                         </span>
                       </div>
                       <form
@@ -508,7 +510,7 @@ export function RoundDetailView() {
                                 : "bg-background/50 text-muted-foreground border border-border/40 hover:border-accent-red/30"
                             }`}
                           >
-                            Phishing
+                            {tr("scan.verdict.phishing")}
                           </button>
                           <button
                             type="button"
@@ -519,14 +521,14 @@ export function RoundDetailView() {
                                 : "bg-background/50 text-muted-foreground border border-border/40 hover:border-accent-green/30"
                             }`}
                           >
-                            Legitimate
+                            {tr("scan.verdict.legitimate")}
                           </button>
                         </div>
                         <input
                           type="text"
                           value={overrideReason}
                           onChange={(e) => setOverrideReason(e.target.value)}
-                          placeholder="Reason (optional)"
+                          placeholder={tr("roundDetail.reasonOptional")}
                           className="w-full bg-background/50 border border-border/40 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-accent-cyan/50"
                         />
                         {overrideError && (
@@ -540,7 +542,7 @@ export function RoundDetailView() {
                           disabled={overrideSubmitting}
                           className="w-full py-1.5 bg-accent-cyan/20 hover:bg-accent-cyan/30 text-accent-cyan border border-accent-cyan/30 rounded text-xs font-semibold transition-colors disabled:opacity-50"
                         >
-                          {overrideSubmitting ? "Submitting…" : "Submit Override"}
+                          {overrideSubmitting ? tr("roundDetail.submitting") : tr("roundDetail.submitOverride")}
                         </button>
                       </form>
                     </div>

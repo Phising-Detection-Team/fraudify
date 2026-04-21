@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { Link2, Github, Linkedin, X, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export interface TeamMember {
   name: string;
@@ -60,6 +61,7 @@ function Avatar({
 
 export const TeamCard: React.FC<{ member: TeamMember }> = ({ member }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { tr } = useLanguage();
 
   return (
     <>
@@ -113,7 +115,7 @@ export const TeamCard: React.FC<{ member: TeamMember }> = ({ member }) => {
         )}
 
         <div className="z-10 text-xs font-bold tracking-widest uppercase flex items-center mt-2 group-hover:text-cyan-400 transition-colors duration-300 bg-background/50 px-4 py-2 rounded-full border border-border/50 group-hover:border-cyan-500/30">
-          View Profile <ChevronRight size={14} className="ml-1 group-hover:translate-x-1 transition-transform" />
+          {tr("about.viewProfile")} <ChevronRight size={14} className="ml-1 group-hover:translate-x-1 transition-transform" />
         </div>
       </motion.div>
 
@@ -193,7 +195,7 @@ export const TeamCard: React.FC<{ member: TeamMember }> = ({ member }) => {
                 <div className="mt-8 space-y-6 text-left">
                   {member.bio && (
                     <div className="space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 pb-2">About</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 pb-2">{tr("about.aboutLabel")}</h4>
                       <p className="text-foreground/80 leading-relaxed text-sm md:text-base pt-1">
                         {member.bio}
                       </p>
@@ -202,7 +204,7 @@ export const TeamCard: React.FC<{ member: TeamMember }> = ({ member }) => {
 
                   {member.contributions && member.contributions.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 pb-2">Sentra Contributions</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 pb-2">{tr("about.sentraContributions")}</h4>
                       <ul className="space-y-2 pt-2">
                         {member.contributions.map((contribution, idx) => (
                           <li key={idx} className="flex items-start text-sm md:text-base text-foreground/80">
@@ -216,7 +218,7 @@ export const TeamCard: React.FC<{ member: TeamMember }> = ({ member }) => {
 
                   {member.skills && member.skills.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 pb-2">Core Tech Stack</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 pb-2">{tr("about.coreTechStack")}</h4>
                       <div className="flex flex-wrap gap-2.5 pt-2">
                         {member.skills.map((skill, idx) => (
                           <span key={idx} className="px-3.5 py-1.5 text-xs font-bold bg-accent-cyan/10 text-cyan-500 border border-cyan-500/20 rounded-full shadow-sm">

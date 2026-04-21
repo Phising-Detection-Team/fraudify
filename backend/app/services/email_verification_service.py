@@ -1,11 +1,19 @@
-"""Email verification service using Resend API."""
+"""Email services using Resend API."""
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def send_verification_email(to_email: str, token: str, code: str, frontend_url: str, from_email: str, api_key: str) -> bool:
+def send_verification_email(
+    to_email: str,
+    token: str,
+    code: str,
+    frontend_url: str,
+    from_email: str,
+    api_key: str,
+    locale: str = "en",
+) -> bool:
     """
     Send a verification email containing a 6-digit code and a clickable link.
 
@@ -28,14 +36,49 @@ def send_verification_email(to_email: str, token: str, code: str, frontend_url: 
         resend.api_key = api_key
 
         verify_link = f'{frontend_url.rstrip("/")}/verify-email?token={token}'
+        is_vi = locale == "vi"
+        subject = "Mã xác minh Sentra của bạn" if is_vi else "Your Sentra verification code"
+        title = "Xác minh địa chỉ email của bạn" if is_vi else "Verify your email address"
+        intro = (
+            "Chào mừng bạn đến với Sentra! Để hoàn tất đăng ký và bắt đầu bảo vệ hộp thư khỏi phishing, vui lòng xác minh email."
+            if is_vi
+            else "Welcome to Sentra! To complete your signup and start protecting your inbox from phishing threats, please verify your email address."
+        )
+        enter_code = "Nhập mã này trên trang xác minh:" if is_vi else "Enter this code on the verification page:"
+        code_expiry = (
+            '⏱ Mã này sẽ hết hạn sau <strong>15 phút</strong>'
+            if is_vi
+            else '⏱ This code expires in <strong>15 minutes</strong>'
+        )
+        click_btn = (
+            "Hoặc bấm nút bên dưới để xác minh tự động:"
+            if is_vi
+            else "Or click the button below to verify automatically:"
+        )
+        btn_text = "Xác minh email của tôi →" if is_vi else "Verify my email →"
+        link_expiry = (
+            '⏱ Liên kết này cũng sẽ hết hạn sau <strong>15 phút</strong>'
+            if is_vi
+            else '⏱ This link also expires in <strong>15 minutes</strong>'
+        )
+        ignore_text = (
+            "Nếu bạn không tạo tài khoản Sentra, bạn có thể bỏ qua email này."
+            if is_vi
+            else "If you didn't create a Sentra account, you can safely ignore this email."
+        )
+        footer = (
+            "© Sentra — Phát hiện & Bảo vệ chống phishing"
+            if is_vi
+            else "© Sentra — Phishing Detection & Protection"
+        )
 
         html_body = f"""
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{ 'vi' if is_vi else 'en' }">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Verify your Sentra email</title>
+  <title>{title}</title>
   <style>
     body {{ margin: 0; padding: 0; background: #0a0a0f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #e2e8f0; }}
     .container {{ max-width: 480px; margin: 40px auto; padding: 40px; background: #13131a; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; }}
@@ -53,28 +96,28 @@ def send_verification_email(to_email: str, token: str, code: str, frontend_url: 
 <body>
   <div class="container">
     <div class="logo">Sentra</div>
-    <h1>Verify your email address</h1>
-    <p>Welcome to Sentra! To complete your signup and start protecting your inbox from phishing threats, please verify your email address.</p>
+    <h1>{title}</h1>
+    <p>{intro}</p>
 
-    <p style="margin-bottom: 8px;">Enter this code on the verification page:</p>
+    <p style="margin-bottom: 8px;">{enter_code}</p>
     <div class="code-box">
       <div class="code">{code}</div>
     </div>
 
-    <p class="expiry">⏱ This code expires in <strong>15 minutes</strong></p>
+    <p class="expiry">{code_expiry}</p>
 
     <hr class="divider" />
 
-    <p>Or click the button below to verify automatically:</p>
+    <p>{click_btn}</p>
     <div style="text-align: center; margin: 20px 0;">
-      <a href="{verify_link}" class="btn">Verify my email →</a>
+      <a href="{verify_link}" class="btn">{btn_text}</a>
     </div>
 
-    <p class="expiry">⏱ This link also expires in <strong>15 minutes</strong></p>
+    <p class="expiry">{link_expiry}</p>
 
     <div class="footer">
-      <p>If you didn't create a Sentra account, you can safely ignore this email.</p>
-      <p>© Sentra — Phishing Detection &amp; Protection</p>
+      <p>{ignore_text}</p>
+      <p>{footer}</p>
     </div>
   </div>
 </body>
@@ -84,7 +127,7 @@ def send_verification_email(to_email: str, token: str, code: str, frontend_url: 
         params = {
             'from': from_email,
             'to': [to_email],
-            'subject': 'Your Sentra verification code',
+            'subject': subject,
             'html': html_body,
         }
 

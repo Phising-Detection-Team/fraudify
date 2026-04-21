@@ -10,6 +10,7 @@ import {
 import { useMemo } from "react";
 import { type CostBreakdownItem, type CostBreakdown } from "@/lib/admin-api";
 import type { ModelCost } from "@/types";
+import { useLanguage } from "@/components/LanguageProvider";
 
 // Ordered palette — assigned by index, not hardcoded to model name
 const PALETTE = [
@@ -39,14 +40,15 @@ interface CustomTooltipProps {
 }
 
 function CustomTooltip({ active, payload }: CustomTooltipProps) {
+  const { tr } = useLanguage();
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
     <div className="bg-card border border-border rounded-lg px-3 py-2 text-xs shadow-xl">
       <p className="font-semibold mb-1" style={{ color: d.color }}>{d.model_name}</p>
       <p className="text-muted-foreground capitalize">{d.agent_type}</p>
-      <p className="mt-1">${d.cost.toFixed(6)} <span className="text-muted-foreground">cost</span></p>
-      <p>{d.calls.toLocaleString()} <span className="text-muted-foreground">calls</span></p>
+      <p className="mt-1">${d.cost.toFixed(6)} <span className="text-muted-foreground">{tr("dashboard.cost").toLowerCase()}</span></p>
+      <p>{d.calls.toLocaleString()} <span className="text-muted-foreground">{tr("dashboard.calls").toLowerCase()}</span></p>
       <p>{d.tokens.toLocaleString()} <span className="text-muted-foreground">tokens</span></p>
     </div>
   );
@@ -60,6 +62,7 @@ interface Props {
 }
 
 export function CostPieChart({ demoCosts, serverData }: Props) {
+  const { tr } = useLanguage();
   const { items, total } = useMemo(() => {
     if (serverData) {
       return serverData;
@@ -100,7 +103,7 @@ export function CostPieChart({ demoCosts, serverData }: Props) {
 
   return (
     <div className="glass-panel p-6 rounded-xl flex flex-col h-full">
-      <h3 className="text-lg font-semibold mb-4">API Cost Breakdown</h3>
+      <h3 className="text-lg font-semibold mb-4">{tr("dashboard.apiCostBreakdown")}</h3>
 
       <>
         {/* Pie chart */}
@@ -142,7 +145,7 @@ export function CostPieChart({ demoCosts, serverData }: Props) {
             {/* Centre label */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
-                Total
+                {tr("dashboard.total")}
               </span>
               <span className="text-2xl font-bold mt-0.5">
                 ${total.toFixed(total < 0.01 ? 6 : 4)}
@@ -156,10 +159,10 @@ export function CostPieChart({ demoCosts, serverData }: Props) {
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="text-muted-foreground">
-                    <th className="pb-2 font-medium">Model</th>
-                    <th className="pb-2 font-medium text-center">Type</th>
-                    <th className="pb-2 font-medium text-right">Calls</th>
-                    <th className="pb-2 font-medium text-right">Cost</th>
+                    <th className="pb-2 font-medium">{tr("dashboard.model")}</th>
+                    <th className="pb-2 font-medium text-center">{tr("dashboard.type")}</th>
+                    <th className="pb-2 font-medium text-right">{tr("dashboard.calls")}</th>
+                    <th className="pb-2 font-medium text-right">{tr("dashboard.cost")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/20">
@@ -199,7 +202,7 @@ export function CostPieChart({ demoCosts, serverData }: Props) {
               </table>
             ) : (
               <p className="text-xs text-muted-foreground text-center py-4">
-                No API calls recorded yet. Run a round to see cost data.
+                {tr("dashboard.noApiCalls")}
               </p>
             )}
           </div>

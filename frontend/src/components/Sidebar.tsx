@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { config } from "@/lib/config";
 import { useSession, signOut } from "next-auth/react";
 import { Logo } from "@/components/Logo";
-import { toast } from "sonner";
+import { useLanguage } from "@/components/LanguageProvider";
 
 import {
   LayoutDashboard,
@@ -31,6 +31,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+  const { tr } = useLanguage();
   
   const isAdmin = session?.user?.role === 'admin';
   const basePath = isAdmin ? config.ROUTES.DASHBOARD_ADMIN : config.ROUTES.DASHBOARD_USER;
@@ -52,21 +53,21 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const navLinks = isAdmin
     ? [
-        { name: "Dashboard", href: basePath, icon: LayoutDashboard },
-        { name: "Rounds", href: `${basePath}/rounds`, icon: ShieldAlert },
-        { name: "Live Feed", href: `${basePath}/feed`, icon: Activity },
-        { name: "Users", href: `${basePath}/team`, icon: Users },
-        { name: "Training", href: `${basePath}/training`, icon: BrainCircuit },
-        { name: "Feedback", href: `${basePath}/feedback`, icon: MessageSquare },
-        { name: "Settings", href: `${basePath}/settings`, icon: Settings },
+        { name: tr("nav.dashboard"), href: basePath, icon: LayoutDashboard },
+        { name: tr("nav.rounds"), href: `${basePath}/rounds`, icon: ShieldAlert },
+        { name: tr("nav.liveFeed"), href: `${basePath}/feed`, icon: Activity },
+        { name: tr("nav.users"), href: `${basePath}/team`, icon: Users },
+        { name: tr("nav.training"), href: `${basePath}/training`, icon: BrainCircuit },
+        { name: tr("nav.feedback"), href: `${basePath}/feedback`, icon: MessageSquare },
+        { name: tr("nav.settings"), href: `${basePath}/settings`, icon: Settings },
       ]
     : [
-        { name: "Dashboard", href: basePath, icon: LayoutDashboard },
-        { name: "Scan Email", href: `${basePath}/scan`, icon: ScanText },
-        { name: "Training", href: `${basePath}/training`, icon: BrainCircuit },
-        { name: "Feedback", href: `${basePath}/feedback`, icon: MessageSquare },
-        { name: "Settings", href: `${basePath}/settings`, icon: Settings },
-        { name: "About Us", href: "/about", icon: Info },
+        { name: tr("nav.dashboard"), href: basePath, icon: LayoutDashboard },
+        { name: tr("nav.scanEmail"), href: `${basePath}/scan`, icon: ScanText },
+        { name: tr("nav.training"), href: `${basePath}/training`, icon: BrainCircuit },
+        { name: tr("nav.feedback"), href: `${basePath}/feedback`, icon: MessageSquare },
+        { name: tr("nav.settings"), href: `${basePath}/settings`, icon: Settings },
+        { name: tr("nav.aboutUs"), href: "/about", icon: Info },
       ];
 
   return (
@@ -125,7 +126,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
           <div className="flex flex-col flex-1 overflow-hidden">
             <span className="text-sm font-medium truncate">{userName}</span>
-            <span className="text-xs text-muted-foreground capitalize">{isAdmin ? "Admin" : "User"}</span>
+            <span className="text-xs text-muted-foreground capitalize">{isAdmin ? tr("nav.admin") : tr("nav.user")}</span>
           </div>
         </div>
         
@@ -134,7 +135,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-all text-sm font-medium text-muted-foreground hover:bg-accent-red/10 hover:text-accent-red"
         >
           <LogOut size={18} />
-          Sign Out
+          {tr("nav.signOut")}
         </button>
       </div>
     </div>

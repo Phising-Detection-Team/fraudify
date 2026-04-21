@@ -3,6 +3,7 @@
 import { type LogEntry } from "@/lib/admin-api";
 import Link from "next/link";
 import { parseUTC } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const LEVEL_STYLES: Record<string, string> = {
   info: "bg-accent-cyan/10 text-accent-cyan",
@@ -16,20 +17,21 @@ interface Props {
 }
 
 export function RecentLogsSection({ logs }: Props) {
+  const { tr } = useLanguage();
   return (
     <div className="glass-panel rounded-xl overflow-hidden">
       <div className="p-6 border-b border-border/50 flex justify-between items-center bg-card/30">
-        <h3 className="text-lg font-semibold">Recent System Logs</h3>
+        <h3 className="text-lg font-semibold">{tr("dashboard.recentSystemLogs")}</h3>
         <Link
           href="/dashboard/admin/logs"
           className="text-sm text-accent-cyan hover:underline hover:text-accent-cyan/80 transition-colors"
         >
-          View All
+          {tr("dashboard.viewAll")}
         </Link>
       </div>
 
       {logs.length === 0 ? (
-        <div className="p-6 text-sm text-muted-foreground">No logs yet.</div>
+        <div className="p-6 text-sm text-muted-foreground">{tr("dashboard.noLogsYet")}</div>
       ) : (
         <ul className="divide-y divide-border/30">
           {logs.map((log) => (
@@ -52,7 +54,7 @@ export function RecentLogsSection({ logs }: Props) {
                   })}
                   {log.round_id != null && (
                     <span className="ml-2 text-muted-foreground/60">
-                      Round #{log.round_id}
+                      {tr("dashboard.roundNumber")} #{log.round_id}
                     </span>
                   )}
                 </p>

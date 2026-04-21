@@ -17,25 +17,25 @@
 
   <!-- Not logged in -->
   <div id="viewLogin" class="view hidden">
-    <p class="hint">Log in to Sentra to enable email scanning.</p>
+    <p id="loginHint" class="hint">Log in to Sentra to enable email scanning.</p>
     <button id="btnOpenDashboard" class="btn btn-primary">Open Sentra Dashboard</button>
   </div>
 
   <!-- Logged in -->
   <div id="viewMain" class="view hidden">
     <div class="info-row">
-      <span class="label">Logged in as</span>
+      <span id="labelLoggedInAs" class="label">Logged in as</span>
       <span class="value" id="userEmail">—</span>
     </div>
     <div class="info-row">
-      <span class="label">Instance</span>
+      <span id="labelInstance" class="label">Instance</span>
       <span class="value monospace" id="instanceToken">—</span>
     </div>
     <div class="divider"></div>
-    <p class="hint">Sentra automatically scans emails when you open them in Gmail or Outlook.</p>
+    <p id="mainHint" class="hint">Sentra automatically scans emails when you open them in Gmail or Outlook.</p>
     <div id="scan-history-section" class="section">
       <div class="section-header">
-        <span class="section-title">Recent Scans</span>
+        <span id="sectionRecentScans" class="section-title">Recent Scans</span>
         <button id="btnRefreshHistory" class="btn-icon" title="Refresh">&#x21BB;</button>
       </div>
       <ul id="scan-history-list" class="scan-history-list"></ul>

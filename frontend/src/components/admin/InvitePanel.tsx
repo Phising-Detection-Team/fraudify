@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Copy, Check, Trash2, Link2 } from "lucide-react";
 import { createInvite, listInvites, revokeInvite } from "@/lib/admin-api";
 import type { InviteRecord } from "@/lib/admin-api";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface InvitePanelProps {
   token: string;
@@ -27,6 +28,7 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 export default function InvitePanel({ token }: InvitePanelProps) {
+  const { tr } = useLanguage();
   const [role, setRole]         = useState<"user" | "admin">("user");
   const [expiry, setExpiry]     = useState<number>(24);
   const [generating, setGenerating] = useState(false);
@@ -81,13 +83,13 @@ export default function InvitePanel({ token }: InvitePanelProps) {
       {/* Header */}
       <div className="flex items-center gap-2">
         <Link2 size={16} className="text-accent-cyan" />
-        <h3 className="font-semibold">Invite Links</h3>
+        <h3 className="font-semibold">{tr("invite.links")}</h3>
       </div>
 
       {/* Generate form */}
       <div className="flex flex-col sm:flex-row gap-3 items-end">
         <div className="flex flex-col gap-1 flex-1">
-          <label className="text-xs text-muted-foreground font-medium">Role</label>
+          <label className="text-xs text-muted-foreground font-medium">{tr("invite.role")}</label>
           <select
             data-testid="invite-role-select"
             value={role}
@@ -95,13 +97,13 @@ export default function InvitePanel({ token }: InvitePanelProps) {
             className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-cyan"
           >
             {ROLE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>{opt.value === "admin" ? tr("nav.admin") : tr("nav.user")}</option>
             ))}
           </select>
         </div>
 
         <div className="flex flex-col gap-1 flex-1">
-          <label className="text-xs text-muted-foreground font-medium">Expiry</label>
+          <label className="text-xs text-muted-foreground font-medium">{tr("invite.expiry")}</label>
           <select
             data-testid="invite-expiry-select"
             value={expiry}
@@ -109,7 +111,9 @@ export default function InvitePanel({ token }: InvitePanelProps) {
             className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-cyan"
           >
             {EXPIRY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.value === 24 ? tr("invite.expiry24h") : opt.value === 168 ? tr("invite.expiry7d") : tr("invite.expiry30d")}
+              </option>
             ))}
           </select>
         </div>
@@ -121,7 +125,7 @@ export default function InvitePanel({ token }: InvitePanelProps) {
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-sm font-medium hover:bg-accent-cyan/20 transition-colors disabled:opacity-60"
         >
           {generating ? <Loader2 size={14} className="animate-spin" data-testid="loader-icon" /> : null}
-          Generate
+          {tr("invite.generate")}
         </button>
       </div>
 
@@ -140,7 +144,7 @@ export default function InvitePanel({ token }: InvitePanelProps) {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs hover:bg-muted/30 transition-colors flex-shrink-0"
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
-            {copied ? "Copied!" : "Copy"}
+            {copied ? tr("teamAdmin.copied") : tr("scan.copy")}
           </button>
         </div>
       )}
@@ -148,25 +152,25 @@ export default function InvitePanel({ token }: InvitePanelProps) {
       {/* Active invites table */}
       <div data-testid="invites-table">
         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-3">
-          Active Invites
+          {tr("invite.active")}
         </p>
 
         {loadingInvites ? (
           <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
             <Loader2 size={14} className="animate-spin" />
-            Loading…
+            {tr("common.loading")}
           </div>
         ) : invites.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">No active invites.</p>
+          <p className="text-sm text-muted-foreground py-4">{tr("invite.empty")}</p>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-border/50">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-background/50 border-b border-border/50">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Code</th>
-                  <th className="px-4 py-3 font-medium">Role</th>
-                  <th className="px-4 py-3 font-medium">Expires</th>
-                  <th className="px-4 py-3 font-medium sr-only">Actions</th>
+                  <th className="px-4 py-3 font-medium">{tr("invite.code")}</th>
+                  <th className="px-4 py-3 font-medium">{tr("invite.role")}</th>
+                  <th className="px-4 py-3 font-medium">{tr("invite.expires")}</th>
+                  <th className="px-4 py-3 font-medium sr-only">{tr("rounds.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
@@ -181,7 +185,7 @@ export default function InvitePanel({ token }: InvitePanelProps) {
                           ROLE_BADGE[inv.role] ?? "bg-muted text-muted-foreground"
                         }`}
                       >
-                        {inv.role}
+                        {inv.role === "admin" ? tr("nav.admin") : inv.role === "user" ? tr("nav.user") : inv.role}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
@@ -198,7 +202,7 @@ export default function InvitePanel({ token }: InvitePanelProps) {
                         className="flex items-center gap-1 px-2 py-1 rounded text-xs text-red-400 hover:bg-red-500/10 transition-colors"
                       >
                         <Trash2 size={12} />
-                        Revoke
+                        {tr("invite.revoke")}
                       </button>
                     </td>
                   </tr>

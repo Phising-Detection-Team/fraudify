@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { Brain, Database } from "lucide-react";
 import { type IntelligenceStats, type CacheStats } from "@/lib/admin-api";
+import { useLanguage } from "@/components/LanguageProvider";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -20,16 +21,6 @@ interface Props {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const ROUNDS_EMPTY = (
-  <p className="text-xs text-muted-foreground text-center py-4">
-    No rounds completed yet — run a round from the Rounds tab to see data.
-  </p>
-);
-
-const NO_DATA = (
-  <p className="text-xs text-muted-foreground text-center py-4">No data available</p>
-);
 
 function sectionClass() {
   return "glass-panel rounded-xl p-4";
@@ -57,16 +48,20 @@ function chipColor(count: number, min: number, max: number): string {
 
 function ConfidenceDistributionChart({
   data,
+  tr,
 }: {
   data: IntelligenceStats["confidence_distribution"];
+  tr: (key: string) => string;
 }) {
   const hasData = data.some((d) => d.count > 0);
   return (
     <div className={sectionClass()} data-testid="confidence-distribution-chart">
       <h4 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
-        Confidence Distribution
+        {tr("intelligence.confidenceDistribution")}
       </h4>
-      {!hasData ? NO_DATA : (
+      {!hasData ? (
+        <p className="text-xs text-muted-foreground text-center py-4">{tr("intelligence.noData")}</p>
+      ) : (
         <ResponsiveContainer width="100%" height={160}>
           <BarChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
@@ -83,15 +78,19 @@ function ConfidenceDistributionChart({
 
 function AccuracyTrendChart({
   data,
+  tr,
 }: {
   data: IntelligenceStats["accuracy_over_rounds"];
+  tr: (key: string) => string;
 }) {
   return (
     <div className={sectionClass()} data-testid="accuracy-trend-chart">
       <h4 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
-        Accuracy Trend
+        {tr("intelligence.accuracyTrend")}
       </h4>
-      {data.length === 0 ? ROUNDS_EMPTY : (
+      {data.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">{tr("intelligence.noRounds")}</p>
+      ) : (
         <ResponsiveContainer width="100%" height={160}>
           <LineChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
@@ -116,15 +115,19 @@ function AccuracyTrendChart({
 
 function FpFnRatesChart({
   data,
+  tr,
 }: {
   data: IntelligenceStats["fp_fn_rates"];
+  tr: (key: string) => string;
 }) {
   return (
     <div className={sectionClass()} data-testid="fpfn-rates-chart">
       <h4 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
-        FP / FN Rates
+        {tr("intelligence.fpFnRates")}
       </h4>
-      {data.length === 0 ? ROUNDS_EMPTY : (
+      {data.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">{tr("intelligence.noRounds")}</p>
+      ) : (
         <ResponsiveContainer width="100%" height={160}>
           <LineChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
@@ -158,8 +161,10 @@ function FpFnRatesChart({
 
 function WordChipCloud({
   data,
+  tr,
 }: {
   data: IntelligenceStats["top_phishing_words"];
+  tr: (key: string) => string;
 }) {
   const counts = data.map((w) => w.count);
   const minCount = counts.length > 0 ? Math.min(...counts) : 0;
@@ -168,9 +173,11 @@ function WordChipCloud({
   return (
     <div className={sectionClass()} data-testid="word-cloud">
       <h4 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
-        Top Phishing Words
+        {tr("intelligence.topPhishingWords")}
       </h4>
-      {data.length === 0 ? NO_DATA : (
+      {data.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">{tr("intelligence.noData")}</p>
+      ) : (
         <div className="flex flex-wrap gap-2 pt-1">
           {data.map(({ word, count }) => (
             <span
@@ -198,11 +205,12 @@ function WordChipCloud({
 // ---------------------------------------------------------------------------
 
 export default function IntelligencePanel({ stats, cacheStats }: Props) {
+  const { tr } = useLanguage();
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
         <Brain size={20} className="text-accent-cyan" />
-        <h2 className="text-xl font-bold tracking-tight">Threat Intelligence</h2>
+        <h2 className="text-xl font-bold tracking-tight">{tr("intelligence.title")}</h2>
         <span
           data-testid="cache-stats-chip"
           className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
@@ -212,15 +220,15 @@ export default function IntelligencePanel({ stats, cacheStats }: Props) {
           }`}
         >
           <Database size={11} />
-          Cache: {cacheStats.cached_keys} entries
+          {tr("intelligence.cache")}: {cacheStats.cached_keys} {tr("intelligence.entries")}
         </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ConfidenceDistributionChart data={stats.confidence_distribution} />
-        <AccuracyTrendChart data={stats.accuracy_over_rounds} />
-        <FpFnRatesChart data={stats.fp_fn_rates} />
-        <WordChipCloud data={stats.top_phishing_words} />
+        <ConfidenceDistributionChart data={stats.confidence_distribution} tr={tr} />
+        <AccuracyTrendChart data={stats.accuracy_over_rounds} tr={tr} />
+        <FpFnRatesChart data={stats.fp_fn_rates} tr={tr} />
+        <WordChipCloud data={stats.top_phishing_words} tr={tr} />
       </div>
     </div>
   );

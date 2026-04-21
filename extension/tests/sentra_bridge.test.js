@@ -36,6 +36,7 @@ describe('when sentra-ext-data element is present with a valid token', () => {
       type: 'SET_AUTH_TOKEN',
       token: 'jwt-abc',
       email: 'user@example.com',
+      locale: 'en',
     });
   });
 

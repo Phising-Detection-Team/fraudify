@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Database, Shuffle, Layers, Play, RotateCcw, CheckCircle2 } from "lucide-react";
 import { SentraMascot } from "./SentraMascot";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const SPLIT_DATA = [
   { name: "Train",      value: 80, count: "~40,800", color: "hsl(var(--accent-cyan))"   },
@@ -297,6 +298,7 @@ function AnimatedCounter({ target, active }: { target: number; active: boolean }
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export function Phase1Data({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
+  const { tr } = useLanguage();
   const [stage, setStage]               = useState(0);
   const [playing, setPlaying]           = useState(false);
   const [mergeFlash, setFlash]          = useState(false);
@@ -341,21 +343,21 @@ export function Phase1Data({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Database size={20} className="text-accent-cyan" />
-            Data Pipeline
+            {tr("training.phase1")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Two phishing datasets merge into one — 51K shuffled samples
+            {tr("training.phase1Subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
           {playing && (
             <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border/60 hover:bg-muted transition-colors">
-              <RotateCcw size={12} /> Reset
+              <RotateCcw size={12} /> {tr("training.reset")}
             </button>
           )}
           {!playing && (
             <button onClick={startPlay} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-accent-cyan/40 bg-accent-cyan/5 text-accent-cyan hover:bg-accent-cyan/10 transition-colors">
-              <Play size={12} /> Play Phase
+              <Play size={12} /> {tr("training.playPhase")}
             </button>
           )}
         </div>
@@ -618,9 +620,9 @@ export function Phase1Data({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
               <CheckCircle2 size={18} className="text-accent-green" />
             </motion.div>
             <div className="flex-1 text-sm">
-              <span className="font-semibold text-accent-green">Merge complete — </span>
+              <span className="font-semibold text-accent-green">{tr("training.phase1MergeComplete")} </span>
               <span className="text-muted-foreground text-xs">
-                <AnimatedCounter target={51000} active={mergeFlash} /> samples · shuffled with seed=42 · ready for tokenization
+                <AnimatedCounter target={51000} active={mergeFlash} /> {tr("training.phase1MergeReady")}
               </span>
             </div>
             <div className="text-[10px] font-mono text-accent-green/60">33K + 18K</div>
@@ -640,7 +642,7 @@ export function Phase1Data({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
             <div className="glass-panel rounded-xl p-5">
               <div className="flex items-center gap-2 mb-5">
                 <Layers size={16} className="text-accent-cyan" />
-                <h3 className="font-semibold text-sm">Dataset Split  (80 / 10 / 10)</h3>
+                <h3 className="font-semibold text-sm">{tr("training.phase1DatasetSplit")}</h3>
               </div>
               <div className="space-y-4">
                 {SPLIT_DATA.map((d, i) => (
@@ -684,7 +686,7 @@ export function Phase1Data({ autoPlay, wasCompleted, onComplete }: PhaseProps) {
             </div>
 
             <div className="glass-panel rounded-xl p-5">
-              <h3 className="font-semibold text-sm mb-4">Pipeline Config</h3>
+              <h3 className="font-semibold text-sm mb-4">{tr("training.phase1PipelineConfig")}</h3>
               <div className="space-y-2.5">
                 {PIPELINE_CONFIG.map((row, i) => (
                   <motion.div

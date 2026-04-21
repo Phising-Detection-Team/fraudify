@@ -11,6 +11,8 @@ import {
   type BackendUser, type ExtensionInstance,
 } from "@/lib/admin-api";
 import { parseUTC } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
+import type { Locale } from "@/lib/i18n";
 
 function Initials({ name }: { name?: string | null }) {
   const initials = (name ?? "?")
@@ -25,7 +27,7 @@ function Initials({ name }: { name?: string | null }) {
   );
 }
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, title }: { text: string; title: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text);
@@ -37,7 +39,7 @@ function CopyButton({ text }: { text: string }) {
       type="button"
       onClick={handleCopy}
       className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-      title="Copy token"
+      title={title}
     >
       {copied ? <Check size={14} className="text-accent-green" /> : <Copy size={14} />}
     </button>
@@ -46,6 +48,7 @@ function CopyButton({ text }: { text: string }) {
 
 export function ProfileSettings() {
   const { data: session } = useSession();
+  const { locale, setLocaleAndPersist, tr } = useLanguage();
   const [profile, setProfile] = useState<BackendUser | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -57,6 +60,7 @@ export function ProfileSettings() {
   const [showNew, setShowNew] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [languageMessage, setLanguageMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Extension instances
   const [instances, setInstances] = useState<ExtensionInstance[]>([]);
@@ -86,23 +90,23 @@ export function ProfileSettings() {
     setMessage(null);
 
     if (newPassword !== confirmPassword) {
-      setMessage({ type: "error", text: "New passwords do not match." });
+      setMessage({ type: "error", text: tr("profile.passwordMismatch") });
       return;
     }
     if (newPassword.length < 8) {
-      setMessage({ type: "error", text: "New password must be at least 8 characters." });
+      setMessage({ type: "error", text: tr("profile.passwordMinLength") });
       return;
     }
     if (!session?.accessToken) return;
     setSaving(true);
     try {
       await updatePassword(session.accessToken, currentPassword, newPassword);
-      setMessage({ type: "success", text: "Password updated successfully." });
+      setMessage({ type: "success", text: tr("profile.passwordUpdated") });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
-      setMessage({ type: "error", text: (err as Error).message ?? "Failed to update password." });
+      setMessage({ type: "error", text: (err as Error).message ?? tr("profile.passwordUpdateFailed") });
     } finally {
       setSaving(false);
     }
@@ -116,13 +120,22 @@ export function ProfileSettings() {
       await deleteExtensionInstance(session.accessToken, instanceId);
       setInstances((prev) => prev.filter((i) => i.id !== instanceId));
     } catch (err) {
-      setDeleteError((err as Error).message ?? "Failed to remove instance.");
+      setDeleteError((err as Error).message ?? tr("profile.removeInstanceFailed"));
     } finally {
       setDeletingId(null);
     }
   }
 
-  const displayName = session?.user?.name ?? profile?.username ?? "User";
+  async function handleLanguageChange(nextLocale: Locale) {
+    const success = await setLocaleAndPersist(nextLocale);
+    if (success) {
+      setLanguageMessage({ type: "success", text: tr("profile.languageSaved") });
+      return;
+    }
+    setLanguageMessage({ type: "error", text: tr("profile.languageSaveFailed") });
+  }
+
+  const displayName = session?.user?.name ?? profile?.username ?? tr("nav.user");
   const displayEmail = session?.user?.email ?? profile?.email ?? "";
   const roles = profile?.roles ?? (session?.user?.role ? [session.user.role] : []);
   const memberSince = profile?.created_at
@@ -136,13 +149,36 @@ export function ProfileSettings() {
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your account information and security.</p>
+        <h1 className="text-3xl font-bold tracking-tight">{tr("profile.title")}</h1>
+        <p className="text-muted-foreground mt-1">{tr("profile.subtitle")}</p>
       </div>
 
       {/* Account Info */}
       <div className="glass-panel rounded-xl p-6 space-y-6">
-        <h2 className="text-lg font-semibold border-b border-border/50 pb-3">Account Information</h2>
+        <h2 className="text-lg font-semibold border-b border-border/50 pb-3">{tr("profile.accountInformation")}</h2>
+
+        <div className="rounded-lg border border-border/50 bg-background/30 p-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <label className="text-sm font-medium whitespace-nowrap">{tr("profile.languagePreference")}</label>
+          <select
+            value={locale}
+            onChange={(e) => void handleLanguageChange(e.target.value as Locale)}
+              className="w-full sm:w-auto sm:min-w-[180px] bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-cyan"
+          >
+            <option value="en">{tr("common.english")}</option>
+            <option value="vi">{tr("common.vietnamese")}</option>
+          </select>
+          </div>
+          {languageMessage && (
+            <p
+              className={`text-xs mt-2 ${
+                languageMessage.type === "success" ? "text-accent-green" : "text-accent-red"
+              }`}
+            >
+              {languageMessage.text}
+            </p>
+          )}
+        </div>
 
         <div className="flex items-center gap-5">
           <Initials name={displayName} />
@@ -155,25 +191,25 @@ export function ProfileSettings() {
         {loadingProfile ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 size={14} className="animate-spin" />
-            Loading profile…
+            {tr("profile.loadingProfile")}
           </div>
         ) : (
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Username
+                {tr("profile.username")}
               </dt>
               <dd className="text-sm font-medium">{profile?.username ?? displayName}</dd>
             </div>
             <div>
               <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Email
+                {tr("profile.email")}
               </dt>
               <dd className="text-sm font-medium">{displayEmail}</dd>
             </div>
             <div>
               <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Roles
+                {tr("profile.roles")}
               </dt>
               <dd className="flex flex-wrap gap-1.5">
                 {roles.map((role) => (
@@ -181,7 +217,7 @@ export function ProfileSettings() {
                     key={role}
                     className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-accent-cyan/10 text-accent-cyan"
                   >
-                    {role}
+                    {role === "admin" ? tr("nav.admin") : role === "user" ? tr("nav.user") : role}
                   </span>
                 ))}
               </dd>
@@ -189,7 +225,7 @@ export function ProfileSettings() {
             {memberSince && (
               <div>
                 <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                  Member Since
+                  {tr("profile.memberSince")}
                 </dt>
                 <dd className="text-sm font-medium">{memberSince}</dd>
               </div>
@@ -200,17 +236,17 @@ export function ProfileSettings() {
 
       {/* Change Password */}
       <div className="glass-panel rounded-xl p-6 space-y-5">
-        <h2 className="text-lg font-semibold border-b border-border/50 pb-3">Change Password</h2>
+        <h2 className="text-lg font-semibold border-b border-border/50 pb-3">{tr("profile.changePassword")}</h2>
 
         {!session?.user?.fromBackend ? (
           <p className="text-sm text-muted-foreground">
-            Password management is only available for backend accounts.
+            {tr("profile.backendOnlyPassword")}
           </p>
         ) : (
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div>
               <label htmlFor="current-password" className="block text-sm font-medium mb-1.5">
-                Current Password
+                {tr("profile.currentPassword")}
               </label>
               <div className="relative">
                 <input
@@ -235,7 +271,7 @@ export function ProfileSettings() {
 
             <div>
               <label htmlFor="new-password" className="block text-sm font-medium mb-1.5">
-                New Password
+                {tr("profile.newPassword")}
               </label>
               <div className="relative">
                 <input
@@ -261,7 +297,7 @@ export function ProfileSettings() {
 
             <div>
               <label htmlFor="confirm-password" className="block text-sm font-medium mb-1.5">
-                Confirm New Password
+                {tr("profile.confirmNewPassword")}
               </label>
               <input
                 id="confirm-password"
@@ -299,7 +335,7 @@ export function ProfileSettings() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent-cyan text-black font-semibold text-sm hover:bg-accent-cyan/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving && <Loader2 size={14} className="animate-spin" />}
-                Update Password
+                {tr("profile.updatePassword")}
               </button>
             </div>
           </form>
@@ -310,17 +346,17 @@ export function ProfileSettings() {
       <div className="glass-panel rounded-xl p-6 space-y-5">
         <div className="flex items-center gap-2 border-b border-border/50 pb-3">
           <Puzzle size={18} className="text-accent-cyan" />
-          <h2 className="text-lg font-semibold">Browser Extension</h2>
+          <h2 className="text-lg font-semibold">{tr("profile.browserExtension")}</h2>
         </div>
 
         {/* How it works callout */}
         <div className="rounded-lg border border-accent-cyan/20 bg-accent-cyan/5 px-4 py-4 space-y-3">
-          <p className="text-xs font-semibold text-accent-cyan uppercase tracking-wider">How it works</p>
+          <p className="text-xs font-semibold text-accent-cyan uppercase tracking-wider">{tr("profile.howItWorks")}</p>
           <ol className="space-y-2">
             {[
-              "Install the Sentra browser extension (Chrome / Edge).",
-              "Log in to the Sentra dashboard.",
-              "The extension automatically connects — your instance will appear here.",
+              tr("profile.extensionStep1"),
+              tr("profile.extensionStep2"),
+              tr("profile.extensionStep3"),
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                 <span className="flex-shrink-0 w-4 h-4 rounded-full bg-accent-cyan/20 text-accent-cyan flex items-center justify-center text-[10px] font-bold mt-0.5">
@@ -334,19 +370,19 @@ export function ProfileSettings() {
 
         {!session?.user?.fromBackend ? (
           <p className="text-sm text-muted-foreground">
-            Extension tracking is only available for backend accounts.
+            {tr("profile.backendOnlyExtension")}
           </p>
         ) : loadingInstances ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 size={14} className="animate-spin" />
-            Loading instances…
+            {tr("profile.loadingInstances")}
           </div>
         ) : instances.length === 0 ? (
           <div className="rounded-lg border border-border/50 bg-muted/20 px-4 py-6 text-center space-y-2">
             <WifiOff size={24} className="mx-auto text-muted-foreground" />
-            <p className="text-sm font-medium">No instances registered yet</p>
+            <p className="text-sm font-medium">{tr("profile.noInstances")}</p>
             <p className="text-xs text-muted-foreground">
-              Install the extension and log in — your instance will appear here automatically.
+              {tr("profile.noInstancesHint")}
             </p>
           </div>
         ) : (
@@ -362,7 +398,7 @@ export function ProfileSettings() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium truncate">
-                      {inst.browser ?? "Unknown browser"}
+                      {inst.browser ?? tr("profile.unknownBrowser")}
                     </span>
                     {inst.os_name && (
                       <span className="text-xs text-muted-foreground">· {inst.os_name}</span>
@@ -374,22 +410,22 @@ export function ProfileSettings() {
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {inst.is_active ? "Active" : "Idle — waiting for heartbeat"}
+                      {inst.is_active ? tr("profile.active") : tr("profile.idleWaitingHeartbeat")}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 mt-1">
                     <span className="font-mono text-[10px] text-muted-foreground truncate">
-                      Token: {inst.instance_token}
+                      {tr("profile.token")}: {inst.instance_token}
                     </span>
-                    <CopyButton text={inst.instance_token} />
+                    <CopyButton text={inst.instance_token} title={tr("profile.copyToken")} />
                   </div>
                   {inst.last_seen ? (
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Last heartbeat {parseUTC(inst.last_seen).toLocaleString()}
+                      {tr("profile.lastHeartbeat")} {parseUTC(inst.last_seen).toLocaleString()}
                     </p>
                   ) : (
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      No heartbeat received yet — check the extension is installed and you are logged in.
+                      {tr("profile.noHeartbeatYet")}
                     </p>
                   )}
                 </div>
@@ -398,7 +434,7 @@ export function ProfileSettings() {
                   onClick={() => handleRemoveInstance(inst.id)}
                   disabled={deletingId === inst.id}
                   className="flex-shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-red-400 transition-colors disabled:opacity-50"
-                  title="Remove instance"
+                  title={tr("profile.removeInstance")}
                   data-testid={`remove-instance-${inst.id}`}
                 >
                   {deletingId === inst.id

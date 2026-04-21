@@ -3,6 +3,7 @@
 import { Menu } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Logo } from "./Logo";
+import { LanguageSelector } from "./LanguageSelector";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -25,6 +26,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="hidden md:flex flex-1" />
 
       <div className="flex items-center gap-4">
+        <LanguageSelector persistToProfile />
         <ThemeToggle />
       </div>
     </header>
